@@ -50,7 +50,6 @@ const handleSignup = async () => {
   }
 }
 
-// Login con Google
 const signInWithGoogle = async () => {
   try {
     loading.value = true
@@ -101,14 +100,14 @@ const signInWithGithub = async () => {
             <h1>S-mart</h1>
           </div>
           <h2 class="hero-title">Proyecto</h2>
-          <p class="hero-subtitle">Smart.</p>
+          <p class="hero-subtitle">Tienda en linea.</p>
         </div>
       </div>
 
       <div class="login-right">
         <div class="login-form">
           <h2 class="form-title">S-mart</h2>
-          <p class="form-subtitle">Proyecto eccomerce</p>
+          <p class="form-subtitle">Proyecto tienda en linea.</p>
 
           <div class="oauth-buttons">
             <button
@@ -157,9 +156,38 @@ const signInWithGithub = async () => {
             <span>or</span>
           </div>
 
-          <button type="button" @click="isLogin = !isLogin" class="toggle-btn">
-            {{ isLogin ? 'Log in' : 'Sign up' }}
-          </button>
+          <form @submit.prevent="isLogin ? handleSignup : handleLogin" class="email-form">
+            <div class="form-group">
+              <input
+                type="email"
+                v-model="email"
+                required
+                placeholder="Email"
+                class="input-field"
+              />
+            </div>
+
+            <div class="form-group">
+              <input
+                type="password"
+                v-model="password"
+                required
+                placeholder="Password"
+                class="input-field"
+              />
+            </div>
+
+            <button type="submit" :disabled="loading" class="submit-btn">
+              {{ loading ? 'Loading...' : isLogin ? 'Sign up' : 'Log in' }}
+            </button>
+          </form>
+
+          <div class="switch-mode">
+            <span>{{ isLogin ? 'Already have an account?' : "Don't have an account?" }}</span>
+            <button type="button" @click="isLogin = !isLogin" class="switch-btn">
+              {{ isLogin ? 'Log in' : 'Sign up' }}
+            </button>
+          </div>
 
           <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
 
@@ -346,6 +374,81 @@ const signInWithGithub = async () => {
   padding: 0 1rem;
   font-size: 0.85rem;
   color: #666;
+}
+
+.email-form {
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 0.75rem;
+}
+
+.input-field {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  background: transparent;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 50px;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.input-field::placeholder {
+  color: #666;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #555;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 0.9rem;
+  background: #fff;
+  color: #000;
+  border: none;
+  border-radius: 50px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 0.5rem;
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.switch-mode {
+  text-align: center;
+  color: #666;
+  font-size: 0.85rem;
+  margin-top: 1.5rem;
+}
+
+.switch-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-left: 0.25rem;
+  transition: color 0.2s;
+}
+
+.switch-btn:hover {
+  color: #ccc;
 }
 
 .toggle-btn {
