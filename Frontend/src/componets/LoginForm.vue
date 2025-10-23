@@ -1,6 +1,11 @@
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { supabase } from '../lib/supabase'
+import { useAuthStore } from '../stores/auth'
+
+const router = useRouter()
+const authStore = useAuthStore()
 
 const email = ref('')
 const password = ref('')
@@ -21,6 +26,7 @@ const handleLogin = async () => {
     if (error) throw error
 
     console.log('Login exitoso:', data)
+    router.push('/')
   } catch (error) {
     errorMessage.value = error.message
   } finally {
@@ -28,7 +34,6 @@ const handleLogin = async () => {
   }
 }
 
-// Registro con email/password
 const handleSignup = async () => {
   try {
     loading.value = true
@@ -43,6 +48,7 @@ const handleSignup = async () => {
 
     console.log('Registro exitoso:', data)
     alert('Revisa tu email para confirmar tu cuenta')
+    router.push('/')
   } catch (error) {
     errorMessage.value = error.message
   } finally {
@@ -58,7 +64,7 @@ const signInWithGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.origin}/`,
       },
     })
 
@@ -78,7 +84,7 @@ const signInWithGithub = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.origin}/`,
       },
     })
 
@@ -225,7 +231,7 @@ const signInWithGithub = async () => {
 .login-content {
   display: flex;
   width: 100%;
-  height: 100vh;
+  min-height: 100vh;
 }
 
 .login-left {
@@ -292,11 +298,13 @@ const signInWithGithub = async () => {
   align-items: center;
   justify-content: center;
   padding: 2rem;
+  overflow-y: auto;
 }
 
 .login-form {
   width: 100%;
   max-width: 360px;
+  padding: 1rem 0;
 }
 
 .form-title {

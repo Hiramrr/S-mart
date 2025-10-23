@@ -1,13 +1,7 @@
 <script setup>
-import LoginForm from '../src/componets/LoginForm.vue'
-import StoreView from './componets/PrincipalComponents/StoreView.vue';
+import { RouterView } from 'vue-router'
 </script>
 
 <template>
-  <div>
-    <StoreView />
-  </div>
-  <!-- <div>
-  <LoginForm />
-  </div> -->
+  <RouterView />
 </template>
