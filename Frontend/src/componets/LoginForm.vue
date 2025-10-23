@@ -67,6 +67,9 @@ const signInWithGoogle = async () => {
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
     })
 
     if (error) throw error
@@ -84,6 +87,9 @@ const signInWithGithub = async () => {
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
+      options: {
+        redirectTo: window.location.origin
+      }
     })
 
     if (error) throw error
