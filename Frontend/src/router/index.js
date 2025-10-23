@@ -8,14 +8,21 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView
+      component: HomeView,
+      meta: { title: 'S-mart' }
     },
     {
       path: '/login',
       name: 'login',
-      component: LoginView
+      component: LoginView,
+      meta: { title: 'Login - S-mart' }
     }
   ],
+})
+
+router.beforeEach((to, from, next) => {
+  document.title = to.meta.title || 'S-mart'
+  next()
 })
 
 export default router
