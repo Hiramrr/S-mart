@@ -68,7 +68,7 @@ const signInWithGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin
+        redirectTo: import.meta.env.VITE_REDIRECT_URL || window.location.origin
       }
     })
 
@@ -88,7 +88,7 @@ const signInWithGithub = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: window.location.origin
+        redirectTo: import.meta.env.VITE_REDIRECT_URL || window.location.origin
       }
     })
 
