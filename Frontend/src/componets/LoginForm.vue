@@ -106,7 +106,13 @@ const signInWithGithub = async () => {
 
       <div class="login-right">
         <div class="login-form">
-          <h2 class="form-title">S-mart</h2>
+          <div>
+            <img
+              src="/src/assets/smart.svg"
+              alt="Logo"
+              style="width: 120px; height: auto; margin: 0 auto; display: block"
+            />
+          </div>
           <p class="form-subtitle">Proyecto tienda en linea.</p>
 
           <div class="oauth-buttons">
