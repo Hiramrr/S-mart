@@ -9,6 +9,7 @@ const authStore = useAuthStore()
 
 const email = ref('')
 const password = ref('')
+const nombre = ref('')
 const loading = ref(false)
 const errorMessage = ref('')
 const isLogin = ref(true)
@@ -25,7 +26,6 @@ const handleLogin = async () => {
 
     if (error) throw error
 
-    console.log('Login exitoso:', data)
     router.push('/')
   } catch (error) {
     errorMessage.value = error.message
@@ -42,11 +42,15 @@ const handleSignup = async () => {
     const { data, error } = await supabase.auth.signUp({
       email: email.value,
       password: password.value,
+      options: {
+        data: {
+          nombre: nombre.value || null
+        }
+      }
     })
 
     if (error) throw error
 
-    console.log('Registro exitoso:', data)
     alert('Revisa tu email para confirmar tu cuenta')
     router.push('/')
   } catch (error) {
@@ -146,7 +150,7 @@ const signInWithGithub = async () => {
                   d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3Z"
                 />
               </svg>
-              {{ isLogin ? 'Sign up' : 'Continue with Google' }}
+              {{ isLogin ? 'Continue with Google' : 'Sign up with Google' }}
             </button>
 
             <button
@@ -160,7 +164,7 @@ const signInWithGithub = async () => {
                   d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
                 />
               </svg>
-              {{ isLogin ? 'Sign up with GitHub' : 'Continue with GitHub' }}
+              {{ isLogin ? 'Continue with GitHub' : 'Sign up with GitHub' }}
             </button>
           </div>
 
@@ -168,7 +172,11 @@ const signInWithGithub = async () => {
             <span>or</span>
           </div>
 
-          <form @submit.prevent="isLogin ? handleSignup : handleLogin" class="email-form">
+          <form @submit.prevent="isLogin ? handleLogin() : handleSignup()" class="email-form">
+            <div class="form-group" v-if="!isLogin">
+              <input type="text" v-model="nombre" placeholder="Nombre" class="input-field" />
+            </div>
+
             <div class="form-group">
               <input
                 type="email"
@@ -190,14 +198,14 @@ const signInWithGithub = async () => {
             </div>
 
             <button type="submit" :disabled="loading" class="submit-btn">
-              {{ loading ? 'Loading...' : isLogin ? 'Sign up' : 'Log in' }}
+              {{ loading ? 'Loading...' : isLogin ? 'Log in' : 'Sign up' }}
             </button>
           </form>
 
           <div class="switch-mode">
-            <span>{{ isLogin ? 'Already have an account?' : "Don't have an account?" }}</span>
+            <span>{{ isLogin ? "Don't have an account?" : 'Already have an account?' }}</span>
             <button type="button" @click="isLogin = !isLogin" class="switch-btn">
-              {{ isLogin ? 'Log in' : 'Sign up' }}
+              {{ isLogin ? 'Sign up' : 'Log in' }}
             </button>
           </div>
 

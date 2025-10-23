@@ -30,7 +30,6 @@ export const useAuthStore = defineStore('auth', () => {
       if (data) {
         perfil.value = data
       } else {
-        console.log('No existe perfil para este usuario, creando...')
         await crearPerfil()
       }
     } catch (error) {
@@ -49,6 +48,8 @@ export const useAuthStore = defineStore('auth', () => {
           id: usuario.value.id,
           email: usuario.value.email,
           rol: 'cliente',
+          nombre: usuario.value.user_metadata?.nombre || null,
+          foto_url: null,
         })
         .select()
         .single()
@@ -56,7 +57,6 @@ export const useAuthStore = defineStore('auth', () => {
       if (error) throw error
 
       perfil.value = data
-      console.log('Perfil creado exitosamente')
     } catch (error) {
       console.error('Error al crear el perfil:', error)
       perfil.value = null
