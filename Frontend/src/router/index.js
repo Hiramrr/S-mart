@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
+
 import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
+import VenderView from '../views/VenderView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,6 +18,12 @@ const router = createRouter({
       name: 'login',
       component: LoginView,
       meta: { title: 'Login - S-mart' }
+    },
+    {
+      path: '/vender',
+      name: 'vender',
+      component: VenderView,
+      meta: { title: 'Agregar un Producto - S-mart' }
     }
   ],
 })

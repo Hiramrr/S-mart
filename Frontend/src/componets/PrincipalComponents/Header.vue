@@ -6,7 +6,12 @@ import { useAuthStore } from '../../stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 
+
 const showUserMenu = ref(false)
+
+const goToVender = () => {
+  router.push('/vender')
+}
 
 const openLogin = () => {
   router.push('/login')
@@ -90,6 +95,7 @@ const getUserAvatar = computed(() => {
               </div>
             </div>
             <div class="dropdown-divider"></div>
+            <button class="dropdown-item" @click="goToVender">Vender</button>
             <button class="dropdown-item" @click="handleLogout">Cerrar sesión</button>
           </div>
         </div>
