@@ -1,11 +1,12 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const showMobileMenu = ref(false)
+const showUserMenu = ref(false)
 const isDarkBackground = ref(false)
 
 const checkBackgroundColor = () => {
@@ -63,12 +64,10 @@ const handleScroll = () => {
 
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
-  // Usar un pequeño delay para asegurar que el DOM esté listo
   setTimeout(() => {
     checkBackgroundColor()
   }, 100)
 
-  // También verificar cada cierto tiempo por si hay cambios
   const interval = setInterval(checkBackgroundColor, 500)
 
   onUnmounted(() => {
@@ -87,6 +86,13 @@ const goToLogin = () => {
   showMobileMenu.value = false
 }
 
+const handleLogout = async () => {
+  await authStore.cerrarSesion()
+  showUserMenu.value = false
+  showMobileMenu.value = false
+  router.push('/login')
+}
+
 const scrollToSection = (sectionId) => {
   const element = document.getElementById(sectionId)
   if (element) {
@@ -94,6 +100,29 @@ const scrollToSection = (sectionId) => {
     showMobileMenu.value = false
   }
 }
+
+const getUserName = computed(() => {
+  if (authStore.perfil?.nombre) {
+    return authStore.perfil.nombre
+  }
+  if (authStore.usuario?.user_metadata?.full_name) {
+    return authStore.usuario.user_metadata.full_name
+  }
+  if (authStore.usuario?.email) {
+    return authStore.usuario.email.split('@')[0]
+  }
+  return 'Usuario'
+})
+
+const getUserAvatar = computed(() => {
+  if (authStore.perfil?.avatar_url) {
+    return authStore.perfil.avatar_url
+  }
+  if (authStore.usuario?.user_metadata?.avatar_url) {
+    return authStore.usuario.user_metadata.avatar_url
+  }
+  return null
+})
 </script>
 
 <template>
@@ -113,9 +142,31 @@ const scrollToSection = (sectionId) => {
       </nav>
 
       <div class="header-actions">
-        <button v-if="!authStore.usuario" class="btn-login" @click="goToLogin">
-          INICIAR SESIÓN
-        </button>
+        <!-- User Menu cuando está autenticado -->
+        <div v-if="authStore.usuario" class="user-menu-container">
+          <button class="btn-user" @click="showUserMenu = !showUserMenu">
+            <img v-if="getUserAvatar" :src="getUserAvatar" :alt="getUserName" class="user-avatar" />
+            <div v-else class="user-avatar-placeholder">
+              {{ getUserName.charAt(0).toUpperCase() }}
+            </div>
+            <span class="user-name">{{ getUserName }}</span>
+          </button>
+
+          <div v-if="showUserMenu" class="user-dropdown" @click.stop>
+            <div class="dropdown-item user-info">
+              <div class="user-email">{{ authStore.usuario.email }}</div>
+              <div v-if="authStore.perfil?.role" class="user-role">
+                {{ authStore.perfil.role }}
+              </div>
+            </div>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item" @click="handleLogout">Cerrar sesión</button>
+          </div>
+        </div>
+
+        <!-- Login button cuando NO está autenticado -->
+        <button v-else class="btn-login" @click="goToLogin">INICIAR SESIÓN</button>
+
         <button class="btn-get-started" @click="goToStore">COMENZAR →</button>
 
         <button class="mobile-menu-btn" @click="showMobileMenu = !showMobileMenu">
@@ -152,9 +203,30 @@ const scrollToSection = (sectionId) => {
         <button @click="scrollToSection('features')">Productos</button>
         <button @click="scrollToSection('pricing')">Precios</button>
         <button @click="scrollToSection('footer')">Contacto</button>
-        <button v-if="!authStore.usuario" class="mobile-login" @click="goToLogin">
-          Iniciar sesión
-        </button>
+
+        <!-- User info en mobile cuando está autenticado -->
+        <div v-if="authStore.usuario" class="mobile-user-section">
+          <div class="mobile-user-info">
+            <img
+              v-if="getUserAvatar"
+              :src="getUserAvatar"
+              :alt="getUserName"
+              class="mobile-user-avatar"
+            />
+            <div v-else class="mobile-user-avatar-placeholder">
+              {{ getUserName.charAt(0).toUpperCase() }}
+            </div>
+            <div class="mobile-user-details">
+              <div class="mobile-user-name">{{ getUserName }}</div>
+              <div class="mobile-user-email">{{ authStore.usuario.email }}</div>
+            </div>
+          </div>
+          <button class="mobile-logout" @click="handleLogout">Cerrar sesión</button>
+        </div>
+
+        <!-- Login button en mobile cuando NO está autenticado -->
+        <button v-else class="mobile-login" @click="goToLogin">Iniciar sesión</button>
+
         <button class="mobile-cta" @click="goToStore">Comenzar →</button>
       </nav>
     </transition>
@@ -259,6 +331,119 @@ const scrollToSection = (sectionId) => {
   gap: 1rem;
 }
 
+/* User Menu Styles */
+.user-menu-container {
+  position: relative;
+}
+
+.btn-user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-user:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.user-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #000;
+}
+
+.user-avatar-placeholder {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background-color: #000000;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.875rem;
+}
+
+.user-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #000;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.2),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  min-width: 220px;
+  z-index: 50;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-item {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+  color: #000;
+}
+
+.dropdown-item:hover {
+  background-color: #f3f4f6;
+}
+
+.user-info {
+  cursor: default;
+  padding: 1rem;
+}
+
+.user-info:hover {
+  background-color: transparent;
+}
+
+.user-email {
+  font-weight: 500;
+  color: #111827;
+  font-size: 0.875rem;
+}
+
+.user-role {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-transform: capitalize;
+  margin-top: 0.25rem;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 0.25rem 0;
+}
+
 .btn-login {
   background: none;
   border: none;
@@ -329,6 +514,78 @@ const scrollToSection = (sectionId) => {
   background: rgba(255, 255, 255, 0.1);
 }
 
+/* Mobile User Section */
+.mobile-user-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mobile-user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.mobile-user-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+}
+
+.mobile-user-avatar-placeholder {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background-color: #ffffff;
+  color: #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.mobile-user-details {
+  flex: 1;
+  overflow: hidden;
+}
+
+.mobile-user-name {
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-user-email {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-logout {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #ef4444 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+}
+
+.mobile-logout:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+}
+
 .mobile-login {
   margin-top: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
@@ -363,7 +620,8 @@ const scrollToSection = (sectionId) => {
     display: none;
   }
 
-  .btn-login {
+  .btn-login,
+  .user-menu-container {
     display: none;
   }
 
@@ -377,6 +635,16 @@ const scrollToSection = (sectionId) => {
 
   .header-content {
     padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .user-name {
+    display: none;
+  }
+
+  .btn-user {
+    padding: 0.5rem;
   }
 }
 </style>
