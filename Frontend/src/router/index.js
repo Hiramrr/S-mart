@@ -1,7 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
+
 import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
+<<<<<<< HEAD
 import TiendaView from '../views/TiendaView.vue'
+=======
+import VenderView from '../views/VenderView.vue'
+>>>>>>> refs/remotes/origin/main
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,6 +21,7 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
+<<<<<<< HEAD
       meta: { title: 'Login - S-mart' },
     },
     {
@@ -24,6 +30,16 @@ const router = createRouter({
       component: TiendaView,
       meta: { title: 'Tienda - S-mart' },
     },
+=======
+      meta: { title: 'Login - S-mart' }
+    },
+    {
+      path: '/vender',
+      name: 'vender',
+      component: VenderView,
+      meta: { title: 'Agregar un Producto - S-mart' }
+    }
+>>>>>>> refs/remotes/origin/main
   ],
 })
 
