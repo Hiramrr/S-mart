@@ -1,5 +1,5 @@
 <script setup>
-import LoginForm from '../componets/LoginForm.vue'
+import LoginForm from '@/components/LoginForm.vue'
 import { onMounted, onUnmounted } from 'vue'
 
 onMounted(() => {
