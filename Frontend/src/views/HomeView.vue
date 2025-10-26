@@ -2,7 +2,6 @@
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 import LandingHero from '@/components/Landing/LandingHero.vue'
 import LandingFeatures from '@/components/Landing/LandingFeatures.vue'
-import LandingPricing from '@/components/Landing/LandingPricing.vue'
 import LandingFooter from '@/components/Landing/LandingFooter.vue'
 </script>
 
@@ -11,7 +10,6 @@ import LandingFooter from '@/components/Landing/LandingFooter.vue'
     <LandingHeader />
     <LandingHero />
     <LandingFeatures />
-    <LandingPricing />
     <LandingFooter />
   </div>
 </template>

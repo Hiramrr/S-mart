@@ -109,7 +109,6 @@ const scrollToSection = (sectionId) => {
         <button class="nav-btn" @click="scrollToSection('features')">
           PRODUCTOS <span class="plus">+</span>
         </button>
-        <button class="nav-link" @click="scrollToSection('pricing')">PRECIOS</button>
         <button class="nav-link" @click="scrollToSection('footer')">CONTACTO</button>
       </nav>
 
