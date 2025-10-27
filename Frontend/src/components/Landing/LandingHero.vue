@@ -15,7 +15,7 @@ const goToStore = () => {
 
       <h1 class="hero-title">Utiliza <span class="highlight">S★mart</span></h1>
 
-      <p class="hero-subtitle">Se S★mart</p>
+      <p class="hero-subtitle">Sé S★mart</p>
 
       <button class="btn-hero" @click="goToStore">COMENZAR →</button>
 
@@ -44,7 +44,6 @@ const goToStore = () => {
 </template>
 
 <style scoped>
-/* 1. Importamos las fuentes de Google al inicio del todo */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:ital,wght@1,400&display=swap');
 
 .hero {
@@ -58,7 +57,6 @@ const goToStore = () => {
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
-  /* 2. Aplicamos la fuente base 'Inter' a esta sección */
   font-family: 'Inter', sans-serif;
 }
 
