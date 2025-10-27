@@ -2,12 +2,13 @@
   <div class="vender-container">
     <header class="vender-header">
       <div class="logo">
-        <span class="logo-s">S</span><span class="logo-star">★</span><span class="logo-mart">MART</span>
+        <span class="logo-s">S</span><span class="logo-star">★</span
+        ><span class="logo-mart">MART</span>
       </div>
       <div class="user-icon">
         <svg width="32" height="32" fill="none" stroke="black" stroke-width="2" viewBox="0 0 24 24">
-          <circle cx="12" cy="8" r="4"/>
-          <path d="M4 20c0-4 8-4 8-4s8 0 8 4"/>
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 20c0-4 8-4 8-4s8 0 8 4" />
         </svg>
       </div>
     </header>
@@ -41,15 +42,28 @@
                 <img :src="imagenPreview" alt="Preview" />
               </div>
               <div v-else class="image-placeholder">
-                <svg width="100" height="100" fill="none" stroke="black" stroke-width="2" viewBox="0 0 24 24">
-                  <rect x="3" y="3" width="18" height="18" rx="2"/>
-                  <path d="M8 17l4-4 4 4M12 13V7"/>
-                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                <svg
+                  width="100"
+                  height="100"
+                  fill="none"
+                  stroke="black"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path d="M8 17l4-4 4 4M12 13V7" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
                 </svg>
                 <span class="plus-icon">+</span>
               </div>
             </div>
-            <input ref="fileInput" type="file" @change="onFileChange" accept="image/*" style="display:none" />
+            <input
+              ref="fileInput"
+              type="file"
+              @change="onFileChange"
+              accept="image/*"
+              style="display: none"
+            />
           </div>
           <div class="form-actions-vertical">
             <button type="submit" class="btn-registrar">Registrar producto</button>
@@ -70,8 +84,17 @@
 <script setup>
 import { ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import { subirImagenCloudinary } from '@/lib/cloudinary'
+import { createClient } from '@supabase/supabase-js'
+
+// Configuración Supabase
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 const router = useRouter()
+
+// Campos del producto
 const nombre = ref('')
 const sku = ref('')
 const descripcion = ref('')
@@ -80,16 +103,19 @@ const categorias = ref(['Electrónica', 'Ropa', 'Hogar', 'Juguetes', 'Deportes']
 const stock = ref(0)
 const precio = ref(0)
 
+// Imagen
 const imagen = ref(null)
 const imagenPreview = ref(null)
 const fileInput = ref(null)
 
+// Abre el input de archivo
 function triggerFileInput() {
   nextTick(() => {
     if (fileInput.value) fileInput.value.click()
   })
 }
 
+// Muestra vista previa y guarda el archivo
 function onFileChange(e) {
   const file = e.target.files[0]
   if (file) {
@@ -105,6 +131,7 @@ function onFileChange(e) {
   }
 }
 
+// Limpia los campos
 function limpiarCampos() {
   nombre.value = ''
   sku.value = ''
@@ -116,20 +143,44 @@ function limpiarCampos() {
   imagenPreview.value = null
 }
 
+// Cancelar
 function cancelar() {
   router.push('/')
 }
 
-function registrarProducto() {
-  // Aquí iría la lógica para guardar el producto
-  alert('Producto registrado (demo)')
-  limpiarCampos()
+async function registrarProducto() {
+  try {
+    if (!imagen.value) {
+      alert('Selecciona una imagen para el producto')
+      return
+    }
+
+    const imagenUrl = await subirImagenCloudinary(imagen.value)
+
+    const { error } = await supabase.from('productos').insert([
+      {
+        nombre: nombre.value,
+        codigo: sku.value,
+        descripcion: descripcion.value,
+        categoria: categoria.value,
+        stock: stock.value,
+        precio_venta: precio.value,
+        imagen_url: imagenUrl,
+      },
+    ])
+
+    if (error) throw error
+
+    alert('Producto registrado correctamente')
+    limpiarCampos()
+  } catch (err) {
+    console.error('Error al registrar el producto:', err)
+    alert('Error al registrar el producto')
+  }
 }
 </script>
 
 <style scoped>
-
-
 .vender-container {
   background: #f3f4f6;
   min-height: 100vh;
@@ -153,15 +204,26 @@ function registrarProducto() {
   width: 28px;
   height: 28px;
 }
-.logo-s, .logo-mart { color: #000; }
-.logo-star { color: #fbbf24; margin: 0 2px; }
-.user-icon { border-radius: 50%; background: #fff; padding: 0.25rem; border: 1px solid #eee; }
+.logo-s,
+.logo-mart {
+  color: #000;
+}
+.logo-star {
+  color: #fbbf24;
+  margin: 0 2px;
+}
+.user-icon {
+  border-radius: 50%;
+  background: #fff;
+  padding: 0.25rem;
+  border: 1px solid #eee;
+}
 .vender-title-row {
   display: flex;
   justify-content: center;
   align-items: center;
   margin-top: 0.5rem;
-  margin-bottom: 2.0rem;
+  margin-bottom: 2rem;
 }
 .vender-title-row h1 {
   font-size: 2rem;
@@ -178,7 +240,7 @@ hr {
   background: #fff;
   border-radius: 1.5rem;
   box-shadow: 0 2px 16px #0002;
-    max-width: 1300px;
+  max-width: 1300px;
   margin: 0 auto;
   padding: 2rem 2.5rem 1.5rem 2.5rem;
   display: flex;
@@ -203,7 +265,9 @@ hr {
   margin-bottom: 0.2rem;
   color: #222;
 }
-.form-fields input, .form-fields textarea, .form-fields select {
+.form-fields input,
+.form-fields textarea,
+.form-fields select {
   background: #f6f6f6;
   border: none;
   border-radius: 1rem;
@@ -236,7 +300,7 @@ hr {
   flex-direction: column;
   align-items: center;
 }
-.image-upload input[type="file"] {
+.image-upload input[type='file'] {
   margin-bottom: 0.5rem;
 }
 .image-placeholder {
@@ -298,7 +362,9 @@ hr {
   padding: 0.8rem 2rem;
   font-size: 1.1rem;
   cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
 }
 .btn-registrar:hover {
   background: #f2ecff;
@@ -314,7 +380,9 @@ hr {
   padding: 0.8rem 2rem;
   font-size: 1.1rem;
   cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
 }
 .btn-cancelar {
   background: #fff;
@@ -325,18 +393,31 @@ hr {
   padding: 0.8rem 2rem;
   font-size: 1.1rem;
   cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
 }
 .btn-limpiar:hover,
 .btn-cancelar:hover {
   background: #f2ecff;
   border-color: #14b8a6;
   color: #14b8a6;
-  }
+}
 @media (max-width: 900px) {
-  .vender-form { padding: 1rem; }
-  .form-main { flex-direction: column; gap: 1.5rem; }
-  .form-image { margin-top: 0; }
-  .form-actions { flex-direction: column; gap: 1rem; align-items: stretch; }
+  .vender-form {
+    padding: 1rem;
+  }
+  .form-main {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .form-image {
+    margin-top: 0;
+  }
+  .form-actions {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
 }
 </style>
