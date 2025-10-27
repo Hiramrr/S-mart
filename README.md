@@ -1,52 +1,148 @@
-# Backend de Mi Tienda
+# S-mart - Sistema de Tienda en Línea
+#### Proyecto Gestión del proceso de desarrollo de software
 
-Este repositorio contiene el backend (API) para el proyecto "Mi Tienda", construido con Node.js y Express. Está diseñado con una arquitectura escalable (Controladores, Servicios, Modelos) para facilitar el mantenimiento y reducir la deuda técnica.
-
----
-
-## ¿Qué es y por qué usamos Express.js?
-
-### ¿Qué es Node.js?
-
-`Node.js` es el entorno que nos permite ejecutar código JavaScript fuera del navegador, es decir, en un servidor. Sin embargo, Node por sí solo es de "bajo nivel"; construir una API completa desde cero con él sería muy complejo, verboso y repetitivo.
-
-### ¿Qué es Express.js?
-
-**Express.js** es el "superpoder" de Node.js. Es un framework minimalista, rápido y flexible que se instala sobre Node.js para simplificar radicalmente la creación de aplicaciones web y APIs.
-
-Express nos proporciona un conjunto de herramientas robustas para tareas comunes, como:
-
-* **Manejo de Rutas (Routing):** Define de manera sencilla qué debe hacer el servidor cuando un usuario visita `GET /api/productos` o envía datos a `POST /api/pedidos`.
-* **Gestión de Peticiones y Respuestas:** Facilita la lectura de datos enviados por el usuario (JSON, formularios) y el envío de respuestas (HTML, JSON, errores).
-* **Middlewares:** Este es el concepto más poderoso de Express. Nos permite crear "funciones intermedias" que se ejecutan en orden. Las usamos para:
-    * Verificar si un usuario está autenticado.
-    * Validar los datos de entrada.
-    * Registrar logs de peticiones.
-    * Manejar errores de forma centralizada.
-
-### ¿Por qué es la mejor decisión para este proyecto?
-
-1.  **Flexibilidad (No opinado):** Express no te impone una forma estricta de estructurar tu proyecto. Nos da la libertad de diseñar nuestra propia arquitectura (como la que estamos usando, separada en capas) que se adapta a las necesidades de una tienda en línea.
-2.  **Ecosistema Gigante:** Al ser el framework estándar de facto para Node.js, existe una inmensa comunidad. Cualquier funcionalidad que necesitemos (autenticación con JWT, subida de archivos, conexión a bases de datos) probablemente ya tiene un paquete (`npm`) maduro y bien documentado que se integra perfectamente con Express.
-3.  **Rendimiento:** Es extremadamente ligero. No añade sobrecarga innecesaria, lo que resulta en una API rápida y eficiente.
-4.  **Curva de Aprendizaje:** Es relativamente fácil de empezar a usar, pero su concepto de *middlewares* es lo suficientemente potente como para construir aplicaciones a gran escala.
-
-En resumen, Express nos da la base sólida y las herramientas para construir una API robusta, rápida y mantenible, sin forzarnos a seguir una estructura rígida.
+Sistema completo de tienda en línea con diferentes roles de usuario: **Cliente**, **Cajero**, **Vendedor** y **Administrador**. El proyecto está construido con Vue.js en el frontend y Node.js/Express en el backend.
 
 ---
 
-## 🚀 Configuración para Desarrollo Local
+## 📋 Descripción del Proyecto
 
-Sigue estos pasos para levantar el servidor en tu máquina local.
+S-mart es una aplicación web moderna que permite gestionar una tienda en línea con las siguientes características:
 
-### 1. Prerrequisitos
+### Roles de Usuario
 
-* **Node.js:** Asegúrate de tener Node.js instalado (se recomienda v18+). Puedes descargarlo [aquí](https://nodejs.org/).
-* **Git:** (Opcional, si estás clonando el repositorio).
+* **Cliente:** Navega productos, añade al carrito y realiza compras
+* **Cajero:** Procesa pagos y gestiona transacciones en punto de venta
+* **Vendedor:** Gestiona inventario, productos y pedidos
+* **Administrador:** Control total del sistema, usuarios y configuraciones
+
+### Tecnologías
+
+* **Frontend:** Vue.js 3 + Vite + Pinia
+* **Backend:** Node.js + Express.js
+* **Base de Datos:** Supabase
+
+---
+
+## 🚀 Instalación y Ejecución
+
+### Prerrequisitos
+
+* **Node.js** v20.19.0 o superior (recomendado v22.12.0+)
+* **npm** (incluido con Node.js)
+* **Git** (opcional)
+
+### 1. Clonar el Repositorio
+
+```bash
+git clone https://github.com/Hiramrr/S-mart.git
+cd S-mart
+```
 
 ### 2. Instalar Dependencias
 
-En la raíz del proyecto, ejecuta el siguiente comando para instalar Express y todas las demás dependencias listadas en `package.json`:
+Instala las dependencias tanto del backend como del frontend:
 
 ```bash
+# Instalar dependencias del backend
+cd backend
 npm install
+
+# Instalar dependencias del frontend
+cd ../Frontend
+npm install
+```
+
+### 3. Configurar Variables de Entorno
+
+Crea los archivos `.env` necesarios en cada carpeta (backend y Frontend) con las credenciales correspondientes.
+
+Tendras que registrarte en supabase y utilizar tus propios api keys.
+### 4. Ejecutar el Proyecto
+
+#### Opción A: Ejecutar Backend y Frontend por Separado
+
+**Terminal 1 - Backend:**
+```bash
+cd backend
+npm run dev
+```
+El servidor backend estará disponible en `http://localhost:3000` (o el puerto configurado)
+
+**Terminal 2 - Frontend:**
+```bash
+cd Frontend
+npm run dev
+```
+El servidor de desarrollo de Vue estará disponible en `http://localhost:5173`
+
+#### Opción B: Ejecutar desde la raíz
+
+Desde la raíz del proyecto:
+
+```bash
+# Instalar todas las dependencias
+npm install
+
+# Ejecutar backend
+cd backend && npm run dev &
+
+# Ejecutar frontend
+cd Frontend && npm run dev
+```
+
+---
+
+## 📁 Estructura del Proyecto
+
+```
+S-mart/
+├── backend/           # API REST con Node.js/Express
+│   ├── src/
+│   └── package.json
+├── Frontend/          # Aplicación Vue.js
+│   ├── src/
+│   ├── public/
+│   └── package.json
+│   └──.env             #Tú lo vas a poner manualmente
+└── README.md
+```
+
+---
+
+## 🛠️ Scripts Disponibles
+
+### Backend
+
+```bash
+npm start      # Ejecutar servidor en producción
+npm run dev    # Ejecutar servidor en modo desarrollo (con nodemon)
+```
+
+### Frontend
+
+```bash
+npm run dev      # Servidor de desarrollo con hot-reload
+npm run build    # Compilar para producción
+npm run preview  # Vista previa del build de producción
+npm run lint     # Ejecutar linter (ESLint)
+npm run format   # Formatear código (Prettier)
+```
+
+---
+
+
+## 🎨 Frontend con Vue.js
+
+El frontend utiliza Vue 3 con la Composition API y las siguientes herramientas:
+
+* **Vite:** Build tool ultra-rápido con HMR (Hot Module Replacement)
+* **Pinia:** Store de estado (sucesor de Vuex)
+* **Vue Router:** Navegación entre vistas
+* **Supabase:** Backend-as-a-Service para autenticación y base de datos
+
+---
+
+## 📧 Contacto
+
+Para más información sobre el proyecto, contacta al equipo de desarrollo..
