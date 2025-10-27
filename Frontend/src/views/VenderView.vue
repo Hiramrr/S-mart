@@ -1,83 +1,149 @@
 <template>
   <div class="vender-container">
-    <header class="vender-header">
-      <div class="logo">
-        <span class="logo-s">S</span><span class="logo-star">★</span
-        ><span class="logo-mart">MART</span>
-      </div>
-      <div class="user-icon">
-        <svg width="32" height="32" fill="none" stroke="black" stroke-width="2" viewBox="0 0 24 24">
-          <circle cx="12" cy="8" r="4" />
-          <path d="M4 20c0-4 8-4 8-4s8 0 8 4" />
-        </svg>
+    <!-- Header minimalista -->
+    <header class="header">
+      <div class="header-content">
+        <div class="logo" @click="router.push('/')">
+          <span class="logo-s">S</span>
+          <span class="logo-star">★</span>
+          <span class="logo-mart">MART</span>
+        </div>
+        <button class="btn-back" @click="router.push('/')">← Volver</button>
       </div>
     </header>
-    <div class="vender-title-row">
-      <h1>Agregar un Producto</h1>
-    </div>
-    <form class="vender-form" @submit.prevent="registrarProducto">
-      <div class="form-main">
-        <div class="form-fields">
-          <label>Nombre del producto</label>
-          <input v-model="nombre" type="text" required />
-          <label>Código o SKU</label>
-          <input v-model="sku" type="text" required />
-          <label>Descripción</label>
-          <textarea v-model="descripcion" rows="2" required></textarea>
-          <label>Categoría</label>
-          <select v-model="categoria" required>
-            <option value="">Selecciona una categoría</option>
-            <option v-for="cat in categorias" :key="cat" :value="cat">{{ cat }}</option>
-          </select>
-          <label>Stock</label>
-          <input v-model.number="stock" type="number" min="0" required />
-          <label>Precio Venta</label>
-          <input v-model.number="precio" type="number" min="0" step="0.01" required />
+
+    <!-- Contenido principal -->
+    <div class="content">
+      <div class="form-wrapper">
+        <!-- Título con badge -->
+        <div class="title-section">
+          <h1 class="title">Agregar Producto</h1>
+          <p class="subtitle">Completa la información para añadir un nuevo producto a tu tienda</p>
         </div>
-        <div class="form-image">
-          <label>Imagen del Producto</label>
-          <div class="image-upload">
-            <div class="image-upload-icon" @click="triggerFileInput">
-              <div v-if="imagenPreview" class="image-preview">
-                <img :src="imagenPreview" alt="Preview" />
+
+        <!-- Formulario -->
+        <form class="form" @submit.prevent="registrarProducto">
+          <div class="form-grid">
+            <!-- Columna izquierda: Campos del formulario -->
+            <div class="form-section">
+              <div class="input-group">
+                <label class="label">Nombre del producto</label>
+                <input
+                  v-model="nombre"
+                  type="text"
+                  required
+                  class="input"
+                  placeholder="Ej: iPhone 15 Pro"
+                />
               </div>
-              <div v-else class="image-placeholder">
-                <svg
-                  width="100"
-                  height="100"
-                  fill="none"
-                  stroke="black"
-                  stroke-width="2"
-                  viewBox="0 0 24 24"
-                >
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <path d="M8 17l4-4 4 4M12 13V7" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                </svg>
-                <span class="plus-icon">+</span>
+
+              <div class="input-group">
+                <label class="label">Código o SKU</label>
+                <input v-model="sku" type="text" required class="input" placeholder="Ej: SKU-001" />
+              </div>
+
+              <div class="input-group">
+                <label class="label">Descripción</label>
+                <textarea
+                  v-model="descripcion"
+                  rows="4"
+                  required
+                  class="input textarea"
+                  placeholder="Describe las características principales del producto"
+                ></textarea>
+              </div>
+
+              <div class="input-row">
+                <div class="input-group">
+                  <label class="label">Categoría</label>
+                  <select v-model="categoria" required class="input select">
+                    <option value="">Selecciona una categoría</option>
+                    <option v-for="cat in categorias" :key="cat" :value="cat">{{ cat }}</option>
+                  </select>
+                </div>
+
+                <div class="input-group">
+                  <label class="label">Stock</label>
+                  <input
+                    v-model.number="stock"
+                    type="number"
+                    min="0"
+                    required
+                    class="input"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+
+              <div class="input-group">
+                <label class="label">Precio de venta</label>
+                <div class="price-input">
+                  <span class="currency">$</span>
+                  <input
+                    v-model.number="precio"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    required
+                    class="input price"
+                    placeholder="0.00"
+                  />
+                </div>
               </div>
             </div>
-            <input
-              ref="fileInput"
-              type="file"
-              @change="onFileChange"
-              accept="image/*"
-              style="display: none"
-            />
+
+            <!-- Columna derecha: Imagen -->
+            <div class="form-section image-section">
+              <div class="input-group">
+                <label class="label">Imagen del producto</label>
+                <div class="image-upload-area" @click="triggerFileInput">
+                  <div v-if="imagenPreview" class="image-preview">
+                    <img :src="imagenPreview" alt="Preview" />
+                    <div class="image-overlay">
+                      <span>Cambiar imagen</span>
+                    </div>
+                  </div>
+                  <div v-else class="image-placeholder">
+                    <svg
+                      width="48"
+                      height="48"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
+                      />
+                    </svg>
+                    <p class="upload-text">Haz clic para subir una imagen</p>
+                    <p class="upload-hint">PNG, JPG hasta 10MB</p>
+                  </div>
+                </div>
+                <input
+                  ref="fileInput"
+                  type="file"
+                  @change="onFileChange"
+                  accept="image/*"
+                  style="display: none"
+                />
+              </div>
+            </div>
           </div>
-          <div class="form-actions-vertical">
-            <button type="submit" class="btn-registrar">Registrar producto</button>
-            <button type="button" class="btn-limpiar" @click="limpiarCampos">Limpiar campos</button>
-            <button type="button" class="btn-cancelar" @click="cancelar">Cancelar</button>
+
+          <!-- Botones de acción -->
+          <div class="actions">
+            <button type="button" class="btn btn-secondary" @click="limpiarCampos">
+              Limpiar campos
+            </button>
+            <button type="button" class="btn btn-outline" @click="cancelar">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Registrar producto →</button>
           </div>
-        </div>
+        </form>
       </div>
-      <div class="form-actions">
-        <button type="submit" class="btn-registrar">Registrar producto</button>
-        <button type="button" class="btn-limpiar" @click="limpiarCampos">Limpiar campos</button>
-        <button type="button" class="btn-cancelar" @click="cancelar">Cancelar</button>
-      </div>
-    </form>
+    </div>
   </div>
 </template>
 
@@ -87,14 +153,12 @@ import { useRouter } from 'vue-router'
 import { subirImagenCloudinary } from '@/lib/cloudinary'
 import { createClient } from '@supabase/supabase-js'
 
-// Configuración Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 const router = useRouter()
 
-// Campos del producto
 const nombre = ref('')
 const sku = ref('')
 const descripcion = ref('')
@@ -102,20 +166,16 @@ const categoria = ref('')
 const categorias = ref(['Electrónica', 'Ropa', 'Hogar', 'Juguetes', 'Deportes'])
 const stock = ref(0)
 const precio = ref(0)
-
-// Imagen
 const imagen = ref(null)
 const imagenPreview = ref(null)
 const fileInput = ref(null)
 
-// Abre el input de archivo
 function triggerFileInput() {
   nextTick(() => {
     if (fileInput.value) fileInput.value.click()
   })
 }
 
-// Muestra vista previa y guarda el archivo
 function onFileChange(e) {
   const file = e.target.files[0]
   if (file) {
@@ -131,7 +191,6 @@ function onFileChange(e) {
   }
 }
 
-// Limpia los campos
 function limpiarCampos() {
   nombre.value = ''
   sku.value = ''
@@ -143,7 +202,6 @@ function limpiarCampos() {
   imagenPreview.value = null
 }
 
-// Cancelar
 function cancelar() {
   router.push('/')
 }
@@ -173,6 +231,7 @@ async function registrarProducto() {
 
     alert('Producto registrado correctamente')
     limpiarCampos()
+    router.push('/')
   } catch (err) {
     console.error('Error al registrar el producto:', err)
     alert('Error al registrar el producto')
@@ -182,242 +241,397 @@ async function registrarProducto() {
 
 <style scoped>
 .vender-container {
-  background: #f3f4f6;
   min-height: 100vh;
-  padding: 0;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
 }
-.vender-header {
+
+/* Header */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.header-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 2vw 0 2vw;
-  min-height: 48px;
-  background: #fff;
 }
+
 .logo {
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   font-weight: bold;
   display: flex;
   align-items: center;
+  color: #000;
+  cursor: pointer;
+  transition: transform 0.2s;
 }
-.user-icon svg {
-  width: 28px;
-  height: 28px;
+
+.logo:hover {
+  transform: scale(1.05);
 }
+
 .logo-s,
 .logo-mart {
   color: #000;
 }
+
 .logo-star {
   color: #fbbf24;
   margin: 0 2px;
 }
-.user-icon {
-  border-radius: 50%;
+
+.btn-back {
   background: #fff;
-  padding: 0.25rem;
-  border: 1px solid #eee;
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #111827;
 }
-.vender-title-row {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 0.5rem;
+
+.btn-back:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+/* Content */
+.content {
+  padding: 8rem 2rem 4rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.form-wrapper {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 3rem;
+  border: 1px solid #f3f4f6;
+}
+
+/* Title Section */
+.title-section {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.subtitle {
+  font-size: 1.125rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Form */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 3rem;
   margin-bottom: 2rem;
 }
-.vender-title-row h1 {
-  font-size: 2rem;
-  font-weight: bold;
-  margin: 0;
-  text-align: center;
-}
-hr {
-  margin: 0.5rem 0 2rem 0;
-  border: none;
-  border-top: 2px solid #222;
-}
-.vender-form {
-  background: #fff;
-  border-radius: 1.5rem;
-  box-shadow: 0 2px 16px #0002;
-  max-width: 1300px;
-  margin: 0 auto;
-  padding: 2rem 2.5rem 1.5rem 2.5rem;
+
+.form-section {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
-.form-main {
-  display: flex;
-  flex-direction: row;
-  gap: 2.5rem;
-  align-items: flex-start;
-}
-.form-fields {
-  flex: 2;
+
+.input-group {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
+  gap: 0.5rem;
 }
-.form-fields label {
+
+.label {
+  font-size: 0.875rem;
   font-weight: 600;
-  margin-top: 0.7rem;
-  margin-bottom: 0.2rem;
-  color: #222;
+  color: #111827;
+  letter-spacing: 0.3px;
 }
-.form-fields input,
-.form-fields textarea,
-.form-fields select {
-  background: #f6f6f6;
-  border: none;
-  border-radius: 1rem;
-  padding: 0.7rem 1.2rem;
-  margin-bottom: 0.5rem;
-  font-size: 1.1rem;
-  color: #222;
+
+.input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background: #fff;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  color: #111827;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.input:focus {
   outline: none;
-  box-shadow: 0 1px 2px #0001;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
-.form-fields textarea {
-  resize: none;
+
+.input::placeholder {
+  color: #9ca3af;
 }
-.form-image {
-  flex: 1.2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  margin-top: 1.5rem;
+
+.textarea {
+  resize: vertical;
+  min-height: 100px;
 }
-.form-image label {
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: #222;
-  text-align: center;
+
+.select {
+  cursor: pointer;
 }
-.image-upload {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.image-upload input[type='file'] {
-  margin-bottom: 0.5rem;
-}
-.image-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 140px;
-  height: 140px;
-  background: #fafafa;
-  border-radius: 1rem;
-  border: 2px dashed #bbb;
-  position: relative;
-  margin-top: 0.5rem;
-}
-.plus-icon {
-  position: absolute;
-  top: 10px;
-  right: 18px;
-  font-size: 2rem;
-  color: #111;
-  font-weight: bold;
-}
-.image-preview img {
-  width: 140px;
-  height: 140px;
-  object-fit: cover;
-  border-radius: 1rem;
-  border: 2px solid #bbb;
-  margin-top: 0.5rem;
-}
-.form-actions {
-  display: none;
-}
-.form-actions-vertical {
-  display: flex;
-  flex-direction: column;
+
+.input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
-  align-items: stretch;
-  margin-top: 2.5rem;
 }
-.image-upload-icon {
+
+.price-input {
+  position: relative;
+}
+
+.currency {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.input.price {
+  padding-left: 2.5rem;
+}
+
+/* Image Section */
+.image-section {
+  gap: 1.5rem;
+}
+
+.image-upload-area {
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+.image-placeholder {
+  background: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 16px;
+  padding: 3rem 2rem;
+  text-align: center;
+  transition: all 0.2s;
+  min-height: 300px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.75rem;
 }
-.image-upload-icon:hover .image-placeholder {
-  border-color: #7be000;
-  background: #f3ffe6;
+
+.image-placeholder:hover {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.05);
 }
-.btn-registrar {
-  background: #fff;
-  color: #14b8a6;
+
+.image-placeholder svg {
+  color: #9ca3af;
+}
+
+.upload-text {
+  font-size: 0.9375rem;
   font-weight: 500;
-  border: 2px solid #bbb;
-  border-radius: 10px;
-  padding: 0.8rem 2rem;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition:
-    border-color 0.2s,
-    color 0.2s;
+  color: #111827;
+  margin: 0;
 }
-.btn-registrar:hover {
-  background: #f2ecff;
-  border-color: #14b8a6;
-  color: #14b8a6;
+
+.upload-hint {
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  margin: 0;
 }
-.btn-limpiar {
-  background: #fff;
-  color: #14b8a6;
+
+.image-preview {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  min-height: 300px;
+}
+
+.image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.image-preview:hover .image-overlay {
+  opacity: 1;
+}
+
+.image-overlay span {
+  color: #fff;
   font-weight: 500;
-  border: 2px solid #bbb;
-  border-radius: 10px;
-  padding: 0.8rem 2rem;
-  font-size: 1.1rem;
+  font-size: 0.9375rem;
+}
+
+/* Info Card */
+.info-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.info-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 1rem 0;
+}
+
+.info-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.info-list li {
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 2rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn {
+  padding: 0.875rem 1.75rem;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 600;
   cursor: pointer;
-  transition:
-    border-color 0.2s,
-    color 0.2s;
+  transition: all 0.2s;
+  border: none;
+  font-family: inherit;
 }
-.btn-cancelar {
-  background: #fff;
-  color: #14b8a6;
-  font-weight: 500;
-  border: 2px solid #bbb;
-  border-radius: 10px;
-  padding: 0.8rem 2rem;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition:
-    border-color 0.2s,
-    color 0.2s;
+
+.btn-primary {
+  background: #111827;
+  color: #fff;
 }
-.btn-limpiar:hover,
-.btn-cancelar:hover {
-  background: #f2ecff;
-  border-color: #14b8a6;
-  color: #14b8a6;
+
+.btn-primary:hover {
+  background: #000;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
-@media (max-width: 900px) {
-  .vender-form {
-    padding: 1rem;
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+.btn-outline {
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+.btn-outline:hover {
+  background: #f9fafb;
+  color: #111827;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
   }
-  .form-main {
+
+  .title {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding: 7rem 1rem 2rem;
+  }
+
+  .form-wrapper {
+    padding: 2rem 1.5rem;
+  }
+
+  .title-section {
+    margin-bottom: 2rem;
+  }
+
+  .title {
+    font-size: 1.75rem;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+  }
+
+  .input-row {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
     flex-direction: column;
-    gap: 1.5rem;
   }
-  .form-image {
-    margin-top: 0;
-  }
-  .form-actions {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
+
+  .btn {
+    width: 100%;
   }
 }
 </style>

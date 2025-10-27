@@ -89,6 +89,19 @@ const goToLogin = () => {
   showMobileMenu.value = false
 }
 
+// ✅ Agregar estas funciones que faltaban
+const goToVender = () => {
+  router.push('/vender')
+  showUserMenu.value = false
+  showMobileMenu.value = false
+}
+
+const goToAdmin = () => {
+  router.push('/admin')
+  showUserMenu.value = false
+  showMobileMenu.value = false
+}
+
 const handleLogout = async () => {
   await authStore.cerrarSesion()
   showUserMenu.value = false
@@ -164,10 +177,12 @@ const getUserAvatar = computed(() => {
 
             <button class="dropdown-item" @click="router.push('/perfil')">Mi perfil</button>
 
+            <!-- ✅ Botón corregido -->
             <button v-if="canSell" class="dropdown-item" @click="goToVender">
               Vender producto
             </button>
 
+            <!-- ✅ Botón corregido -->
             <button v-if="isAdmin" class="dropdown-item" @click="goToAdmin">
               Panel de administración
             </button>
@@ -234,6 +249,15 @@ const getUserAvatar = computed(() => {
               <div class="mobile-user-email">{{ authStore.usuario.email }}</div>
             </div>
           </div>
+
+          <!-- ✅ Agregar botones en mobile también -->
+          <button v-if="canSell" class="mobile-menu-option" @click="goToVender">
+            📦 Vender producto
+          </button>
+          <button v-if="isAdmin" class="mobile-menu-option" @click="goToAdmin">
+            ⚙️ Panel de administración
+          </button>
+
           <button class="mobile-logout" @click="handleLogout">Cerrar sesión</button>
         </div>
 
@@ -659,5 +683,16 @@ const getUserAvatar = computed(() => {
   .btn-user {
     padding: 0.5rem;
   }
+}
+
+.mobile-menu-option {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  margin-top: 0.5rem;
+  text-align: center !important;
+}
+
+.mobile-menu-option:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
 }
 </style>
