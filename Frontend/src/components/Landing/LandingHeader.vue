@@ -2,9 +2,12 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useRole } from '@/composables/useRole'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { isAdmin, canSell, isAuthenticated } = useRole()
+
 const showMobileMenu = ref(false)
 const showUserMenu = ref(false)
 const isDarkBackground = ref(false)
@@ -135,9 +138,7 @@ const getUserAvatar = computed(() => {
       </div>
 
       <nav class="nav-center">
-        <button class="nav-btn" @click="scrollToSection('features')">
-          PRODUCTOS <span class="plus">+</span>
-        </button>
+        <button class="nav-btn" @click="scrollToSection('features')">PRODUCTOS</button>
         <button class="nav-link" @click="scrollToSection('footer')">CONTACTO</button>
       </nav>
 
@@ -155,10 +156,22 @@ const getUserAvatar = computed(() => {
           <div v-if="showUserMenu" class="user-dropdown" @click.stop>
             <div class="dropdown-item user-info">
               <div class="user-email">{{ authStore.usuario.email }}</div>
-              <div v-if="authStore.perfil?.role" class="user-role">
-                {{ authStore.perfil.role }}
+              <div v-if="authStore.perfil?.rol" class="user-role">
+                {{ authStore.perfil.rol }}
               </div>
             </div>
+            <div class="dropdown-divider"></div>
+
+            <button class="dropdown-item" @click="router.push('/perfil')">Mi perfil</button>
+
+            <button v-if="canSell" class="dropdown-item" @click="goToVender">
+              Vender producto
+            </button>
+
+            <button v-if="isAdmin" class="dropdown-item" @click="goToAdmin">
+              Panel de administración
+            </button>
+
             <div class="dropdown-divider"></div>
             <button class="dropdown-item" @click="handleLogout">Cerrar sesión</button>
           </div>

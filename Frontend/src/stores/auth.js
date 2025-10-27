@@ -1,3 +1,4 @@
+// Frontend/src/stores/auth.js
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { supabase } from '@/lib/supabase.js'
@@ -7,7 +8,7 @@ export const useAuthStore = defineStore('auth', () => {
   const perfil = ref(null)
   const loading = ref(false)
 
-  const rolUsuario = computed(() => perfil.value?.role || null)
+  const rolUsuario = computed(() => perfil.value?.rol || null)
 
   const esAdmin = computed(() => rolUsuario.value === 'administrador')
   const esCliente = computed(() => rolUsuario.value === 'cliente')
