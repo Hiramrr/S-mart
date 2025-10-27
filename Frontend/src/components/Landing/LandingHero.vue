@@ -15,7 +15,7 @@ const goToStore = () => {
 
       <h1 class="hero-title">Utiliza <span class="highlight">S★mart</span></h1>
 
-      <p class="hero-subtitle">Hay que poner algo aqui pero no se que jaja</p>
+      <p class="hero-subtitle">Se S★mart</p>
 
       <button class="btn-hero" @click="goToStore">COMENZAR →</button>
 

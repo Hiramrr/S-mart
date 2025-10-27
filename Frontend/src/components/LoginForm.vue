@@ -44,9 +44,9 @@ const handleSignup = async () => {
       password: password.value,
       options: {
         data: {
-          nombre: nombre.value || null
-        }
-      }
+          nombre: nombre.value || null,
+        },
+      },
     })
 
     if (error) throw error
@@ -68,8 +68,8 @@ const signInWithGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: import.meta.env.VITE_REDIRECT_URL || window.location.origin
-      }
+        redirectTo: import.meta.env.VITE_REDIRECT_URL || window.location.origin,
+      },
     })
 
     if (error) throw error
@@ -88,8 +88,8 @@ const signInWithGithub = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: import.meta.env.VITE_REDIRECT_URL || window.location.origin
-      }
+        redirectTo: import.meta.env.VITE_REDIRECT_URL || window.location.origin,
+      },
     })
 
     if (error) throw error
@@ -107,23 +107,27 @@ const signInWithGithub = async () => {
       <div class="login-left">
         <div class="hero-content">
           <div class="brand">
-            <h1>S-mart</h1>
+            <div class="logo">
+              <span class="logo-s">S</span>
+              <span class="logo-star">★</span>
+              <span class="logo-mart">MART</span>
+            </div>
           </div>
-          <h2 class="hero-title">Proyecto</h2>
-          <p class="hero-subtitle">Tienda en linea.</p>
+          <h2 class="hero-title">Tu tienda en línea</h2>
+          <p class="hero-subtitle">Compra y vende de manera fácil y segura</p>
         </div>
       </div>
 
       <div class="login-right">
         <div class="login-form">
-          <div>
-            <img
-              src="/src/assets/smart.svg"
-              alt="Logo"
-              style="width: 120px; height: auto; margin: 0 auto; display: block"
-            />
+          <div class="form-header">
+            <div class="logo-mini">
+              <span class="logo-s">S</span>
+              <span class="logo-star">★</span>
+              <span class="logo-mart">MART</span>
+            </div>
+            <p class="form-subtitle">{{ isLogin ? 'Bienvenido de nuevo' : 'Crear una cuenta' }}</p>
           </div>
-          <p class="form-subtitle">Proyecto tienda en linea.</p>
 
           <div class="oauth-buttons">
             <button
@@ -150,7 +154,7 @@ const signInWithGithub = async () => {
                   d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3Z"
                 />
               </svg>
-              {{ isLogin ? 'Continue with Google' : 'Sign up with Google' }}
+              {{ isLogin ? 'Continuar con Google' : 'Registrarse con Google' }}
             </button>
 
             <button
@@ -164,17 +168,22 @@ const signInWithGithub = async () => {
                   d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
                 />
               </svg>
-              {{ isLogin ? 'Continue with GitHub' : 'Sign up with GitHub' }}
+              {{ isLogin ? 'Continuar con GitHub' : 'Registrarse con GitHub' }}
             </button>
           </div>
 
           <div class="divider">
-            <span>or</span>
+            <span>o</span>
           </div>
 
           <form @submit.prevent="isLogin ? handleLogin() : handleSignup()" class="email-form">
             <div class="form-group" v-if="!isLogin">
-              <input type="text" v-model="nombre" placeholder="Nombre" class="input-field" />
+              <input
+                type="text"
+                v-model="nombre"
+                placeholder="Nombre completo"
+                class="input-field"
+              />
             </div>
 
             <div class="form-group">
@@ -192,29 +201,29 @@ const signInWithGithub = async () => {
                 type="password"
                 v-model="password"
                 required
-                placeholder="Password"
+                placeholder="Contraseña"
                 class="input-field"
               />
             </div>
 
             <button type="submit" :disabled="loading" class="submit-btn">
-              {{ loading ? 'Loading...' : isLogin ? 'Log in' : 'Sign up' }}
+              {{ loading ? 'Cargando...' : isLogin ? 'Iniciar sesión' : 'Crear cuenta' }}
             </button>
           </form>
 
           <div class="switch-mode">
-            <span>{{ isLogin ? "Don't have an account?" : 'Already have an account?' }}</span>
+            <span>{{ isLogin ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?' }}</span>
             <button type="button" @click="isLogin = !isLogin" class="switch-btn">
-              {{ isLogin ? 'Sign up' : 'Log in' }}
+              {{ isLogin ? 'Regístrate' : 'Inicia sesión' }}
             </button>
           </div>
 
           <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
 
           <p class="terms">
-            By signing up you agree to our
-            <a href="#">Privacy Policy</a> and
-            <a href="#">Terms of Service</a>
+            Al continuar, aceptas nuestros
+            <a href="#">Términos de servicio</a> y
+            <a href="#">Política de privacidad</a>
           </p>
         </div>
       </div>
@@ -223,6 +232,8 @@ const signInWithGithub = async () => {
 </template>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 * {
   margin: 0;
   padding: 0;
@@ -233,7 +244,13 @@ const signInWithGithub = async () => {
   min-height: 100vh;
   display: flex;
   background: #000;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'Roboto',
+    sans-serif;
 }
 
 .login-content {
@@ -244,8 +261,7 @@ const signInWithGithub = async () => {
 
 .login-left {
   flex: 1;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  background-image: url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1200&q=80');
+  background-image: url('https://images.unsplash.com/photo-1750623985866-4a8549042d6b?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=2340');
   background-size: cover;
   background-position: center;
   position: relative;
@@ -262,7 +278,7 @@ const signInWithGithub = async () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.4);
 }
 
 .hero-content {
@@ -276,32 +292,52 @@ const signInWithGithub = async () => {
   margin-bottom: 3rem;
 }
 
-.brand h1 {
+.logo {
   font-size: 2.5rem;
-  font-weight: 300;
-  letter-spacing: 0.1em;
-  border: 2px solid white;
-  padding: 0.5rem 1.5rem;
-  display: inline-block;
-  border-radius: 50px;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  color: #000;
+  background: #fff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  transition: transform 0.2s;
+}
+
+.logo:hover {
+  transform: scale(1.05);
+}
+
+.logo-s,
+.logo-mart {
+  color: #000;
+  font-weight: 700;
+}
+
+.logo-star {
+  color: #000;
+  margin: 0 4px;
 }
 
 .hero-title {
   font-size: 3.5rem;
   font-weight: 300;
   line-height: 1.2;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
 }
 
 .hero-subtitle {
-  font-size: 3.5rem;
+  font-size: 1.5rem;
   font-weight: 300;
-  line-height: 1.2;
+  line-height: 1.4;
+  opacity: 0.95;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
 .login-right {
   width: 480px;
-  background: #000;
+  background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -315,19 +351,36 @@ const signInWithGithub = async () => {
   padding: 1rem 0;
 }
 
-.form-title {
-  color: #fff;
-  font-size: 2rem;
-  font-weight: 400;
-  margin-bottom: 0.5rem;
+.form-header {
   text-align: center;
+  margin-bottom: 2rem;
+}
+
+.logo-mini {
+  font-size: 1.75rem;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  color: #000;
+  margin-bottom: 1rem;
+}
+
+.logo-mini .logo-s,
+.logo-mini .logo-mart {
+  color: #000;
+  font-weight: 700;
+}
+
+.logo-mini .logo-star {
+  color: #000;
+  margin: 0 4px;
 }
 
 .form-subtitle {
-  color: #999;
-  font-size: 0.95rem;
-  margin-bottom: 2.5rem;
-  text-align: center;
+  color: #374151;
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin-bottom: 0;
 }
 
 .oauth-buttons {
@@ -339,10 +392,10 @@ const signInWithGithub = async () => {
 
 .oauth-btn {
   width: 100%;
-  padding: 0.9rem;
-  border: none;
-  border-radius: 50px;
-  font-size: 0.95rem;
+  padding: 0.875rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
   display: flex;
@@ -350,6 +403,9 @@ const signInWithGithub = async () => {
   justify-content: center;
   gap: 0.75rem;
   transition: all 0.2s;
+  background: #fff;
+  color: #1f2937;
+  font-family: 'Inter', sans-serif;
 }
 
 .oauth-btn:disabled {
@@ -357,24 +413,10 @@ const signInWithGithub = async () => {
   cursor: not-allowed;
 }
 
-.google-btn {
-  background: #fff;
-  color: #000;
-}
-
-.google-btn:hover:not(:disabled) {
+.oauth-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
-}
-
-.github-btn {
-  background: #fff;
-  color: #000;
-}
-
-.github-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+  border-color: #d1d5db;
+  background: #f9fafb;
 }
 
 .divider {
@@ -382,20 +424,21 @@ const signInWithGithub = async () => {
   align-items: center;
   text-align: center;
   margin: 1.5rem 0;
-  color: #666;
+  color: #9ca3af;
 }
 
 .divider::before,
 .divider::after {
   content: '';
   flex: 1;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .divider span {
   padding: 0 1rem;
-  font-size: 0.85rem;
-  color: #666;
+  font-size: 0.875rem;
+  color: #9ca3af;
+  font-weight: 500;
 }
 
 .email-form {
@@ -403,47 +446,49 @@ const signInWithGithub = async () => {
 }
 
 .form-group {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.875rem;
 }
 
 .input-field {
   width: 100%;
-  padding: 0.9rem 1rem;
-  background: transparent;
-  color: #fff;
-  border: 1px solid #333;
-  border-radius: 50px;
-  font-size: 0.95rem;
+  padding: 0.875rem 1rem;
+  background: #fff;
+  color: #1f2937;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 0.9rem;
   transition: all 0.2s;
+  font-family: 'Inter', sans-serif;
 }
 
 .input-field::placeholder {
-  color: #666;
+  color: #9ca3af;
 }
 
 .input-field:focus {
   outline: none;
-  border-color: #555;
-  background: rgba(255, 255, 255, 0.05);
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .submit-btn {
   width: 100%;
-  padding: 0.9rem;
-  background: #fff;
-  color: #000;
+  padding: 0.875rem;
+  background: #000000;
+  color: #fff;
   border: none;
-  border-radius: 50px;
-  font-size: 0.95rem;
-  font-weight: 500;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   margin-top: 0.5rem;
+  font-family: 'Inter', sans-serif;
 }
 
 .submit-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: #000000;
 }
 
 .submit-btn:disabled {
@@ -453,67 +498,57 @@ const signInWithGithub = async () => {
 
 .switch-mode {
   text-align: center;
-  color: #666;
-  font-size: 0.85rem;
+  color: #6b7280;
+  font-size: 0.875rem;
   margin-top: 1.5rem;
 }
 
 .switch-btn {
   background: none;
   border: none;
-  color: #fff;
-  text-decoration: underline;
+  color: #667eea;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   margin-left: 0.25rem;
   transition: color 0.2s;
+  font-family: 'Inter', sans-serif;
 }
 
 .switch-btn:hover {
-  color: #ccc;
-}
-
-.toggle-btn {
-  width: 100%;
-  padding: 0.9rem;
-  background: transparent;
-  color: #fff;
-  border: 1px solid #333;
-  border-radius: 50px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.toggle-btn:hover:not(:disabled) {
-  border-color: #555;
-  background: rgba(255, 255, 255, 0.05);
+  color: #764ba2;
+  text-decoration: underline;
 }
 
 .error {
-  color: #ff6b6b;
+  color: #dc2626;
   margin-top: 1rem;
+  padding: 0.75rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
 }
 
 .terms {
   margin-top: 2rem;
   text-align: center;
   font-size: 0.8rem;
-  color: #666;
-  line-height: 1.5;
+  color: #9ca3af;
+  line-height: 1.6;
 }
 
 .terms a {
-  color: #999;
-  text-decoration: underline;
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 500;
   transition: color 0.2s;
 }
 
 .terms a:hover {
-  color: #fff;
+  color: #764ba2;
+  text-decoration: underline;
 }
 
 @media (max-width: 968px) {
