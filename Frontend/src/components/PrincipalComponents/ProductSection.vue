@@ -5,27 +5,49 @@ import ProductCard from './ProductCard.vue'
 
 const totalProducts = ref(0)
 const products = ref([])
+const loading = ref(true)
+const error = ref(null)
 
 async function cargarProductos() {
-  const { data, error } = await supabase
-    .from('productos')
-    .select('*')
-    .order('id', { ascending: false })
+  try {
+    loading.value = true
+    error.value = null
 
-  if (error) {
-    console.error('Error al cargar productos:', error)
-    return
+    // Verificar que supabase esté configurado
+    if (!supabase) {
+      throw new Error('Supabase no está configurado correctamente')
+    }
+
+    const { data, error: supabaseError } = await supabase
+      .from('productos')
+      .select('*')
+      .order('id', { ascending: false })
+
+    if (supabaseError) {
+      throw supabaseError
+    }
+
+    if (!data) {
+      products.value = []
+      totalProducts.value = 0
+      return
+    }
+
+    products.value = data.map((p) => ({
+      id: p.id,
+      name: p.nombre,
+      price: `$${p.precio_venta.toFixed(2)}`,
+      description: p.descripcion,
+      imageUrl: p.imagen_url,
+    }))
+
+    totalProducts.value = data.length
+  } catch (err) {
+    console.error('Error al cargar productos:', err)
+    error.value = err.message || 'Error al cargar productos'
+  } finally {
+    loading.value = false
   }
-
-  products.value = data.map((p) => ({
-    id: p.id,
-    name: p.nombre,
-    price: `$${p.precio_venta.toFixed(2)}`,
-    description: p.descripcion,
-    imageUrl: p.imagen_url,
-  }))
-
-  totalProducts.value = data.length
 }
 
 onMounted(() => {
@@ -38,7 +60,6 @@ onMounted(() => {
     <!-- Sidebar de Filtros -->
     <aside class="sidebar">
       <h2 class="sidebar-title">Filtro</h2>
-      <!-- Aquí puedes agregar tus filtros más adelante -->
       <div class="filter-placeholder">
         <p>Categorías</p>
         <p>Precio</p>
@@ -53,8 +74,24 @@ onMounted(() => {
         <h1 class="products-count">+{{ totalProducts }} Productos encontrados</h1>
       </div>
 
+      <!-- Estado de Carga -->
+      <div v-if="loading" class="loading-state">
+        <p>Cargando productos...</p>
+      </div>
+
+      <!-- Estado de Error -->
+      <div v-else-if="error" class="error-state">
+        <p>⚠️ Error: {{ error }}</p>
+        <button @click="cargarProductos" class="retry-button">Reintentar</button>
+      </div>
+
+      <!-- Estado Vacío -->
+      <div v-else-if="products.length === 0" class="empty-state">
+        <p>No se encontraron productos</p>
+      </div>
+
       <!-- Grid de Productos -->
-      <div class="products-grid">
+      <div v-else class="products-grid">
         <ProductCard
           v-for="product in products"
           :key="product.id"
@@ -127,6 +164,38 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 1.5rem;
+}
+
+/* Estados de carga y error */
+.loading-state,
+.error-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.error-state {
+  color: #dc2626;
+}
+
+.retry-button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.retry-button:hover {
+  background-color: #2563eb;
 }
 
 /* Responsive */
