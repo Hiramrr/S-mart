@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { supabase } from '@/lib/supabase.js'
 import ProductCard from './ProductCard.vue'
 
@@ -7,6 +7,7 @@ const totalProducts = ref(0)
 const products = ref([])
 const loading = ref(true)
 const error = ref(null)
+const search = ref('')
 
 async function cargarProductos() {
   try {
@@ -53,6 +54,14 @@ async function cargarProductos() {
 onMounted(() => {
   cargarProductos()
 })
+
+// Computed para filtrar productos por nombre
+const filteredProducts = computed(() => {
+  if (!search.value.trim()) return products.value
+  return products.value.filter(p =>
+    p.name.toLowerCase().includes(search.value.trim().toLowerCase())
+  )
+})
 </script>
 
 <template>
@@ -69,9 +78,23 @@ onMounted(() => {
 
     <!-- Área de Productos -->
     <main class="products-area">
-      <!-- Contador de Productos -->
-      <div class="products-header">
-        <h1 class="products-count">+{{ totalProducts }} Productos encontrados</h1>
+      <!-- Contador de Productos y barra de búsqueda -->
+      <div class="products-header" style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+        <h1 class="products-count">+{{ filteredProducts.length }} Productos encontrados</h1>
+        <div class="search-bar-minimal">
+          <span class="search-icon">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </span>
+          <input
+            v-model="search"
+            type="text"
+            placeholder="Buscar..."
+            class="search-input-minimal"
+          />
+        </div>
       </div>
 
       <!-- Estado de Carga -->
@@ -86,14 +109,14 @@ onMounted(() => {
       </div>
 
       <!-- Estado Vacío -->
-      <div v-else-if="products.length === 0" class="empty-state">
+      <div v-else-if="filteredProducts.length === 0" class="empty-state">
         <p>No se encontraron productos</p>
       </div>
 
       <!-- Grid de Productos -->
       <div v-else class="products-grid">
         <ProductCard
-          v-for="product in products"
+          v-for="product in filteredProducts"
           :key="product.id"
           :product-name="product.name"
           :price="product.price"
@@ -151,6 +174,53 @@ onMounted(() => {
 
 .products-header {
   margin-bottom: 1.5rem;
+}
+
+.search-bar-minimal {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 2rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 0.25rem 1rem;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 0.5rem;
+}
+.search-icon {
+  display: flex;
+  align-items: center;
+  color: #bdbdbd;
+  margin-right: 0.5rem;
+}
+.search-input-minimal {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 1rem;
+  flex: 1;
+  padding: 0.5rem 0;
+  color: #222;
+}
+.search-input-minimal::placeholder {
+  color: #bdbdbd;
+}
+
+
+.search-bar {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  outline: none;
+  transition: border-color 0.2s;
+  margin-bottom: 0.5rem;
+}
+.search-bar:focus {
+  border-color: #3b82f6;
 }
 
 .products-count {
