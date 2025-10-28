@@ -39,7 +39,7 @@ const handleLogout = async () => {
         <div class="action-card">
           <h3>Gestión de Productos</h3>
           <p>Administrar productos de la tienda</p>
-          <button>Ver productos</button>
+          <button @click="router.push('/admin/productos')">Ver productos</button>
         </div>
         <div class="action-card">
           <h3>Reportes</h3>

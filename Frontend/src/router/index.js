@@ -50,6 +50,16 @@ const router = createRouter({
         requiresRoles: ['administrador'],
       },
     },
+    {
+      path: '/admin/productos',
+      name: 'admin-productos',
+      component: () => import('../views/AdminProductosView.vue'),
+      meta: {
+        title: 'Productos - Admin',
+        requiresAuth: true,
+        requiresRoles: ['administrador'],
+      },
+    },
     /*{
       path: '/perfil',
       name: 'perfil',
