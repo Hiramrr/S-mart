@@ -150,7 +150,8 @@ const getUserAvatar = computed(() => {
         <span class="logo-mart">MART</span>
       </div>
 
-      <nav class="nav-center" v-if="$route.path !== '/admin/productos'">
+  <!-- Ocultar navegación en /admin/productos -->
+  <nav class="nav-center" v-if="$route.path !== '/admin/productos'">
         <button class="nav-btn" @click="scrollToSection('features')">PRODUCTOS</button>
         <button class="nav-link" @click="scrollToSection('footer')">CONTACTO</button>
       </nav>
@@ -195,6 +196,7 @@ const getUserAvatar = computed(() => {
         <!-- Login button cuando NO está autenticado -->
         <button v-else class="btn-login" @click="goToLogin">INICIAR SESIÓN</button>
 
+  <!-- Ocultar botón 'COMENZAR' en /admin/productos -->
   <button v-if="$route.path !== '/admin/productos'" class="btn-get-started" @click="goToStore">COMENZAR →</button>
 
         <button class="mobile-menu-btn" @click="showMobileMenu = !showMobileMenu">
@@ -264,6 +266,7 @@ const getUserAvatar = computed(() => {
         <!-- Login button en mobile cuando NO está autenticado -->
         <button v-else class="mobile-login" @click="goToLogin">Iniciar sesión</button>
 
+  <!-- Ocultar botón 'Comenzar' en mobile en /admin/productos -->
   <button v-if="$route.path !== '/admin/productos'" class="mobile-cta" @click="goToStore">Comenzar →</button>
       </nav>
     </transition>
