@@ -8,13 +8,17 @@
           <span class="logo-star">★</span>
           <span class="logo-mart">MART</span>
         </div>
-        <button class="btn-back" @click="router.push('/')">← Volver</button>
+        <div class="header-actions">
+          <button class="btn-logout" @click="handleLogout">Cerrar sesión</button>
+        </div>
       </div>
     </header>
-
     <!-- Contenido principal -->
     <div class="content">
       <div class="form-wrapper">
+        <div>
+          <button class="btn btn-primary" @click="goToPanel">Regresar al panel de vendedor</button>
+        </div>
         <!-- Título con badge -->
         <div class="title-section">
           <h1 class="title">Agregar Producto</h1>
@@ -237,6 +241,10 @@ async function registrarProducto() {
     alert('Error al registrar el producto')
   }
 }
+
+function goToPanel() {
+  router.push('/vendedor')
+}
 </script>
 
 <style scoped>
@@ -378,6 +386,22 @@ async function registrarProducto() {
   color: #111827;
   transition: all 0.2s;
   font-family: inherit;
+}
+
+.btn-logout {
+  padding: 0.5rem 1.5rem;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-logout:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
 }
 
 .input:focus {

@@ -4,7 +4,8 @@ import { useAuthStore } from '@/stores/auth'
 import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
 import TiendaView from '../views/TiendaView.vue'
-import VenderView from '../views/VenderView.vue'
+import AgregarProductoView from '../views/VenderView.vue'
+import VenderView from '../views/VendedorProductosView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -31,9 +32,9 @@ const router = createRouter({
       meta: { title: 'Tienda - S-mart' },
     },
     {
-      path: '/vender',
-      name: 'vender',
-      component: VenderView,
+      path: '/AgregarProducto',
+      name: 'AgregarProducto',
+      component: AgregarProductoView,
       meta: {
         title: 'Agregar un Producto - S-mart',
         requiresAuth: true,
@@ -48,6 +49,16 @@ const router = createRouter({
         title: 'Panel de Administración - S-mart',
         requiresAuth: true,
         requiresRoles: ['administrador'],
+      },
+    },
+    {
+      path: '/vendedor',
+      name: 'vendedor',
+      component: VenderView,
+      meta: {
+        title: 'Agregar un Producto - S-mart',
+        requiresAuth: true,
+        requiresRoles: ['vendedor', 'administrador'],
       },
     },
     /*{

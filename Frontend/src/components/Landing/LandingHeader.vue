@@ -89,9 +89,8 @@ const goToLogin = () => {
   showMobileMenu.value = false
 }
 
-// ✅ Agregar estas funciones que faltaban
 const goToVender = () => {
-  router.push('/vender')
+  router.push('/vendedor')
   showUserMenu.value = false
   showMobileMenu.value = false
 }
@@ -179,7 +178,7 @@ const getUserAvatar = computed(() => {
 
             <!-- ✅ Botón corregido -->
             <button v-if="canSell" class="dropdown-item" @click="goToVender">
-              Vender producto
+              Panel de ventas
             </button>
 
             <!-- ✅ Botón corregido -->
