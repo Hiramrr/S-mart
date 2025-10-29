@@ -17,7 +17,7 @@
     <div class="content">
       <div class="form-wrapper">
         <div>
-          <button class="btn btn-primary" @click="goToPanel">Regresar al panel de vendedor</button>
+          <button class="btn btn-primary" @click="goToPanel">Regresar al panel</button>
         </div>
         <!-- Título con badge -->
         <div class="title-section">
@@ -207,7 +207,7 @@ function limpiarCampos() {
 }
 
 function cancelar() {
-  router.push('/')
+  router.back()
 }
 
 async function registrarProducto() {
@@ -243,7 +243,7 @@ async function registrarProducto() {
 }
 
 function goToPanel() {
-  router.push('/vendedor')
+  router.back()
 }
 </script>
 
