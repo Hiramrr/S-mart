@@ -122,6 +122,7 @@ const filteredProducts = computed(() => {
           :price="product.price"
           :description="product.description"
           :image-url="product.imageUrl"
+          :isSeller="false"
         />
       </div>
     </main>

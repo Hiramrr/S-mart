@@ -81,6 +81,21 @@ const handleLogout = async () => {
   await authStore.cerrarSesion()
   router.push('/login')
 }
+
+async function handleDeleteProduct(productId) {
+  if (!productId) return;
+  const { data, error } = await supabase
+    .from('productos')
+    .delete()
+    .eq('id', productId);
+  if (!error) {
+    products.value = products.value.filter(p => p.id !== productId);
+    // await cargarMisProductos(); // Si quieres recargar desde la base
+  } else {
+    alert('Error al eliminar el producto');
+    console.error(error);
+  }
+}
 </script>
 
 <template>
@@ -172,11 +187,14 @@ const handleLogout = async () => {
           <ProductCard
             v-for="product in filteredProducts"
             :key="product.id"
+            :product-id="product.id"
             :product-name="product.name"
             :price="product.price"
             :description="product.description"
             :image-url="product.imageUrl"
             :rating="4.5"
+            :isSeller="true"
+            @delete-product="handleDeleteProduct"
           />
         </div>
       </div>
