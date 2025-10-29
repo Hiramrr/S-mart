@@ -1,50 +1,43 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
+import LandingHeader from '@/components/Landing/LandingHeader.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
-
-const handleLogout = async () => {
-  await authStore.cerrarSesion()
-  router.push('/login')
-}
 </script>
 
 <template>
-  <div class="admin-container">
-    <header class="admin-header">
-      <div class="logo">
-        <span class="logo-s">S</span>
-        <span class="logo-star">★</span>
-        <span class="logo-mart">MART</span>
-      </div>
-      <button class="btn-logout" @click="handleLogout">Cerrar sesión</button>
-    </header>
+  <div class="pagina-principal">
+    <div class="admin-container">
+      <header class="admin-header">
+        <LandingHeader />
+      </header>
 
-    <div class="admin-content">
-      <h1>Panel de Administración</h1>
-      <div class="admin-info">
-        <p><strong>Usuario:</strong> {{ authStore.usuario?.email }}</p>
-        <p><strong>Rol:</strong> {{ authStore.rolUsuario }}</p>
-        <p><strong>Nombre:</strong> {{ authStore.perfil?.nombre || 'Sin nombre' }}</p>
-      </div>
+      <div class="admin-content">
+        <h1>Panel de Administración</h1>
+        <div class="admin-info">
+          <p><strong>Usuario:</strong> {{ authStore.usuario?.email }}</p>
+          <p><strong>Rol:</strong> {{ authStore.rolUsuario }}</p>
+          <p><strong>Nombre:</strong> {{ authStore.perfil?.nombre || 'Sin nombre' }}</p>
+        </div>
 
-      <div class="admin-actions">
-        <div class="action-card">
-          <h3>Gestión de Usuarios</h3>
-          <p>Administrar usuarios del sistema</p>
-          <button>Ver usuarios</button>
-        </div>
-        <div class="action-card">
-          <h3>Gestión de Productos</h3>
-          <p>Administrar productos de la tienda</p>
-          <button @click="router.push('/admin/productos')">Ver productos</button>
-        </div>
-        <div class="action-card">
-          <h3>Reportes</h3>
-          <p>Ver reportes y estadísticas</p>
-          <button>Ver reportes</button>
+        <div class="admin-actions">
+          <div class="action-card">
+            <h3>Gestión de Usuarios</h3>
+            <p>Administrar usuarios del sistema</p>
+            <button>Ver usuarios</button>
+          </div>
+          <div class="action-card">
+            <h3>Gestión de Productos</h3>
+            <p>Administrar productos de la tienda</p>
+            <button @click="router.push('/admin/productos')">Ver productos</button>
+          </div>
+          <div class="action-card">
+            <h3>Reportes</h3>
+            <p>Ver reportes y estadísticas</p>
+            <button>Ver reportes</button>
+          </div>
         </div>
       </div>
     </div>
@@ -52,20 +45,6 @@ const handleLogout = async () => {
 </template>
 
 <style scoped>
-.admin-container {
-  min-height: 100vh;
-  background: #f3f4f6;
-}
-
-.admin-header {
-  background: #fff;
-  padding: 1rem 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
 .logo {
   font-size: 1.5rem;
   font-weight: bold;
@@ -158,5 +137,11 @@ const handleLogout = async () => {
 
 .action-card button:hover {
   background: #1f2937;
+}
+
+.pagina-principal {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding: 5rem 1rem;
 }
 </style>

@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase.js'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 import ProductCard from '@/components/PrincipalComponents/ProductCard.vue'
+import LandingHeader from '@/components/Landing/LandingHeader.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -85,17 +86,8 @@ const handleLogout = async () => {
 <template>
   <div class="vendedor-container">
     <!-- Header -->
-    <header class="header">
-      <div class="header-content">
-        <div class="logo" @click="router.push('/')">
-          <span class="logo-s">S</span>
-          <span class="logo-star">★</span>
-          <span class="logo-mart">MART</span>
-        </div>
-        <div class="header-actions">
-          <button class="btn-logout" @click="handleLogout">Cerrar sesión</button>
-        </div>
-      </div>
+    <header>
+      <LandingHeader />
     </header>
 
     <!-- Main Content -->
@@ -196,26 +188,6 @@ const handleLogout = async () => {
 .vendedor-container {
   min-height: 100vh;
   background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
-}
-
-.header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.header-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 1.5rem 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 .logo {

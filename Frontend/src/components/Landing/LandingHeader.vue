@@ -12,12 +12,25 @@ const showMobileMenu = ref(false)
 const showUserMenu = ref(false)
 const isDarkBackground = ref(false)
 
+// Rutas con fondo blanco donde el header debe ser negro
+const whiteBackgroundRoutes = ['/admin/productos', '/vendedor', '/AgregarProducto']
+
 const checkBackgroundColor = () => {
   try {
+    // Si está en una ruta con fondo blanco, forzar header negro
+    if (whiteBackgroundRoutes.includes(router.currentRoute.value.path)) {
+      isDarkBackground.value = true
+      return
+    }
+
+    // Para otras rutas, detectar el color del fondo
+    const header = document.querySelector('.header')
+    const headerHeight = header ? header.offsetHeight : 100
+    
     const points = [
-      { x: window.innerWidth / 2, y: 100 },
-      { x: window.innerWidth / 4, y: 100 },
-      { x: (window.innerWidth * 3) / 4, y: 100 },
+      { x: window.innerWidth / 2, y: headerHeight + 20 },
+      { x: window.innerWidth / 4, y: headerHeight + 20 },
+      { x: (window.innerWidth * 3) / 4, y: headerHeight + 20 },
     ]
 
     let totalBrightness = 0
@@ -31,7 +44,7 @@ const checkBackgroundColor = () => {
       let bgColor = 'rgba(0, 0, 0, 0)'
       let attempts = 0
 
-      while (currentElement && attempts < 10) {
+      while (currentElement && attempts < 15) {
         const style = window.getComputedStyle(currentElement)
         bgColor = style.backgroundColor
 
@@ -67,16 +80,25 @@ const handleScroll = () => {
 
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
-  setTimeout(() => {
-    checkBackgroundColor()
-  }, 100)
-
-  const interval = setInterval(checkBackgroundColor, 500)
-
-  onUnmounted(() => {
-    window.removeEventListener('scroll', handleScroll)
-    clearInterval(interval)
-  })
+  
+  // Verificar el fondo inmediatamente
+  checkBackgroundColor()
+  
+  // Solo continuar verificando si no está en ruta con fondo blanco
+  if (!whiteBackgroundRoutes.includes(router.currentRoute.value.path)) {
+    setTimeout(checkBackgroundColor, 100)
+    setTimeout(checkBackgroundColor, 300)
+    const interval = setInterval(checkBackgroundColor, 500)
+    
+    onUnmounted(() => {
+      window.removeEventListener('scroll', handleScroll)
+      clearInterval(interval)
+    })
+  } else {
+    onUnmounted(() => {
+      window.removeEventListener('scroll', handleScroll)
+    })
+  }
 })
 
 const goToStore = () => {
@@ -149,8 +171,8 @@ const getUserAvatar = computed(() => {
         <span class="logo-mart">MART</span>
       </div>
 
-  <!-- Ocultar navegación en /admin/productos -->
-  <nav class="nav-center" v-if="$route.path !== '/admin/productos'">
+  <!-- Ocultar navegación en rutas específicas -->
+  <nav class="nav-center" v-if="![$route.path === '/admin/productos', $route.path === '/vendedor', $route.path === '/AgregarProducto'].includes(true)">
         <button class="nav-btn" @click="scrollToSection('features')">PRODUCTOS</button>
         <button class="nav-link" @click="scrollToSection('footer')">CONTACTO</button>
       </nav>
@@ -195,8 +217,8 @@ const getUserAvatar = computed(() => {
         <!-- Login button cuando NO está autenticado -->
         <button v-else class="btn-login" @click="goToLogin">INICIAR SESIÓN</button>
 
-  <!-- Ocultar botón 'COMENZAR' en /admin/productos -->
-  <button v-if="$route.path !== '/admin/productos'" class="btn-get-started" @click="goToStore">COMENZAR →</button>
+  <!-- Ocultar botón 'COMENZAR' en rutas específicas -->
+  <button v-if="!['/admin/productos', '/vendedor', '/AgregarProducto'].includes($route.path)" class="btn-get-started" @click="goToStore">COMENZAR →</button>
 
         <button class="mobile-menu-btn" @click="showMobileMenu = !showMobileMenu">
           <svg
@@ -265,8 +287,8 @@ const getUserAvatar = computed(() => {
         <!-- Login button en mobile cuando NO está autenticado -->
         <button v-else class="mobile-login" @click="goToLogin">Iniciar sesión</button>
 
-  <!-- Ocultar botón 'Comenzar' en mobile en /admin/productos -->
-  <button v-if="$route.path !== '/admin/productos'" class="mobile-cta" @click="goToStore">Comenzar →</button>
+  <!-- Ocultar botón 'Comenzar' en mobile en rutas específicas -->
+  <button v-if="!['/admin/productos', '/vendedor', '/AgregarProducto'].includes($route.path)" class="mobile-cta" @click="goToStore">Comenzar →</button>
       </nav>
     </transition>
   </header>
