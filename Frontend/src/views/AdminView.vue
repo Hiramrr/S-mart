@@ -34,6 +34,11 @@ const router = useRouter()
             <button @click="router.push('/admin/productos')">Ver productos</button>
           </div>
           <div class="action-card">
+            <h3>Gestión de Categorías</h3>
+            <p>Administrar categorías de productos</p>
+            <button @click="router.push('/admin/categorias')">Ver categorías</button>
+          </div>
+          <div class="action-card">
             <h3>Reportes</h3>
             <p>Ver reportes y estadísticas</p>
             <button>Ver reportes</button>

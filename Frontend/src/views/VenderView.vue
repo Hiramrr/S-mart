@@ -143,7 +143,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { subirImagenCloudinary } from '@/lib/cloudinary'
 import { createClient } from '@supabase/supabase-js'
@@ -159,12 +159,33 @@ const nombre = ref('')
 const sku = ref('')
 const descripcion = ref('')
 const categoria = ref('')
-const categorias = ref(['Electrónica', 'Ropa', 'Hogar', 'Juguetes', 'Deportes'])
+const categorias = ref([])
 const stock = ref(0)
 const precio = ref(0)
 const imagen = ref(null)
 const imagenPreview = ref(null)
 const fileInput = ref(null)
+
+async function cargarCategorias() {
+  try {
+    const { data, error } = await supabase.from('categoria').select('nombre').order('nombre')
+
+    if (error) {
+      console.error('Error al cargar categorías:', error)
+      return
+    }
+
+    if (data) {
+      categorias.value = data.map((cat) => cat.nombre)
+    }
+  } catch (err) {
+    console.error('Error al cargar categorías:', err)
+  }
+}
+
+onMounted(() => {
+  cargarCategorias()
+})
 
 function triggerFileInput() {
   nextTick(() => {

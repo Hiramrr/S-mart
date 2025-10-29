@@ -71,6 +71,16 @@ const router = createRouter({
         requiresRoles: ['administrador'],
       },
     },
+    {
+      path: '/admin/categorias',
+      name: 'admin-categorias',
+      component: () => import('../views/AdminCategoriasView.vue'),
+      meta: {
+        title: 'Categorías - Admin',
+        requiresAuth: true,
+        requiresRoles: ['administrador'],
+      },
+    },
     /*{
       path: '/perfil',
       name: 'perfil',
