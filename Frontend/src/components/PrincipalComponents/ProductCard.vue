@@ -1,5 +1,5 @@
 <script setup>
-const emit = defineEmits(['delete-product'])
+const emit = defineEmits(['delete-product', 'edit-product'])
 defineProps({
   productId: {
     type: [String, Number],
@@ -64,11 +64,11 @@ defineProps({
       <p class="product-description">{{ description }}</p>
       <!-- Botones de acción para vendedor -->
       <div v-if="isSeller" class="product-actions">
-        <button class="icon-btn edit-btn" title="Editar">
+        <button class="icon-btn edit-btn" title="Editar" @click="emit('edit-product', productId)">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
           <span class="btn-label">Editar</span>
         </button>
-  <button class="icon-btn delete-btn" title="Eliminar" @click="emit('delete-product', productId)">
+        <button class="icon-btn delete-btn" title="Eliminar" @click="emit('delete-product', productId)">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m5 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
           <span class="btn-label">Eliminar</span>
         </button>

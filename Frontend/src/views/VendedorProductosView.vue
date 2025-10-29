@@ -15,6 +15,8 @@ const error = ref(null)
 const search = ref('')
 const totalVentas = ref(0)
 const stockTotal = ref(0)
+const showDeleteModal = ref(false)
+const productToDelete = ref(null)
 
 async function cargarMisProductos() {
   try {
@@ -82,15 +84,34 @@ const handleLogout = async () => {
   router.push('/login')
 }
 
-async function handleDeleteProduct(productId) {
+function handleEditProduct(productId) {
   if (!productId) return;
+  router.push(`/EditarProducto/${productId}`);
+}
+
+function handleDeleteProduct(productId) {
+  if (!productId) return;
+  productToDelete.value = products.value.find(p => p.id === productId);
+  showDeleteModal.value = true;
+}
+
+function cancelDelete() {
+  showDeleteModal.value = false;
+  productToDelete.value = null;
+}
+
+async function confirmDelete() {
+  if (!productToDelete.value) return;
+  
   const { data, error } = await supabase
     .from('productos')
     .delete()
-    .eq('id', productId);
+    .eq('id', productToDelete.value.id);
+  
   if (!error) {
-    products.value = products.value.filter(p => p.id !== productId);
-    // await cargarMisProductos(); // Si quieres recargar desde la base
+    products.value = products.value.filter(p => p.id !== productToDelete.value.id);
+    showDeleteModal.value = false;
+    productToDelete.value = null;
   } else {
     alert('Error al eliminar el producto');
     console.error(error);
@@ -193,9 +214,29 @@ async function handleDeleteProduct(productId) {
             :description="product.description"
             :image-url="product.imageUrl"
             :rating="4.5"
-            :isSeller="true"
+            :is-seller="true"
+            @edit-product="handleEditProduct"
             @delete-product="handleDeleteProduct"
           />
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Confirmación -->
+    <div v-if="showDeleteModal" class="modal-overlay" @click="cancelDelete">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <div class="modal-icon">⚠️</div>
+          <h2 class="modal-title">Confirmar eliminación</h2>
+        </div>
+        <div class="modal-body">
+          <p>¿Estás seguro de que deseas eliminar el producto:</p>
+          <p class="product-name-highlight">{{ productToDelete?.name }}</p>
+          <p class="warning-text">Esta acción no se puede deshacer.</p>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" @click="cancelDelete">Cancelar</button>
+          <button class="btn-confirm-delete" @click="confirmDelete">Eliminar</button>
         </div>
       </div>
     </div>
@@ -498,6 +539,126 @@ async function handleDeleteProduct(productId) {
   transform: translateY(-2px);
 }
 
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.modal-body {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.modal-body p {
+  color: #6b7280;
+  margin: 0.5rem 0;
+  font-size: 0.9375rem;
+}
+
+.product-name-highlight {
+  font-weight: 600;
+  color: #111827;
+  font-size: 1.125rem !important;
+  margin: 1rem 0 !important;
+}
+
+.warning-text {
+  color: #dc2626 !important;
+  font-weight: 500;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-cancel,
+.btn-confirm-delete {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.btn-cancel:hover {
+  background: #e5e7eb;
+}
+
+.btn-confirm-delete {
+  background: #dc2626;
+  color: white;
+}
+
+.btn-confirm-delete:hover {
+  background: #b91c1c;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .content {
@@ -525,6 +686,14 @@ async function handleDeleteProduct(productId) {
   .stats-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+
+  .modal-content {
+    padding: 1.5rem;
+  }
+
+  .modal-actions {
+    flex-direction: column;
   }
 }
 </style>

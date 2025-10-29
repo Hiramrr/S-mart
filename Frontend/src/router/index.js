@@ -6,6 +6,7 @@ import LoginView from '../views/LoginView.vue'
 import TiendaView from '../views/TiendaView.vue'
 import AgregarProductoView from '../views/VenderView.vue'
 import VenderView from '../views/VendedorProductosView.vue'
+import EditarProductoView from '../views/EditarProductoView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -79,6 +80,26 @@ const router = createRouter({
         title: 'Categorías - Admin',
         requiresAuth: true,
         requiresRoles: ['administrador'],
+      },
+    },
+    {
+      path: '/EditarProducto/:id',
+      name: 'EditarProducto',
+      component: EditarProductoView,
+      meta: {
+        title: 'Editar Producto - S-mart',
+        requiresAuth: true,
+        requiresRoles: ['vendedor', 'administrador'],
+      },
+    },
+    {
+      path: '/VendedorProductos',
+      name: 'VendedorProductos',
+      component: VenderView,
+      meta: {
+        title: 'Mis Productos - S-mart',
+        requiresAuth: true,
+        requiresRoles: ['vendedor', 'administrador'],
       },
     },
     /*{
