@@ -7,6 +7,7 @@ import TiendaView from '../views/TiendaView.vue'
 import AgregarProductoView from '../views/VenderView.vue'
 import VenderView from '../views/VendedorProductosView.vue'
 import EditarProductoView from '../views/EditarProductoView.vue'
+import ProductoDetalleView from '../views/ProductoDetalleView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -31,6 +32,13 @@ const router = createRouter({
       name: 'tienda',
       component: TiendaView,
       meta: { title: 'Tienda - S-mart' },
+    },
+    {
+      path: '/producto/:id', // URL dinámica que captura el ID
+      name: 'producto-detalle', // Nombre único para la ruta
+      component: ProductoDetalleView, 
+      props: true, 
+      meta: { title: 'Producto - S-mart' }, 
     },
     {
       path: '/AgregarProducto',
@@ -119,6 +127,13 @@ const router = createRouter({
       meta: { title: '404 - S-mart' },
       */
   ],
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    } else {
+      return { top: 0 }
+    }
+  },
 })
 
 router.beforeEach(async (to, from, next) => {

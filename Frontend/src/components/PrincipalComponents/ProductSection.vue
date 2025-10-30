@@ -66,7 +66,6 @@ const filteredProducts = computed(() => {
 
 <template>
   <div class="product-section">
-    <!-- Sidebar de Filtros -->
     <aside class="sidebar">
       <h2 class="sidebar-title">Filtro</h2>
       <div class="filter-placeholder">
@@ -76,9 +75,7 @@ const filteredProducts = computed(() => {
       </div>
     </aside>
 
-    <!-- Área de Productos -->
     <main class="products-area">
-      <!-- Contador de Productos y barra de búsqueda -->
       <div class="products-header" style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
         <h1 class="products-count">+{{ filteredProducts.length }} Productos encontrados</h1>
         <div class="search-bar-minimal">
@@ -97,28 +94,24 @@ const filteredProducts = computed(() => {
         </div>
       </div>
 
-      <!-- Estado de Carga -->
       <div v-if="loading" class="loading-state">
         <p>Cargando productos...</p>
       </div>
 
-      <!-- Estado de Error -->
       <div v-else-if="error" class="error-state">
         <p>⚠️ Error: {{ error }}</p>
         <button @click="cargarProductos" class="retry-button">Reintentar</button>
       </div>
 
-      <!-- Estado Vacío -->
       <div v-else-if="filteredProducts.length === 0" class="empty-state">
         <p>No se encontraron productos</p>
       </div>
 
-      <!-- Grid de Productos -->
       <div v-else class="products-grid">
         <ProductCard
           v-for="product in filteredProducts"
           :key="product.id"
-          :product-name="product.name"
+          :product-id="product.id" :product-name="product.name"
           :price="product.price"
           :description="product.description"
           :image-url="product.imageUrl"
