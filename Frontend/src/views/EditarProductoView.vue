@@ -1,37 +1,30 @@
 <template>
   <div class="editar-container">
-    <!-- Header minimalista -->
     <header class="header">
       <LandingHeader />
     </header>
-    <!-- Contenido principal -->
     <div class="content">
       <div class="form-wrapper">
         <div>
           <button class="btn btn-primary" @click="goToPanel">Regresar al panel</button>
         </div>
-        <!-- Título con badge -->
         <div class="title-section">
           <h1 class="title">Editar Producto</h1>
           <p class="subtitle">Actualiza la información del producto</p>
         </div>
 
-        <!-- Loading State -->
         <div v-if="loading" class="loading-state">
           <div class="spinner"></div>
           <p>Cargando producto...</p>
         </div>
 
-        <!-- Error State -->
         <div v-else-if="error" class="error-state">
           <p>⚠️ Error: {{ error }}</p>
           <button @click="cargarProducto" class="btn btn-primary">Reintentar</button>
         </div>
 
-        <!-- Formulario -->
         <form v-else class="form" @submit.prevent="actualizarProducto">
           <div class="form-grid">
-            <!-- Columna izquierda: Campos del formulario -->
             <div class="form-section">
               <div class="input-group">
                 <label class="label">Nombre del producto</label>
@@ -99,7 +92,6 @@
               </div>
             </div>
 
-            <!-- Columna derecha: Imagen -->
             <div class="form-section image-section">
               <div class="input-group">
                 <label class="label">Imagen del producto</label>
@@ -140,7 +132,6 @@
             </div>
           </div>
 
-          <!-- Botones de acción -->
           <div class="actions">
             <button type="button" class="btn btn-outline" @click="cancelar">Cancelar</button>
             <button type="submit" class="btn btn-primary" :disabled="updating">
@@ -208,14 +199,21 @@ async function cargarProducto() {
       throw new Error('No hay sesión de usuario')
     }
 
-    const { data, error: supabaseError } = await supabase
+    let query = supabase
       .from('productos')
       .select('*')
       .eq('id', productId.value)
-      .eq('vendedor_id', authStore.usuario.id)
-      .single()
+    
+    if (authStore.rolUsuario === 'vendedor') {
+      query = query.eq('vendedor_id', authStore.usuario.id)
+    }
+    
+    const { data, error: supabaseError } = await query.single()
 
     if (supabaseError) {
+       if (supabaseError.code === 'PGRST116') {
+         throw new Error('Producto no encontrado o no tienes permiso para editarlo.');
+      }
       throw supabaseError
     }
 
@@ -223,7 +221,6 @@ async function cargarProducto() {
       throw new Error('Producto no encontrado')
     }
 
-    // Cargar datos del producto
     nombre.value = data.nombre
     sku.value = data.codigo
     descripcion.value = data.descripcion
@@ -276,13 +273,12 @@ async function actualizarProducto() {
       throw new Error('No hay sesión de usuario')
     }
 
-    // Si hay una nueva imagen, subirla
     let imagenUrl = imagenUrlOriginal.value
     if (imagen.value) {
       imagenUrl = await subirImagenCloudinary(imagen.value)
     }
-
-    const { error: supabaseError } = await supabase
+    
+    let query = supabase
       .from('productos')
       .update({
         nombre: nombre.value,
@@ -294,14 +290,25 @@ async function actualizarProducto() {
         imagen_url: imagenUrl,
       })
       .eq('id', productId.value)
-      .eq('vendedor_id', authStore.usuario.id)
 
+    if (authStore.rolUsuario === 'vendedor') {
+       query = query.eq('vendedor_id', authStore.usuario.id)
+    }
+    
+    const { error: supabaseError } = await query.select() 
+    
     if (supabaseError) {
       throw supabaseError
     }
 
     alert('Producto actualizado exitosamente')
-    router.push('/VendedorProductos')
+    
+    if (authStore.rolUsuario === 'vendedor') {
+        router.push('/VendedorProductos')
+    } else {
+        router.push('/admin/productos')
+    }
+    
   } catch (err) {
     console.error('Error al actualizar producto:', err)
     alert('Error al actualizar el producto: ' + (err.message || 'Error desconocido'))
@@ -311,11 +318,19 @@ async function actualizarProducto() {
 }
 
 function cancelar() {
-  router.push('/VendedorProductos')
+  if (authStore.rolUsuario === 'vendedor') {
+      router.push('/VdndedorProductos')
+  } else {
+      router.push('/admin/productos')
+  }
 }
 
 function goToPanel() {
-  router.push('/VendedorProductos')
+  if (authStore.rolUsuario === 'vendedor') {
+      router.push('/VendedorProductos')
+  } else {
+      router.push('/admin/productos')
+  }
 }
 
 onMounted(() => {
@@ -325,6 +340,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* ESTILOS (sin cambios, son los del archivo original) */
 * {
   margin: 0;
   padding: 0;
@@ -338,7 +354,6 @@ onMounted(() => {
     sans-serif;
 }
 
-/* Header */
 .header {
   position: fixed;
   top: 0;
@@ -349,7 +364,6 @@ onMounted(() => {
   z-index: 50;
 }
 
-/* Content */
 .content {
   padding: 8rem 2rem 4rem;
   max-width: 1400px;
@@ -365,7 +379,6 @@ onMounted(() => {
     0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
-/* Title Section */
 .title-section {
   margin-bottom: 3rem;
 }
@@ -384,7 +397,6 @@ onMounted(() => {
   margin: 0;
 }
 
-/* Form */
 .form {
   display: flex;
   flex-direction: column;
@@ -471,7 +483,6 @@ onMounted(() => {
   padding-left: 2.25rem;
 }
 
-/* Image Section */
 .image-section {
   display: flex;
   flex-direction: column;
@@ -559,7 +570,6 @@ onMounted(() => {
   font-size: 0.9375rem;
 }
 
-/* Loading & Error States */
 .loading-state,
 .error-state {
   display: flex;
@@ -593,7 +603,6 @@ onMounted(() => {
   margin: 0;
 }
 
-/* Actions */
 .actions {
   display: flex;
   gap: 1rem;
@@ -640,7 +649,6 @@ onMounted(() => {
   color: #111827;
 }
 
-/* Responsive */
 @media (max-width: 1024px) {
   .form-grid {
     grid-template-columns: 1fr;

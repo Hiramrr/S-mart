@@ -1,135 +1,149 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useRole } from '@/composables/useRole'
+import { useNotificationStore } from '@/stores/notificationStore'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const notificationStore = useNotificationStore()
 const { isAdmin, canSell, isAuthenticated } = useRole()
 
 const showMobileMenu = ref(false)
 const showUserMenu = ref(false)
+const showNotificationMenu = ref(false)
 const isDarkBackground = ref(false)
 
-// Rutas con fondo blanco donde el header debe ser negro
-const whiteBackgroundRoutes = ['/admin/productos', '/vendedor', '/AgregarProducto']
+const userMenuBtnRef = ref(null)
+const userMenuDropdownRef = ref(null)
+const notificationBtnRef = ref(null)
+const notificationDropdownRef = ref(null)
+
+const whiteBackgroundRoutes = ['/admin', '/admin/productos', '/admin/categorias', '/vendedor', '/VendedorProductos', '/AgregarProducto', '/EditarProducto']
 
 const checkBackgroundColor = () => {
   try {
-    // Si está en una ruta con fondo blanco, forzar header negro
-    if (whiteBackgroundRoutes.includes(router.currentRoute.value.path)) {
+    if (whiteBackgroundRoutes.some(route => router.currentRoute.value.path.startsWith(route))) {
       isDarkBackground.value = true
       return
     }
-
-    // Para otras rutas, detectar el color del fondo
     const header = document.querySelector('.header')
     const headerHeight = header ? header.offsetHeight : 100
-    
     const points = [
       { x: window.innerWidth / 2, y: headerHeight + 20 },
       { x: window.innerWidth / 4, y: headerHeight + 20 },
       { x: (window.innerWidth * 3) / 4, y: headerHeight + 20 },
     ]
-
     let totalBrightness = 0
     let validPoints = 0
-
     points.forEach((point) => {
       const element = document.elementFromPoint(point.x, point.y)
       if (!element) return
-
       let currentElement = element
       let bgColor = 'rgba(0, 0, 0, 0)'
       let attempts = 0
-
       while (currentElement && attempts < 15) {
         const style = window.getComputedStyle(currentElement)
         bgColor = style.backgroundColor
-
         if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
           break
         }
-
         currentElement = currentElement.parentElement
         attempts++
       }
-
       const rgb = bgColor.match(/\d+/g)
       if (rgb && rgb.length >= 3) {
-        const brightness =
-          (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000
+        const brightness = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000
         totalBrightness += brightness
         validPoints++
       }
     })
-
     if (validPoints > 0) {
-      const avgBrightness = totalBrightness / validPoints
-      isDarkBackground.value = avgBrightness > 128
+      isDarkBackground.value = (totalBrightness / validPoints) > 128
+    } else {
+        if (!whiteBackgroundRoutes.some(route => router.currentRoute.value.path.startsWith(route))) {
+            isDarkBackground.value = false
+        }
     }
   } catch (error) {
     console.error('Error detectando color de fondo:', error)
   }
 }
-
 const handleScroll = () => {
   checkBackgroundColor()
 }
+watch(() => router.currentRoute.value.path, () => {
+  checkBackgroundColor()
+})
 
+const handleClickOutside = (event) => {
+  if (showUserMenu.value && userMenuBtnRef.value && !userMenuBtnRef.value.contains(event.target) && userMenuDropdownRef.value && !userMenuDropdownRef.value.contains(event.target)) {
+    showUserMenu.value = false
+  }
+  if (showNotificationMenu.value && notificationBtnRef.value && !notificationBtnRef.value.contains(event.target) && notificationDropdownRef.value && !notificationDropdownRef.value.contains(event.target)) {
+    showNotificationMenu.value = false
+  }
+}
+
+let checkBgInterval = null
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
-  
-  // Verificar el fondo inmediatamente
+  document.addEventListener('click', handleClickOutside)
   checkBackgroundColor()
-  
-  // Solo continuar verificando si no está en ruta con fondo blanco
-  if (!whiteBackgroundRoutes.includes(router.currentRoute.value.path)) {
+  if (!whiteBackgroundRoutes.some(route => router.currentRoute.value.path.startsWith(route))) {
     setTimeout(checkBackgroundColor, 100)
     setTimeout(checkBackgroundColor, 300)
-    const interval = setInterval(checkBackgroundColor, 500)
-    
-    onUnmounted(() => {
-      window.removeEventListener('scroll', handleScroll)
-      clearInterval(interval)
-    })
-  } else {
-    onUnmounted(() => {
-      window.removeEventListener('scroll', handleScroll)
-    })
+    checkBgInterval = setInterval(checkBackgroundColor, 500)
   }
 })
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+  document.removeEventListener('click', handleClickOutside)
+  if (checkBgInterval) {
+    clearInterval(checkBgInterval)
+  }
+})
+
+watch(
+  () => canSell.value, // <--- CAMBIO
+  (puedeVender) => {
+    if (puedeVender) {
+      notificationStore.fetchStockAlerts()
+    }
+  },
+  { immediate: true }
+)
 
 const goToStore = () => {
   router.push('/tienda')
   showMobileMenu.value = false
 }
-
 const goToLogin = () => {
   router.push('/login')
   showMobileMenu.value = false
 }
-
 const goToVender = () => {
-  router.push('/vendedor')
+  router.push('/VendedorProductos')
   showUserMenu.value = false
   showMobileMenu.value = false
 }
-
 const goToAdmin = () => {
   router.push('/admin')
   showUserMenu.value = false
   showMobileMenu.value = false
 }
-
 const handleLogout = async () => {
   await authStore.cerrarSesion()
+  notificationStore.clearAlerts()
   showUserMenu.value = false
   showMobileMenu.value = false
   router.push('/login')
 }
-
+const goToEditProduct = (id) => {
+  showNotificationMenu.value = false
+  router.push({ name: 'EditarProducto', params: { id } })
+}
 const scrollToSection = (sectionId) => {
   const element = document.getElementById(sectionId)
   if (element) {
@@ -139,25 +153,14 @@ const scrollToSection = (sectionId) => {
 }
 
 const getUserName = computed(() => {
-  if (authStore.perfil?.nombre) {
-    return authStore.perfil.nombre
-  }
-  if (authStore.usuario?.user_metadata?.full_name) {
-    return authStore.usuario.user_metadata.full_name
-  }
-  if (authStore.usuario?.email) {
-    return authStore.usuario.email.split('@')[0]
-  }
+  if (authStore.perfil?.nombre) return authStore.perfil.nombre
+  if (authStore.usuario?.user_metadata?.full_name) return authStore.usuario.user_metadata.full_name
+  if (authStore.usuario?.email) return authStore.usuario.email.split('@')[0]
   return 'Usuario'
 })
-
 const getUserAvatar = computed(() => {
-  if (authStore.perfil?.avatar_url) {
-    return authStore.perfil.avatar_url
-  }
-  if (authStore.usuario?.user_metadata?.avatar_url) {
-    return authStore.usuario.user_metadata.avatar_url
-  }
+  if (authStore.perfil?.avatar_url) return authStore.perfil.avatar_url
+  if (authStore.usuario?.user_metadata?.avatar_url) return authStore.usuario.user_metadata.avatar_url
   return null
 })
 </script>
@@ -165,22 +168,89 @@ const getUserAvatar = computed(() => {
 <template>
   <header class="header" :class="{ 'header-dark': isDarkBackground }">
     <div class="header-content">
-      <div class="logo" @click="router.push('/')">
-        <span class="logo-s">S</span>
-        <span class="logo-star">★</span>
-        <span class="logo-mart">MART</span>
+
+      <div class="header-left">
+        <div class="logo" @click="router.push('/')">
+          <span class="logo-s">S</span>
+          <span class="logo-star">★</span>
+          <span class="logo-mart">MART</span>
+        </div>
+
+        <nav class="nav-center" v-if="!['/admin', '/admin/productos', '/admin/categorias', '/vendedor', '/VendedorProductos', '/AgregarProducto', '/EditarProducto'].some(route => $route.path.startsWith(route))">
+          <button class="nav-btn" @click="scrollToSection('features')">PRODUCTOS</button>
+          <button class="nav-link" @click="scrollToSection('footer')">CONTACTO</button>
+        </nav>
       </div>
 
-  <!-- Ocultar navegación en rutas específicas -->
-  <nav class="nav-center" v-if="![$route.path === '/admin/productos', $route.path === '/vendedor', $route.path === '/AgregarProducto'].includes(true)">
-        <button class="nav-btn" @click="scrollToSection('features')">PRODUCTOS</button>
-        <button class="nav-link" @click="scrollToSection('footer')">CONTACTO</button>
-      </nav>
-
       <div class="header-actions">
-        <!-- User Menu cuando está autenticado -->
+      
+        <div v-if="canSell" class="notification-container">
+          <button 
+            ref="notificationBtnRef" 
+            class="notification-btn" 
+            @click.stop="showNotificationMenu = !showNotificationMenu; showUserMenu = false" 
+            title="Alertas de Stock"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span v-if="notificationStore.totalAlertCount > 0" class="notification-badge">
+              {{ notificationStore.totalAlertCount > 9 ? '9+' : notificationStore.totalAlertCount }}
+            </span>
+          </button>
+
+          <div 
+            v-if="showNotificationMenu" 
+            ref="notificationDropdownRef" 
+            class="user-dropdown" 
+            @click.stop
+          >
+            <div class="dropdown-header">Alertas de Stock</div>
+            
+            <div v-if="notificationStore.loading" class="dropdown-item loading">
+              Cargando alertas...
+            </div>
+            
+            <div v-else-if="notificationStore.totalAlertCount === 0" class="dropdown-item empty">
+              No hay alertas de stock.
+            </div>
+
+            <template v-else>
+              <div v-if="notificationStore.outOfStockCount > 0">
+                <div class="dropdown-subheader">Agotados ({{ notificationStore.outOfStockCount }})</div>
+                <button
+                  v-for="item in notificationStore.outOfStockItems"
+                  :key="`out-${item.id}`"
+                  class="dropdown-item notification-item out-of-stock"
+                  @click="goToEditProduct(item.id)"
+                >
+                  <span class="item-name">{{ item.nombre }}</span>
+                  <span class="item-stock">0 unidades</span>
+                </button>
+              </div>
+              <div v-if="notificationStore.lowStockCount > 0">
+                <div class="dropdown-subheader">Stock Bajo ({{ notificationStore.lowStockCount }})</div>
+                <button
+                  v-for="item in notificationStore.lowStockItems"
+                  :key="`low-${item.id}`"
+                  class="dropdown-item notification-item low-stock"
+                  @click="goToEditProduct(item.id)"
+                >
+                  <span class="item-name">{{ item.nombre }}</span>
+                  <span class="item-stock">{{ item.stock }} unidades</span>
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
+        
         <div v-if="authStore.usuario" class="user-menu-container">
-          <button class="btn-user" @click="showUserMenu = !showUserMenu">
+          <button 
+            ref="userMenuBtnRef" 
+            class="btn-user" 
+            @click.stop="showUserMenu = !showUserMenu; showNotificationMenu = false"
+          >
             <img v-if="getUserAvatar" :src="getUserAvatar" :alt="getUserName" class="user-avatar" />
             <div v-else class="user-avatar-placeholder">
               {{ getUserName.charAt(0).toUpperCase() }}
@@ -188,7 +258,12 @@ const getUserAvatar = computed(() => {
             <span class="user-name">{{ getUserName }}</span>
           </button>
 
-          <div v-if="showUserMenu" class="user-dropdown" @click.stop>
+          <div 
+            v-if="showUserMenu" 
+            ref="userMenuDropdownRef" 
+            class="user-dropdown" 
+            @click.stop
+          >
             <div class="dropdown-item user-info">
               <div class="user-email">{{ authStore.usuario.email }}</div>
               <div v-if="authStore.perfil?.rol" class="user-role">
@@ -196,29 +271,26 @@ const getUserAvatar = computed(() => {
               </div>
             </div>
             <div class="dropdown-divider"></div>
-
             <button class="dropdown-item" @click="router.push('/perfil')">Mi perfil</button>
-
-            <!-- ✅ Botón corregido -->
             <button v-if="canSell" class="dropdown-item" @click="goToVender">
               Panel de ventas
             </button>
-
-            <!-- ✅ Botón corregido -->
             <button v-if="isAdmin" class="dropdown-item" @click="goToAdmin">
               Panel de administración
             </button>
-
             <div class="dropdown-divider"></div>
             <button class="dropdown-item" @click="handleLogout">Cerrar sesión</button>
           </div>
         </div>
 
-        <!-- Login button cuando NO está autenticado -->
         <button v-else class="btn-login" @click="goToLogin">INICIAR SESIÓN</button>
 
-  <!-- Ocultar botón 'COMENZAR' en rutas específicas -->
-  <button v-if="!['/admin/productos', '/vendedor', '/AgregarProducto'].includes($route.path)" class="btn-get-started" @click="goToStore">COMENZAR →</button>
+        <button 
+          v-if="!['/admin', '/admin/productos', '/admin/categorias', '/vendedor', '/VendedorProductos', '/AgregarProducto'].some(route => $route.path.startsWith(route))" 
+          class="btn-get-started" 
+          @click="goToStore">
+          COMENZAR →
+        </button>
 
         <button class="mobile-menu-btn" @click="showMobileMenu = !showMobileMenu">
           <svg
@@ -248,14 +320,11 @@ const getUserAvatar = computed(() => {
       </div>
     </div>
 
-    <!-- Mobile Menu -->
     <transition name="slide">
       <nav v-if="showMobileMenu" class="mobile-nav">
         <button @click="scrollToSection('features')">Productos</button>
         <button @click="scrollToSection('pricing')">Precios</button>
         <button @click="scrollToSection('footer')">Contacto</button>
-
-        <!-- User info en mobile cuando está autenticado -->
         <div v-if="authStore.usuario" class="mobile-user-section">
           <div class="mobile-user-info">
             <img
@@ -272,29 +341,29 @@ const getUserAvatar = computed(() => {
               <div class="mobile-user-email">{{ authStore.usuario.email }}</div>
             </div>
           </div>
-
-          <!-- ✅ Agregar botones en mobile también -->
+          <button class="mobile-menu-option" @click="router.push('/perfil')">Mi perfil</button>
           <button v-if="canSell" class="mobile-menu-option" @click="goToVender">
-            📦 Vender producto
+            📦 Panel de ventas
           </button>
           <button v-if="isAdmin" class="mobile-menu-option" @click="goToAdmin">
             ⚙️ Panel de administración
           </button>
-
           <button class="mobile-logout" @click="handleLogout">Cerrar sesión</button>
         </div>
-
-        <!-- Login button en mobile cuando NO está autenticado -->
         <button v-else class="mobile-login" @click="goToLogin">Iniciar sesión</button>
-
-  <!-- Ocultar botón 'Comenzar' en mobile en rutas específicas -->
-  <button v-if="!['/admin/productos', '/vendedor', '/AgregarProducto'].includes($route.path)" class="mobile-cta" @click="goToStore">Comenzar →</button>
+        <button 
+          v-if="!['/admin', '/admin/productos', '/admin/categorias', '/vendedor', '/VendedorProductos', '/AgregarProducto'].some(route => $route.path.startsWith(route))"
+          class="mobile-cta" 
+          @click="goToStore">
+          Comenzar →
+        </button>
       </nav>
     </transition>
   </header>
 </template>
 
 <style scoped>
+/* ESTILOS (sin cambios, son los de la respuesta anterior) */
 .header {
   position: fixed;
   top: 0;
@@ -303,20 +372,9 @@ const getUserAvatar = computed(() => {
   z-index: 100;
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
-}
-
-/* Cuando el fondo es claro (blanco), hacer el header oscuro */
-.header-dark {
-  background: rgba(0, 0, 0, 0.85);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.header-dark .nav-btn,
-.header-dark .nav-link,
-.header-dark .btn-login {
-  color: #fff;
 }
 
 .header-content {
@@ -326,6 +384,12 @@ const getUserAvatar = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
 }
 
 .logo {
@@ -340,16 +404,13 @@ const getUserAvatar = computed(() => {
   cursor: pointer;
   transition: transform 0.2s;
 }
-
 .logo:hover {
   transform: scale(1.05);
 }
-
 .logo-s,
 .logo-mart {
   color: #000;
 }
-
 .logo-star {
   color: #000;
   margin: 0 2px;
@@ -375,15 +436,9 @@ const getUserAvatar = computed(() => {
   letter-spacing: 0.5px;
   transition: all 0.3s ease;
 }
-
 .nav-btn:hover,
 .nav-link:hover {
   opacity: 0.8;
-}
-
-.plus {
-  font-size: 1.2rem;
-  font-weight: 300;
 }
 
 .header-actions {
@@ -392,11 +447,195 @@ const getUserAvatar = computed(() => {
   gap: 1rem;
 }
 
-/* User Menu Styles */
-.user-menu-container {
+.header-dark {
+  background: rgba(255, 255, 255, 0.85);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+.header-dark .nav-btn,
+.header-dark .nav-link,
+.header-dark .btn-login {
+  color: #111827;
+}
+.header-dark .mobile-menu-btn {
+  color: #111827;
+}
+.header-dark .logo {
+  background: #000;
+  color: #fff;
+}
+.header-dark .logo-s,
+.header-dark .logo-mart {
+  color: #fff;
+}
+.header-dark .logo-star {
+  color: #fbbf24;
+}
+
+.notification-container {
   position: relative;
 }
 
+.notification-btn {
+  background: none;
+  border: none;
+  color: #fff; 
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: color 0.3s;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+.notification-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+.header-dark .notification-btn {
+  color: #111827;
+}
+.header-dark .notification-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+.notification-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.notification-badge {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  background-color: #ef4444;
+  color: #fff;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border: 2px solid #333;
+}
+.header:not(.header-dark) .notification-badge {
+  border-color: #333;
+}
+.header-dark .notification-badge {
+  border-color: #ffffff;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 0.75rem);
+  right: 0;
+  width: 320px;
+  max-height: 400px;
+  overflow-y: auto;
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.2),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  border: 1px solid #e5e7eb;
+  color: #111827;
+}
+.user-menu-container .user-dropdown {
+    min-width: 220px;
+    width: auto;
+}
+.dropdown-header {
+  padding: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb;
+}
+.dropdown-subheader {
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+  background-color: #f9fafb;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.dropdown-item {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+  color: #374151;
+}
+.dropdown-item:hover {
+  background-color: #f3f4f6;
+}
+.dropdown-item.empty,
+.dropdown-item.loading {
+  text-align: center;
+  color: #6b7280;
+  cursor: default;
+}
+.dropdown-item.loading:hover,
+.dropdown-item.empty:hover {
+  background-color: #fff;
+}
+.notification-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+.item-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+.item-stock {
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-left: 1rem;
+}
+.low-stock .item-stock {
+  color: #f59e0b;
+}
+.out-of-stock .item-stock {
+  color: #ef4444;
+}
+.user-info {
+  cursor: default;
+}
+.user-info:hover {
+  background-color: transparent;
+}
+.user-email {
+  font-weight: 500;
+  color: #111827;
+  font-size: 0.875rem;
+}
+.user-role {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-transform: capitalize;
+  margin-top: 0.25rem;
+}
+.dropdown-divider {
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 0.25rem 0;
+}
+.user-menu-container {
+  position: relative;
+}
 .btn-user {
   display: flex;
   align-items: center;
@@ -408,13 +647,11 @@ const getUserAvatar = computed(() => {
   cursor: pointer;
   transition: all 0.2s;
 }
-
 .btn-user:hover {
   background: rgba(255, 255, 255, 1);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-
 .user-avatar {
   width: 2rem;
   height: 2rem;
@@ -422,7 +659,6 @@ const getUserAvatar = computed(() => {
   object-fit: cover;
   border: 2px solid #000;
 }
-
 .user-avatar-placeholder {
   width: 2rem;
   height: 2rem;
@@ -435,7 +671,6 @@ const getUserAvatar = computed(() => {
   font-weight: bold;
   font-size: 0.875rem;
 }
-
 .user-name {
   font-size: 0.875rem;
   font-weight: 600;
@@ -445,66 +680,6 @@ const getUserAvatar = computed(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.user-dropdown {
-  position: absolute;
-  top: calc(100% + 0.5rem);
-  right: 0;
-  background-color: #ffffff;
-  border-radius: 0.75rem;
-  box-shadow:
-    0 10px 25px -5px rgba(0, 0, 0, 0.2),
-    0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  min-width: 220px;
-  z-index: 50;
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.dropdown-item {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  text-align: left;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.875rem;
-  transition: background-color 0.2s;
-  color: #000;
-}
-
-.dropdown-item:hover {
-  background-color: #f3f4f6;
-}
-
-.user-info {
-  cursor: default;
-  padding: 1rem;
-}
-
-.user-info:hover {
-  background-color: transparent;
-}
-
-.user-email {
-  font-weight: 500;
-  color: #111827;
-  font-size: 0.875rem;
-}
-
-.user-role {
-  font-size: 0.75rem;
-  color: #6b7280;
-  text-transform: capitalize;
-  margin-top: 0.25rem;
-}
-
-.dropdown-divider {
-  height: 1px;
-  background-color: #e5e7eb;
-  margin: 0.25rem 0;
-}
-
 .btn-login {
   background: none;
   border: none;
@@ -516,11 +691,9 @@ const getUserAvatar = computed(() => {
   padding: 0.5rem 1rem;
   transition: all 0.3s ease;
 }
-
 .btn-login:hover {
   opacity: 0.8;
 }
-
 .btn-get-started {
   background: #fff;
   color: #000;
@@ -533,12 +706,10 @@ const getUserAvatar = computed(() => {
   cursor: pointer;
   transition: all 0.2s;
 }
-
 .btn-get-started:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
 }
-
 .mobile-menu-btn {
   display: none;
   background: none;
@@ -547,7 +718,6 @@ const getUserAvatar = computed(() => {
   cursor: pointer;
   padding: 0.5rem;
 }
-
 .mobile-nav {
   display: none;
   flex-direction: column;
@@ -557,7 +727,6 @@ const getUserAvatar = computed(() => {
   backdrop-filter: blur(10px);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
-
 .mobile-nav button {
   background: none;
   border: none;
@@ -570,18 +739,14 @@ const getUserAvatar = computed(() => {
   transition: background 0.2s;
   border-radius: 8px;
 }
-
 .mobile-nav button:hover {
   background: rgba(255, 255, 255, 0.1);
 }
-
-/* Mobile User Section */
 .mobile-user-section {
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
-
 .mobile-user-info {
   display: flex;
   align-items: center;
@@ -591,7 +756,6 @@ const getUserAvatar = computed(() => {
   border-radius: 8px;
   margin-bottom: 0.5rem;
 }
-
 .mobile-user-avatar {
   width: 2.5rem;
   height: 2.5rem;
@@ -599,7 +763,6 @@ const getUserAvatar = computed(() => {
   object-fit: cover;
   border: 2px solid #fff;
 }
-
 .mobile-user-avatar-placeholder {
   width: 2.5rem;
   height: 2.5rem;
@@ -612,12 +775,10 @@ const getUserAvatar = computed(() => {
   font-weight: bold;
   font-size: 1rem;
 }
-
 .mobile-user-details {
   flex: 1;
   overflow: hidden;
 }
-
 .mobile-user-name {
   color: #fff;
   font-weight: 600;
@@ -626,7 +787,6 @@ const getUserAvatar = computed(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 .mobile-user-email {
   color: rgba(255, 255, 255, 0.7);
   font-size: 0.75rem;
@@ -634,7 +794,6 @@ const getUserAvatar = computed(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 .mobile-logout {
   background: rgba(239, 68, 68, 0.1) !important;
   color: #ef4444 !important;
@@ -642,80 +801,70 @@ const getUserAvatar = computed(() => {
   font-weight: 600 !important;
   text-align: center !important;
 }
-
 .mobile-logout:hover {
   background: rgba(239, 68, 68, 0.2) !important;
 }
-
 .mobile-login {
   margin-top: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
 }
-
 .mobile-cta {
   background: #fff !important;
   color: #000 !important;
   font-weight: 600 !important;
   text-align: center !important;
 }
-
-/* Transitions */
 .slide-enter-active,
 .slide-leave-active {
   transition: all 0.3s ease;
 }
-
 .slide-enter-from {
   transform: translateY(-10px);
   opacity: 0;
 }
-
 .slide-leave-to {
   transform: translateY(-10px);
   opacity: 0;
 }
-
-/* Responsive */
 @media (max-width: 768px) {
+  .header-left {
+    gap: 0;
+  }
   .nav-center {
     display: none;
   }
-
   .btn-login,
-  .user-menu-container {
+  .user-menu-container,
+  .notification-container {
     display: none;
   }
-
   .mobile-menu-btn {
     display: block;
   }
-
   .mobile-nav {
     display: flex;
   }
-
   .header-content {
     padding: 1rem;
   }
+  .btn-get-started {
+    display: none;
+  }
 }
-
 @media (max-width: 480px) {
   .user-name {
     display: none;
   }
-
   .btn-user {
     padding: 0.5rem;
   }
 }
-
 .mobile-menu-option {
   background: rgba(255, 255, 255, 0.05) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   margin-top: 0.5rem;
   text-align: center !important;
 }
-
 .mobile-menu-option:hover {
   background: rgba(255, 255, 255, 0.1) !important;
 }
