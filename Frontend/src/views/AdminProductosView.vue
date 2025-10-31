@@ -1,5 +1,5 @@
 <script setup>
-import ProductSection from '@/components/PrincipalComponents/ProductSection.vue'
+import AdminProductSection from '@/components/PrincipalComponents/AdminProductSection.vue'
 import Header from '@/components/Landing/LandingHeader.vue'
 </script>
 
@@ -13,7 +13,7 @@ import Header from '@/components/Landing/LandingHeader.vue'
         <span style="margin-left: 0.5rem; font-size: 1.3rem">&rarr;</span>
       </button>
     </div>
-    <ProductSection />
+    <AdminProductSection />
   </div>
 </template>
 

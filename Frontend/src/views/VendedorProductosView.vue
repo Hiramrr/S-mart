@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 import ProductCard from '@/components/PrincipalComponents/ProductCard.vue'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
+import CouponModal from '@/components/PrincipalComponents/CouponModal.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -17,6 +18,8 @@ const totalVentas = ref(0)
 const stockTotal = ref(0)
 const showDeleteModal = ref(false)
 const productToDelete = ref(null)
+const showCouponModal = ref(false)
+const selectedProduct = ref({ id: null, name: '' })
 
 async function cargarMisProductos() {
   try {
@@ -144,6 +147,16 @@ async function confirmDelete() {
     console.error(error);
   }
 }
+
+function handleCreateCoupon(productId, productName) {
+  selectedProduct.value = { id: productId, name: productName };
+  showCouponModal.value = true;
+}
+
+function handleCouponCreated(coupon) {
+  console.log('Cupón creado:', coupon);
+  // You can add a success notification here if needed
+}
 </script>
 
 <template>
@@ -237,6 +250,7 @@ async function confirmDelete() {
             :is-seller="true"
             @edit-product="handleEditProduct"
             @delete-product="handleDeleteProduct"
+            @create-coupon="handleCreateCoupon"
           />
         </div>
         </div>
@@ -259,6 +273,15 @@ async function confirmDelete() {
         </div>
       </div>
     </div>
+
+    <!-- Coupon Modal -->
+    <CouponModal
+      :show="showCouponModal"
+      :product-id="selectedProduct.id"
+      :product-name="selectedProduct.name"
+      @close="showCouponModal = false"
+      @created="handleCouponCreated"
+    />
   </div>
 </template>
 

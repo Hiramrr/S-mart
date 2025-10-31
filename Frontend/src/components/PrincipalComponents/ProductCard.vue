@@ -1,6 +1,6 @@
 <script setup>
 import { useRouter } from 'vue-router'
-const emit = defineEmits(['delete-product', 'edit-product'])
+const emit = defineEmits(['delete-product', 'edit-product', 'create-coupon'])
 defineProps({
   productId: {
     type: [String, Number],
@@ -80,6 +80,10 @@ const router = useRouter()
         <button class="icon-btn edit-btn" title="Editar" @click.stop="emit('edit-product', productId)">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
           <span class="btn-label">Editar</span>
+        </button>
+        <button class="icon-btn coupon-btn" title="Crear cupón" @click.stop="emit('create-coupon', productId, productName)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><path d="M1 10h22"/></svg>
+          <span class="btn-label">Cupón</span>
         </button>
         <button class="icon-btn delete-btn" title="Eliminar" @click.stop="emit('delete-product', productId)">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m5 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
@@ -253,6 +257,9 @@ const router = useRouter()
 }
 .edit-btn svg {
   stroke: #3b82f6;
+}
+.coupon-btn svg {
+  stroke: #10b981;
 }
 .delete-btn svg {
   stroke: #ef4444;
