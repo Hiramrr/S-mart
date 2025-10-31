@@ -27,6 +27,7 @@ async function cargarMisProductos() {
       throw new Error('No hay sesión de usuario')
     }
 
+    // El select '*' traerá 'precio_venta' y 'precio_descuento'
     const { data, error: supabaseError } = await supabase
       .from('productos')
       .select('*')
@@ -42,20 +43,46 @@ async function cargarMisProductos() {
       return
     }
 
-    products.value = data.map((p) => ({
-      id: p.id,
-      name: p.nombre,
-      price: `$${p.precio_venta.toFixed(2)}`,
-      description: p.descripcion,
-      imageUrl: p.imagen_url,
-      stock: p.stock,
-      categoria: p.categoria,
-      codigo: p.codigo,
-    }))
+    // --- INICIO DE MODIFICACIÓN ---
+    products.value = data.map((p) => {
+      // Verificamos si hay un descuento válido.
+      // (Que exista, sea mayor a 0 y menor que el precio original)
+      const hasDiscount = p.precio_descuento && p.precio_descuento > 0 && p.precio_descuento < p.precio_venta;
+
+      return {
+        id: p.id,
+        name: p.nombre,
+        
+        // 'price' (prop) será el precio final (con descuento si existe)
+        price: hasDiscount
+          ? `$${p.precio_descuento.toFixed(2)}`
+          : `$${p.precio_venta.toFixed(2)}`,
+        
+        // 'originalPrice' (prop) será el precio de venta (tachado) si hay descuento
+        originalPrice: hasDiscount
+          ? `$${p.precio_venta.toFixed(2)}`
+          : null,
+          
+        description: p.descripcion,
+        imageUrl: p.imagen_url,
+        stock: p.stock,
+        categoria: p.categoria,
+        codigo: p.codigo,
+      }
+    })
 
     // Calcular estadísticas
     stockTotal.value = data.reduce((sum, p) => sum + p.stock, 0)
-    totalVentas.value = data.reduce((sum, p) => sum + p.precio_venta * p.stock, 0)
+
+    // Corregimos el cálculo de "Valor Inventario" para que use el precio final
+    totalVentas.value = data.reduce((sum, p) => {
+      const finalPrice = (p.precio_descuento && p.precio_descuento > 0 && p.precio_descuento < p.precio_venta)
+        ? p.precio_descuento
+        : p.precio_venta;
+      return sum + (finalPrice * p.stock);
+    }, 0)
+    // --- FIN DE MODIFICACIÓN ---
+
   } catch (err) {
     console.error('Error al cargar productos:', err)
     error.value = err.message || 'Error al cargar productos'
@@ -121,14 +148,11 @@ async function confirmDelete() {
 
 <template>
   <div class="vendedor-container">
-    <!-- Header -->
     <header>
       <LandingHeader />
     </header>
 
-    <!-- Main Content -->
     <div class="content">
-      <!-- Stats Cards -->
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon">📦</div>
@@ -153,9 +177,7 @@ async function confirmDelete() {
         </div>
       </div>
 
-      <!-- Products Section -->
       <div class="products-section">
-        <!-- Header -->
         <div class="products-header">
           <div class="header-left">
             <h1 class="products-title">Mis Productos</h1>
@@ -167,7 +189,6 @@ async function confirmDelete() {
           </button>
         </div>
 
-        <!-- Search Bar -->
         <div class="search-container">
           <div class="search-bar">
             <span class="search-icon">
@@ -185,7 +206,6 @@ async function confirmDelete() {
           </div>
         </div>
 
-        <!-- Loading State -->
         <div v-if="loading" class="loading-state">
           <div class="spinner"></div>
           <p>Cargando productos...</p>
@@ -196,7 +216,6 @@ async function confirmDelete() {
           <button @click="cargarMisProductos" class="retry-button">Reintentar</button>
         </div>
 
-        <!-- Empty State -->
         <div v-else-if="filteredProducts.length === 0" class="empty-state">
           <div class="empty-icon">📦</div>
           <h3>No tienes productos registrados</h3>
@@ -211,6 +230,7 @@ async function confirmDelete() {
             :product-id="product.id"
             :product-name="product.name"
             :price="product.price"
+            :original-price="product.originalPrice" 
             :description="product.description"
             :image-url="product.imageUrl"
             :rating="4.5"
@@ -219,10 +239,9 @@ async function confirmDelete() {
             @delete-product="handleDeleteProduct"
           />
         </div>
-      </div>
+        </div>
     </div>
 
-    <!-- Modal de Confirmación -->
     <div v-if="showDeleteModal" class="modal-overlay" @click="cancelDelete">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
@@ -244,6 +263,7 @@ async function confirmDelete() {
 </template>
 
 <style scoped>
+/* Los estilos CSS no necesitan cambios, ya que están en el componente ProductCard */
 .vendedor-container {
   min-height: 100vh;
   background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);

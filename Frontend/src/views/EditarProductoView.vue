@@ -26,6 +26,7 @@
         <form v-else class="form" @submit.prevent="actualizarProducto">
           <div class="form-grid">
             <div class="form-section">
+              
               <div class="input-group">
                 <label class="label">Nombre del producto</label>
                 <input
@@ -61,7 +62,6 @@
                     <option v-for="cat in categorias" :key="cat" :value="cat">{{ cat }}</option>
                   </select>
                 </div>
-
                 <div class="input-group">
                   <label class="label">Stock</label>
                   <input
@@ -75,22 +75,39 @@
                 </div>
               </div>
 
-              <div class="input-group">
-                <label class="label">Precio de venta</label>
-                <div class="price-input">
-                  <span class="currency">$</span>
-                  <input
-                    v-model.number="precio"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    required
-                    class="input price"
-                    placeholder="0.00"
-                  />
+              <div class="input-row">
+                <div class="input-group">
+                  <label class="label">Precio de venta (Original)</label>
+                  <div class="price-input">
+                    <span class="currency">$</span>
+                    <input
+                      v-model.number="precio"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      required
+                      class="input price"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+                
+                <div class="input-group">
+                  <label class="label">Precio de descuento (Opcional)</label>
+                  <div class="price-input">
+                    <span class="currency">$</span>
+                    <input
+                      v-model.number="precioDescuento"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      class="input price"
+                      placeholder="0.00"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+              </div>
 
             <div class="form-section image-section">
               <div class="input-group">
@@ -168,6 +185,7 @@ const categoria = ref('')
 const categorias = ref([])
 const stock = ref(0)
 const precio = ref(0)
+const precioDescuento = ref(null)
 const imagen = ref(null)
 const imagenPreview = ref(null)
 const imagenUrlOriginal = ref(null)
@@ -227,6 +245,7 @@ async function cargarProducto() {
     categoria.value = data.categoria
     stock.value = data.stock
     precio.value = data.precio_venta
+    precioDescuento.value = data.precio_descuento
     imagenUrlOriginal.value = data.imagen_url
     imagenPreview.value = data.imagen_url
 
@@ -277,7 +296,8 @@ async function actualizarProducto() {
     if (imagen.value) {
       imagenUrl = await subirImagenCloudinary(imagen.value)
     }
-    
+    const descuentoFinal = precioDescuento.value > 0 ? precioDescuento.value : null
+
     let query = supabase
       .from('productos')
       .update({
@@ -288,6 +308,7 @@ async function actualizarProducto() {
         stock: stock.value,
         precio_venta: precio.value,
         imagen_url: imagenUrl,
+        precio_descuento: descuentoFinal,
       })
       .eq('id', productId.value)
 

@@ -34,13 +34,25 @@ async function cargarProductos() {
       return
     }
 
-    products.value = data.map((p) => ({
-      id: p.id,
-      name: p.nombre,
-      price: `$${p.precio_venta.toFixed(2)}`,
-      description: p.descripcion,
-      imageUrl: p.imagen_url,
-    }))
+    products.value = data.map((p) => {
+      // Comprobar si hay un descuento válido
+      const tieneDescuento = p.precio_descuento && p.precio_descuento > 0 && p.precio_descuento < p.precio_venta
+
+      return {
+        id: p.id,
+        name: p.nombre,
+        // 'price' es el precio final que se muestra
+        price: tieneDescuento
+          ? `$${p.precio_descuento.toFixed(2)}`
+          : `$${p.precio_venta.toFixed(2)}`,
+        // 'originalPrice' es el precio tachado (si existe)
+        originalPrice: tieneDescuento
+          ? `$${p.precio_venta.toFixed(2)}`
+          : null,
+        description: p.descripcion,
+        imageUrl: p.imagen_url,
+      }
+    })
 
     totalProducts.value = data.length
   } catch (err) {
@@ -108,15 +120,16 @@ const filteredProducts = computed(() => {
       </div>
 
       <div v-else class="products-grid">
-        <ProductCard
-          v-for="product in filteredProducts"
-          :key="product.id"
-          :product-id="product.id" :product-name="product.name"
-          :price="product.price"
-          :description="product.description"
-          :image-url="product.imageUrl"
-          :isSeller="false"
-        />
+          <ProductCard
+            v-for="product in filteredProducts"
+            :key="product.id"
+            :product-id="product.id"
+            :product-name="product.name"
+            :price="product.price"
+            :original-price="product.originalPrice" :description="product.description"
+            :image-url="product.imageUrl"
+            :is-seller="false"
+          />
       </div>
     </main>
   </div>

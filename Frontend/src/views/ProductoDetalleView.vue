@@ -58,13 +58,24 @@ async function cargarDetalleProducto() {
 }
 
 // Formatear precio para mostrarlo
-const formattedPrice = computed(() => {
-  if (product.value?.precio_venta) {
-    return `$${product.value.precio_venta.toFixed(2)}`
-  }
-  return ''
+const finalPrice = computed(() => {
+  if (!product.value) return ''
+  const tieneDescuento = product.value.precio_descuento && product.value.precio_descuento > 0 && product.value.precio_descuento < product.value.precio_venta
+  
+  return tieneDescuento
+    ? `$${product.value.precio_descuento.toFixed(2)}`
+    : `$${product.value.precio_venta.toFixed(2)}`
 })
 
+// 'originalPrice' es el precio tachado (solo si hay descuento)
+const originalPrice = computed(() => {
+  if (!product.value) return null
+  const tieneDescuento = product.value.precio_descuento && product.value.precio_descuento > 0 && product.value.precio_descuento < product.value.precio_venta
+  
+  return tieneDescuento
+    ? `$${product.value.precio_venta.toFixed(2)}`
+    : null
+})
 // Cargar datos cuando el componente se monta
 onMounted(() => {
   cargarDetalleProducto()
@@ -105,19 +116,20 @@ const handleBuyNow = (quantity) => {
       <div v-else-if="error" class="status-message error-state">
         <p>⚠️ {{ error }}</p>
         <button @click="cargarDetalleProducto" class="retry-button">Reintentar</button>
-        <button @click="router.push('/tienda')" class="back-button">Volver a la tienda</button>
+         <button @click="router.push('/tienda')" class="back-button">Volver a la tienda</button>
       </div>
 
       <div v-else-if="product" :key="product.id">
-
         <div class="product-layout">
           <div class="gallery-column">
             <ImageGallery :image-url="product.imagen_url" :product-name="product.nombre" />
           </div>
           <div class="info-column">
+
             <ProductInfo
               :name="product.nombre"
-              :price="formattedPrice"
+              :price="finalPrice"           
+              :original-price="originalPrice" 
               :description="product.descripcion"
               :category="product.categoria"
               :sku="product.codigo"
@@ -131,18 +143,18 @@ const handleBuyNow = (quantity) => {
           </div>
         </div>
 
-        <RelatedProducts
+        <RelatedProducts 
           :key="`related-${product.id}`"
-          :category="product.categoria"
-          :current-product-id="product.id"
+          :category="product.categoria" 
+          :current-product-id="product.id" 
         />
-
-        <ProductReviews
+        
+        <ProductReviews 
           :key="`reviews-${product.id}`"
-          :product-id="product.id"
+          :product-id="product.id" 
         />
-
-      </div> 
+        
+      </div>
     </main>
   </div>
 </template>

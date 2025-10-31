@@ -15,8 +15,14 @@ defineProps({
     default: 4.5,
   },
   price: {
+    // Este será el precio final (con descuento si aplica)
     type: String,
     default: 'PRECIO',
+  },
+  originalPrice: {
+    // NUEVO: El precio original antes del descuento
+    type: String,
+    default: null,
   },
   description: {
     type: String,
@@ -59,10 +65,15 @@ const router = useRouter()
         </div>
       </div>
 
-      <div class="product-price">
-        {{ price }}
+      <div class="price-container">
+        <div class="product-price" :class="{ 'discounted': originalPrice }">
+          {{ price }}
+        </div>
+        
+        <div v-if="originalPrice" class="product-price original-striked">
+          {{ originalPrice }}
+        </div>
       </div>
-
       <p class="product-description">{{ description }}</p>
 
       <div v-if="isSeller" class="product-actions">
@@ -86,11 +97,11 @@ const router = useRouter()
   overflow: hidden;
   transition: box-shadow 0.3s;
   cursor: pointer;
-  border: 1px solid #eee; /* Añadimos un borde sutil */
+  border: 1px solid #eee; 
 }
 
-
-.product-card:hover {
+/* MODIFICADO: Cambiado a 'clickable' para no interferir con :hover */
+.clickable:hover {
   box-shadow:
     0 10px 15px -3px rgba(0, 0, 0, 0.1),
     0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -134,7 +145,6 @@ const router = useRouter()
   flex: 1;
   margin: 0;
   display: -webkit-box;
-  /* Limitar texto a 2 líneas */
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -161,24 +171,52 @@ const router = useRouter()
   color: #111827;
 }
 
+/* --- INICIO: NUEVOS ESTILOS DE PRECIO --- */
+
+/* NUEVO: Contenedor para alinear precios.
+  Permite que el precio original tachado se ponga al lado
+  o abajo si no hay espacio.
+*/
+.price-container {
+  display: flex;
+  align-items: baseline; /* Alinea los textos por la base */
+  gap: 0.5rem; /* Espacio entre los precios */
+  flex-wrap: wrap; /* Si no caben, el original pasa abajo */
+  margin-bottom: 0.5rem;
+}
+
+/* MODIFICADO: Estilo de precio base */
 .product-price {
   font-size: 1.25rem;
   font-weight: bold;
   color: #111827;
-  margin-bottom: 0.5rem;
 }
+
+/* NUEVO: Estilo para el precio con descuento (rojo) */
+.product-price.discounted {
+  color: #ef4444; /* Un tono de rojo */
+}
+
+/* NUEVO: Estilo para el precio original (tachado y más pequeño) */
+.product-price.original-striked {
+  font-size: 0.9rem; /* Más pequeño */
+  font-weight: 500; /* Menos grueso */
+  color: #6b7280; /* Un tono de gris */
+  text-decoration: line-through; /* Tachado */
+}
+/* --- FIN: NUEVOS ESTILOS DE PRECIO --- */
+
 
 .product-description {
   font-size: 0.875rem;
   color: #6b7280;
   margin: 0;
-  /* Limitar descripción a 2 líneas */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-height: 2.6em; /* Altura aprox para 2 líneas */
+  min-height: 2.6em; 
 }
 
 
@@ -201,7 +239,7 @@ const router = useRouter()
   background: #f3f4f6;
   border: none;
   border-radius: 0.5rem;
-  padding: 0.5rem 0.75rem; /* Ajustado padding */
+  padding: 0.5rem 0.75rem; 
   padding: 0.25rem 0.75rem;
   display: flex;
   align-items: center;

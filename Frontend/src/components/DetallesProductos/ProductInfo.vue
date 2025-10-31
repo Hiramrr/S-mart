@@ -1,7 +1,8 @@
 <script setup>
 defineProps({
   name: String,
-  price: String,
+  price: String, 
+  originalPrice: { type: String, default: null }, 
   description: String,
   category: String,
   sku: String,
@@ -16,7 +17,13 @@ defineProps({
     <p v-if="sku" class="product-sku">SKU: {{ sku }}</p>
 
     <div class="price-stock-section">
-      <span class="product-price">{{ price }}</span>
+      <div class="price-wrap">
+        <span class="product-price">{{ price }}</span>
+        <span v-if="originalPrice" class="original-price">
+          <s>{{ originalPrice }}</s>
+        </span>
+      </div>
+      
       <span v-if="stock !== null && stock !== undefined"
             :class="['stock-status', stock > 0 ? 'in-stock' : 'out-of-stock']">
         {{ stock > 0 ? `${stock} disponibles` : 'Agotado' }}
@@ -27,8 +34,7 @@ defineProps({
       <h3 class="section-title">Descripción</h3>
       <p class="product-description">{{ description }}</p>
     </div>
-
-    </div>
+  </div>
 </template>
 
 <style scoped>

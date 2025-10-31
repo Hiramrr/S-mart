@@ -1,25 +1,20 @@
 <template>
   <div class="vender-container">
-    <!-- Header minimalista -->
     <header class="header">
       <LandingHeader />
     </header>
-    <!-- Contenido principal -->
     <div class="content">
       <div class="form-wrapper">
         <div>
           <button class="btn btn-primary" @click="goToPanel">Regresar al panel</button>
         </div>
-        <!-- Título con badge -->
         <div class="title-section">
           <h1 class="title">Agregar Producto</h1>
           <p class="subtitle">Completa la información para añadir un nuevo producto a tu tienda</p>
         </div>
 
-        <!-- Formulario -->
         <form class="form" @submit.prevent="registrarProducto">
           <div class="form-grid">
-            <!-- Columna izquierda: Campos del formulario -->
             <div class="form-section">
               <div class="input-group">
                 <label class="label">Nombre del producto</label>
@@ -70,24 +65,38 @@
                 </div>
               </div>
 
-              <div class="input-group">
-                <label class="label">Precio de venta</label>
-                <div class="price-input">
-                  <span class="currency">$</span>
-                  <input
-                    v-model.number="precio"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    required
-                    class="input price"
-                    placeholder="0.00"
-                  />
+              <div class="input-row">
+                <div class="input-group">
+                  <label class="label">Precio de venta (Original)</label> <div class="price-input">
+                    <span class="currency">$</span>
+                    <input
+                      v-model.number="precio"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      required
+                      class="input price"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+                
+                <div class="input-group"> <label class="label">Precio de descuento (Opcional)</label>
+                  <div class="price-input">
+                    <span class="currency">$</span>
+                    <input
+                      v-model.number="precioDescuento"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      class="input price"
+                      placeholder="0.00"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+              </div>
 
-            <!-- Columna derecha: Imagen -->
             <div class="form-section image-section">
               <div class="input-group">
                 <label class="label">Imagen del producto</label>
@@ -127,8 +136,8 @@
               </div>
             </div>
           </div>
+          
 
-          <!-- Botones de acción -->
           <div class="actions">
             <button type="button" class="btn btn-secondary" @click="limpiarCampos">
               Limpiar campos
@@ -141,7 +150,6 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import { ref, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -162,6 +170,7 @@ const categoria = ref('')
 const categorias = ref([])
 const stock = ref(0)
 const precio = ref(0)
+const precioDescuento = ref(null)
 const imagen = ref(null)
 const imagenPreview = ref(null)
 const fileInput = ref(null)
@@ -215,6 +224,7 @@ function limpiarCampos() {
   categoria.value = ''
   stock.value = 0
   precio.value = 0
+  precioDescuento.value = null
   imagen.value = null
   imagenPreview.value = null
 }
@@ -231,6 +241,7 @@ async function registrarProducto() {
     }
 
     const imagenUrl = await subirImagenCloudinary(imagen.value)
+    const descuentoFinal = precioDescuento.value > 0 ? precioDescuento.value : null
 
     const { error } = await supabase.from('productos').insert([
       {
@@ -241,6 +252,7 @@ async function registrarProducto() {
         stock: stock.value,
         precio_venta: precio.value,
         imagen_url: imagenUrl,
+        precio_descuento: descuentoFinal,
       },
     ])
 
@@ -248,7 +260,7 @@ async function registrarProducto() {
 
     alert('Producto registrado correctamente')
     limpiarCampos()
-    router.push('/')
+    router.push('/VendedorProductos')
   } catch (err) {
     console.error('Error al registrar el producto:', err)
     alert('Error al registrar el producto')
