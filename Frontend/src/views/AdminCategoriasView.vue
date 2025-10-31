@@ -50,14 +50,27 @@ const guardarCategoria = async () => {
     cargando.value = true
     error.value = null
 
-    const { error: err } = await supabase.from('categoria').insert([
-      {
-        nombre: nuevaCategoria.value.nombre.trim(),
-        descripcion: nuevaCategoria.value.descripcion.trim() || null,
-      },
-    ])
+    if (categoriaEditando.value) {
+      // Editar categoría existente
+      const { error: err } = await supabase
+        .from('categoria')
+        .update({
+          nombre: nuevaCategoria.value.nombre.trim(),
+          descripcion: nuevaCategoria.value.descripcion.trim() || null,
+        })
+        .eq('nombre', categoriaEditando.value.nombre)
 
-    if (err) throw err
+      if (err) throw err
+    } else {
+      // Agregar nueva categoría
+      const { error: err } = await supabase.from('categoria').insert([
+        {
+          nombre: nuevaCategoria.value.nombre.trim(),
+          descripcion: nuevaCategoria.value.descripcion.trim() || null,
+        },
+      ])
+      if (err) throw err
+    }
 
     await cargarCategorias()
     cerrarFormulario()
@@ -131,7 +144,7 @@ onMounted(() => {
             <p>{{ categoria.descripcion || 'Sin descripción' }}</p>
           </div>
           <div class="categoria-actions">
-            <button class="icon-btn edit-btn" title="Editar" @click="editarCategoria">
+            <button class="icon-btn edit-btn" title="Editar" @click="editarCategoria(categoria)">
               <svg
                 width="22"
                 height="22"
@@ -147,7 +160,7 @@ onMounted(() => {
               </svg>
               <span class="btn-label">Editar</span>
             </button>
-            <button class="icon-btn delete-btn" title="Eliminar" @click="eliminarCategoria">
+            <button class="icon-btn delete-btn" title="Eliminar" @click="eliminarCategoria(categoria.nombre)">
               <svg
                 width="22"
                 height="22"
