@@ -8,6 +8,8 @@ const mostrarFormulario = ref(false)
 const categoriaEditando = ref(null)
 const cargando = ref(false)
 const error = ref(null)
+const showDeleteCategoriaModal = ref(false)
+const categoriaAEliminar = ref(null)
 
 const nuevaCategoria = ref({
   nombre: '',
@@ -88,18 +90,26 @@ const editarCategoria = (categoria) => {
   mostrarFormulario.value = true
 }
 
-const eliminarCategoria = async (nombre) => {
-  if (!confirm(`¿Estás seguro de eliminar la categoría "${nombre}"?`)) return
+const handleDeleteCategoria = (categoria) => {
+  categoriaAEliminar.value = categoria
+  showDeleteCategoriaModal.value = true
+}
 
+const cancelDeleteCategoria = () => {
+  showDeleteCategoriaModal.value = false
+  categoriaAEliminar.value = null
+}
+
+const confirmDeleteCategoria = async () => {
+  if (!categoriaAEliminar.value) return
   try {
     cargando.value = true
     error.value = null
-
-    const { error: err } = await supabase.from('categoria').delete().eq('nombre', nombre)
-
+    const { error: err } = await supabase.from('categoria').delete().eq('nombre', categoriaAEliminar.value.nombre)
     if (err) throw err
-
     await cargarCategorias()
+    showDeleteCategoriaModal.value = false
+    categoriaAEliminar.value = null
   } catch (err) {
     console.error('Error al eliminar categoría:', err)
     error.value = 'Error al eliminar la categoría'
@@ -160,7 +170,7 @@ onMounted(() => {
               </svg>
               <span class="btn-label">Editar</span>
             </button>
-            <button class="icon-btn delete-btn" title="Eliminar" @click="eliminarCategoria(categoria.nombre)">
+            <button class="icon-btn delete-btn" title="Eliminar" @click="handleDeleteCategoria(categoria)">
               <svg
                 width="22"
                 height="22"
@@ -183,67 +193,173 @@ onMounted(() => {
       </div>
     </div>
 
-    <div v-if="mostrarFormulario" class="modal-overlay" @click="cerrarFormulario">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h2>{{ categoriaEditando ? 'Editar' : 'Agregar' }} Categoría</h2>
-          <button @click="cerrarFormulario" class="btn-cerrar">&times;</button>
+  <div v-if="mostrarFormulario" class="modal-overlay" @click="cerrarFormulario">
+    <div class="modal-content" @click.stop>
+      <div class="modal-header">
+        <h2>{{ categoriaEditando ? 'Editar' : 'Agregar' }} Categoría</h2>
+        <button @click="cerrarFormulario" class="btn-cerrar">&times;</button>
+      </div>
+      <form @submit.prevent="guardarCategoria" class="form-categoria">
+        <div v-if="error" class="error-message-modal">
+          {{ error }}
         </div>
+        <div class="form-group">
+          <label for="nombre">Nombre de la categoría *</label>
+          <input
+            id="nombre"
+            v-model="nuevaCategoria.nombre"
+            type="text"
+            placeholder="Ej: Electrónica, Ropa, Alimentos..."
+            required
+            :disabled="cargando"
+          />
+        </div>
+        <div class="form-group">
+          <label for="descripcion">Descripción</label>
+          <textarea
+            id="descripcion"
+            v-model="nuevaCategoria.descripcion"
+            placeholder="Descripción de la categoría (opcional)"
+            rows="4"
+            :disabled="cargando"
+          ></textarea>
+        </div>
+        <div class="form-actions">
+          <button
+            type="button"
+            @click="cerrarFormulario"
+            class="btn-cancelar"
+            :disabled="cargando"
+          >
+            Cancelar
+          </button>
+          <button type="submit" class="btn-guardar" :disabled="cargando">
+            {{ cargando ? 'Guardando...' : 'Guardar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-        <form @submit.prevent="guardarCategoria" class="form-categoria">
-          <div v-if="error" class="error-message-modal">
-            {{ error }}
-          </div>
-
-          <div class="form-group">
-            <label for="nombre">Nombre de la categoría *</label>
-            <input
-              id="nombre"
-              v-model="nuevaCategoria.nombre"
-              type="text"
-              placeholder="Ej: Electrónica, Ropa, Alimentos..."
-              required
-              :disabled="cargando"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="descripcion">Descripción</label>
-            <textarea
-              id="descripcion"
-              v-model="nuevaCategoria.descripcion"
-              placeholder="Descripción de la categoría (opcional)"
-              rows="4"
-              :disabled="cargando"
-            ></textarea>
-          </div>
-
-          <div class="form-actions">
-            <button
-              type="button"
-              @click="cerrarFormulario"
-              class="btn-cancelar"
-              :disabled="cargando"
-            >
-              Cancelar
-            </button>
-            <button type="submit" class="btn-guardar" :disabled="cargando">
-              {{ cargando ? 'Guardando...' : 'Guardar' }}
-            </button>
-          </div>
-        </form>
+  <!-- Modal de confirmación para eliminar categoría -->
+  <div v-if="showDeleteCategoriaModal" class="modal-overlay" @click="cancelDeleteCategoria">
+    <div class="modal-content confirm-modal" @click.stop>
+      <div class="modal-header confirm-modal-header">
+        <div class="modal-icon confirm-modal-icon">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <circle cx="24" cy="24" r="22" fill="#FFFBEA" stroke="#FBBF24" stroke-width="2"/>
+            <polygon points="24,12 36,36 12,36" fill="#FBBF24" />
+            <text x="24" y="32" text-anchor="middle" font-size="24" fill="#B45309" font-family="Arial" dy="-2">!</text>
+          </svg>
+        </div>
+        <h2 class="modal-title confirm-modal-title">Confirmar eliminación</h2>
+      </div>
+      <div class="modal-body confirm-modal-body">
+        <p class="confirm-modal-question">¿Estás seguro de que deseas eliminar la categoría:</p>
+        <p class="product-name-highlight confirm-modal-name">{{ categoriaAEliminar?.nombre }}</p>
+        <p class="warning-text confirm-modal-warning">Esta acción no se puede deshacer.</p>
+      </div>
+      <div class="modal-actions confirm-modal-actions">
+        <button class="btn-cancel confirm-btn-cancel" @click="cancelDeleteCategoria">Cancelar</button>
+        <button class="btn-confirm-delete confirm-btn-delete" @click="confirmDeleteCategoria">Eliminar</button>
       </div>
     </div>
+  </div>
+
   </div>
 </template>
 
 <style scoped>
+
 .pantalla-admin-categorias {
   min-height: 100vh;
   background-color: #f9fafb;
   display: flex;
   flex-direction: column;
   padding: 5rem 1rem;
+}
+
+/* Modal de confirmación estilos tipo imagen */
+.confirm-modal {
+  background: #fff;
+  border-radius: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  padding: 2.5rem 2rem 2rem 2rem;
+  max-width: 420px;
+  width: 100%;
+  position: relative;
+  animation: modalIn 0.2s;
+  text-align: center;
+}
+.confirm-modal-header {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.2rem;
+}
+.confirm-modal-icon {
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: center;
+}
+.confirm-modal-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.2rem;
+}
+.confirm-modal-body {
+  margin-bottom: 1.7rem;
+}
+.confirm-modal-question {
+  color: #374151;
+  font-size: 1.08rem;
+  margin-bottom: 0.5rem;
+}
+.confirm-modal-name {
+  font-weight: bold;
+  color: #6B7280;
+  font-size: 1.15rem;
+  margin: 0.7rem 0 0.7rem 0;
+}
+.confirm-modal-warning {
+  color: #dc2626;
+  font-size: 1.05rem;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+.confirm-modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1.2rem;
+}
+.confirm-btn-cancel {
+  background: #F3F4F6;
+  color: #111827;
+  border: none;
+  border-radius: 1rem;
+  padding: 0.8rem 2.2rem;
+  font-weight: 700;
+  font-size: 1.08rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.confirm-btn-cancel:hover {
+  background: #E5E7EB;
+}
+.confirm-btn-delete {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 1rem;
+  padding: 0.8rem 2.2rem;
+  font-weight: 700;
+  font-size: 1.08rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.confirm-btn-delete:hover {
+  background: #b91c1c;
 }
 
 .admin-categorias-title-centered {
