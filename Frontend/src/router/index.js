@@ -110,7 +110,18 @@ const router = createRouter({
         requiresRoles: ['vendedor', 'administrador'],
       },
     },
-    /*{
+    {
+      path: '/cajero',
+      name: 'cajero',
+      component: () => import('../views/CajeroView.vue'),
+      meta: {
+        title: 'Panel de Cajero - S-mart',
+        requiresAuth: true,
+        requiresRoles: ['cajero', 'administrador'],
+      },
+
+    },
+    /* {
       path: '/perfil',
       name: 'perfil',
       component: () => import('../views/PerfilView.vue'),
@@ -125,7 +136,7 @@ const router = createRouter({
       name: 'not-found',
       component: () => import('../views/NotFoundView.vue'),
       meta: { title: '404 - S-mart' },
-      */
+    } */
   ],
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {

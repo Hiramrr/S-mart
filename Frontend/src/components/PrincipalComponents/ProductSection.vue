@@ -1,76 +1,18 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { supabase } from '@/lib/supabase.js'
+import { computed, onMounted, ref } from 'vue'
+import { useProductStore } from '@/stores/products'
 import ProductCard from './ProductCard.vue'
 
-const totalProducts = ref(0)
-const products = ref([])
-const loading = ref(true)
-const error = ref(null)
+const productStore = useProductStore()
 const search = ref('')
 
-async function cargarProductos() {
-  try {
-    loading.value = true
-    error.value = null
-
-    // Verificar que supabase esté configurado
-    if (!supabase) {
-      throw new Error('Supabase no está configurado correctamente')
-    }
-
-    const { data, error: supabaseError } = await supabase
-      .from('productos')
-      .select('*')
-      .order('id', { ascending: false })
-
-    if (supabaseError) {
-      throw supabaseError
-    }
-
-    if (!data) {
-      products.value = []
-      totalProducts.value = 0
-      return
-    }
-
-    products.value = data.map((p) => {
-      // Comprobar si hay un descuento válido
-      const tieneDescuento = p.precio_descuento && p.precio_descuento > 0 && p.precio_descuento < p.precio_venta
-
-      return {
-        id: p.id,
-        name: p.nombre,
-        // 'price' es el precio final que se muestra
-        price: tieneDescuento
-          ? `$${p.precio_descuento.toFixed(2)}`
-          : `$${p.precio_venta.toFixed(2)}`,
-        // 'originalPrice' es el precio tachado (si existe)
-        originalPrice: tieneDescuento
-          ? `$${p.precio_venta.toFixed(2)}`
-          : null,
-        description: p.descripcion,
-        imageUrl: p.imagen_url,
-      }
-    })
-
-    totalProducts.value = data.length
-  } catch (err) {
-    console.error('Error al cargar productos:', err)
-    error.value = err.message || 'Error al cargar productos'
-  } finally {
-    loading.value = false
-  }
-}
-
 onMounted(() => {
-  cargarProductos()
+  productStore.fetchProducts()
 })
 
-// Computed para filtrar productos por nombre
 const filteredProducts = computed(() => {
-  if (!search.value.trim()) return products.value
-  return products.value.filter(p =>
+  if (!search.value.trim()) return productStore.products
+  return productStore.products.filter(p =>
     p.name.toLowerCase().includes(search.value.trim().toLowerCase())
   )
 })
@@ -106,13 +48,13 @@ const filteredProducts = computed(() => {
         </div>
       </div>
 
-      <div v-if="loading" class="loading-state">
+      <div v-if="productStore.loading" class="loading-state">
         <p>Cargando productos...</p>
       </div>
 
-      <div v-else-if="error" class="error-state">
-        <p>⚠️ Error: {{ error }}</p>
-        <button @click="cargarProductos" class="retry-button">Reintentar</button>
+      <div v-else-if="productStore.error" class="error-state">
+        <p>⚠️ Error: {{ productStore.error }}</p>
+        <button @click="productStore.fetchProducts" class="retry-button">Reintentar</button>
       </div>
 
       <div v-else-if="filteredProducts.length === 0" class="empty-state">
