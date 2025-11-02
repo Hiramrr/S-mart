@@ -15,7 +15,7 @@
     <div v-else class="cart-items">
       <div v-for="item in items" :key="item.id" class="cart-item">
         <div class="item-header">
-          <span class="item-name">{{ item.nombre }}</span>
+          <span class="item-name">{{ item.name }}</span>
           <button 
             @click="$emit('remove-item', item.id)"
             class="btn-remove"

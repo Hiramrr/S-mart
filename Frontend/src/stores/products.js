@@ -31,14 +31,27 @@ export const useProductStore = defineStore('products', () => {
         return;
       }
 
-      products.value = data.map((p) => ({
-        id: p.id,
-        nombre: p.nombre,
-        precio: p.precio_venta,
-        precio_descuento: p.precio_descuento,
-        descripcion: p.descripcion,
-        imagen_url: p.imagen_url,
-      }));
+      products.value = data.map((p) => {
+        // Comprobar si hay un descuento válido
+        const tieneDescuento = p.precio_descuento && p.precio_descuento > 0 && p.precio_descuento < p.precio_venta;
+
+        return {
+          id: p.id,
+          name: p.nombre,
+          // 'price' es el precio final que se muestra
+          price: tieneDescuento
+            ? `$${p.precio_descuento.toFixed(2)}`
+            : `$${p.precio_venta.toFixed(2)}`,
+          // 'originalPrice' es el precio tachado (si existe)
+          originalPrice: tieneDescuento
+            ? `$${p.precio_venta.toFixed(2)}`
+            : null,
+          description: p.descripcion,
+          imageUrl: p.imagen_url,
+          // I will also add the original price to be used in the CajeroView
+          precio: p.precio_venta,
+        };
+      });
     } catch (err) {
       console.error('Error al cargar productos:', err);
       error.value = err.message || 'Error al cargar productos';

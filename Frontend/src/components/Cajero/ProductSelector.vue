@@ -25,7 +25,7 @@
         <tbody>
           <tr v-for="product in filteredProducts" :key="product.id">
             <td>{{ product.id }}</td>
-            <td>{{ product.nombre }}</td>
+            <td>{{ product.name }}</td>
             <td>${{ product.precio.toLocaleString() }}</td>
             <td>
               <button 
@@ -66,7 +66,7 @@ export default {
       if (!searchTerm.value) return props.products;
       
       return props.products.filter(product =>
-        product.nombre.toLowerCase().includes(searchTerm.value.toLowerCase())
+        product.name.toLowerCase().includes(searchTerm.value.toLowerCase())
       );
     });
 
