@@ -9,6 +9,7 @@ import VenderView from '../views/VendedorProductosView.vue'
 import EditarProductoView from '../views/EditarProductoView.vue'
 import ProductoDetalleView from '../views/ProductoDetalleView.vue'
 import CarritoView from '../views/CarritoView.vue'
+import PerfilView from '../views/PerfilView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -119,6 +120,19 @@ const router = createRouter({
         requiresRoles: ['vendedor', 'administrador'],
       },
     },
+
+    {
+      path: '/perfil',
+      name: 'perfil',
+      component: PerfilView, // Usa el componente que importamos
+      meta: {
+        title: 'Mi Perfil - S-mart',
+        requiresAuth: true,
+        // Permitimos que todos los roles vean su perfil
+        requiresRoles: ['cliente', 'vendedor', 'administrador', 'cajero'], 
+      },
+    },
+
     {
       path: '/cajero',
       name: 'cajero',
