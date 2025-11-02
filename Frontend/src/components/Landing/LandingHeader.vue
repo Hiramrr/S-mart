@@ -5,6 +5,9 @@ import { useAuthStore } from '@/stores/auth'
 import { useRole } from '@/composables/useRole'
 import { useNotificationStore } from '@/stores/notificationStore'
 
+import { useCartStore } from '@/stores/cartStore' // 1. Importa el store del carrito
+const cartStore = useCartStore() // 2. Inicialízalo
+
 const router = useRouter()
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
@@ -245,6 +248,17 @@ const getUserAvatar = computed(() => {
           </div>
         </div>
         
+        <button class="btn-icon btn-cart" @click="router.push('/carrito')">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+          <span v-if="cartStore.totalItems > 0" class="cart-badge">
+            {{ cartStore.totalItems > 9 ? '9+' : cartStore.totalItems }}
+          </span>
+        </button>
+
         <div v-if="authStore.usuario" class="user-menu-container">
           <button 
             ref="userMenuBtnRef" 
@@ -282,9 +296,8 @@ const getUserAvatar = computed(() => {
             <button class="dropdown-item" @click="handleLogout">Cerrar sesión</button>
           </div>
         </div>
-
+        
         <button v-else class="btn-login" @click="goToLogin">INICIAR SESIÓN</button>
-
         <button 
           v-if="!['/admin', '/admin/productos', '/admin/categorias', '/vendedor', '/VendedorProductos', '/AgregarProducto'].some(route => $route.path.startsWith(route))" 
           class="btn-get-started" 
@@ -377,6 +390,57 @@ const getUserAvatar = computed(() => {
   transition: all 0.3s ease;
 }
 
+/* (Tus estilos para .btn-icon) */
+.btn-icon {
+  background: none;
+  border: none;
+  color: #fff; 
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: color 0.3s;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+.btn-icon:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+.header-dark .btn-icon {
+  color: #111827;
+}
+.header-dark .btn-icon:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* (Tus estilos para .cart-badge) */
+.cart-badge {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  background-color: #ef4444;
+  color: #fff;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.header:not(.header-dark) .cart-badge {
+  border: 2px solid #333;
+}
+.header-dark .cart-badge {
+  border: 2px solid #ffffff;
+}
+/* (El resto de tus estilos están aquí...) */
 .header-content {
   max-width: 1400px;
   margin: 0 auto;
@@ -833,11 +897,16 @@ const getUserAvatar = computed(() => {
   .nav-center {
     display: none;
   }
+  
+  /* --- 3. MODIFICAR ESTA REGLA (Añadir .btn-cart) --- */
   .btn-login,
   .user-menu-container,
-  .notification-container {
+  .notification-container,
+  .btn-cart { /* <-- Se añadió .btn-cart aquí */
     display: none;
   }
+  /* --- FIN DE LA SECCIÓN 3 --- */
+
   .mobile-menu-btn {
     display: block;
   }

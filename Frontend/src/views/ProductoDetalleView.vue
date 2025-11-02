@@ -9,6 +9,9 @@ import PurchaseActions from '@/components/DetallesProductos/PurchaseActions.vue'
 import RelatedProducts from '@/components/DetallesProductos/RelatedProducts.vue';
 import ProductReviews from '@/components/DetallesProductos/ProductReviews.vue';
 
+import { useCartStore } from '@/stores/cartStore' // 1. Importa tu nuevo store
+const cartStore = useCartStore() // 2. Inicializa el store
+
 const props = defineProps({
   id: {
     type: [String, Number],
@@ -90,15 +93,21 @@ watch(() => props.id, (newId, oldId) => {
 
 // Funciones para manejar acciones (agregar al carrito, comprar)
 const handleAddToCart = (quantity) => {
-  console.log(`Añadir al carrito: ${quantity} x ${product.value?.nombre}`)
-  // Aquí iría la lógica para añadir al carrito (usando Pinia, por ejemplo)
-  alert(`${quantity} ${product.value?.nombre} añadido(s) al carrito (simulado).`)
+  if (product.value) {
+    // 3. Llama a la acción del store
+    cartStore.addProduct(product.value, quantity) 
+    alert(`${quantity} ${product.value?.nombre} añadido(s) al carrito.`)
+  }
 }
 
 const handleBuyNow = (quantity) => {
-  console.log(`Comprar ahora: ${quantity} x ${product.value?.nombre}`)
-  // Aquí iría la lógica para iniciar el proceso de compra
-  alert(`Iniciando compra de ${quantity} ${product.value?.nombre} (simulado).`)
+  if (product.value) {
+    // También puedes añadir al carrito y luego redirigir
+    cartStore.addProduct(product.value, quantity)
+    // Cuando tengas la página de checkout, rediriges:
+    // router.push('/checkout')
+    alert(`Iniciando compra de ${quantity} ${product.value?.nombre} (simulado).`)
+  }
 }
 
 </script>
