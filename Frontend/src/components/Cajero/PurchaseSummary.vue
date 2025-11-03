@@ -27,7 +27,7 @@
       </button>
     </div>
     <div v-else class="post-payment-actions">
-        <button @click="$emit('checkout')" class="btn-checkout">Finalizar compra</button>
+        <button @click="$emit('checkout', paymentMethod)" class="btn-checkout">Finalizar compra</button>
         <button @click="handleCancelPurchase" class="btn-cancel-purchase">Cancelar compra</button>
     </div>
 
@@ -39,6 +39,10 @@
 
     <SecurityCodeModal
       v-if="showSecurityModal"
+      title="Cancelar Compra"
+      description="Ingresa el código de 4 dígitos para confirmar la cancelación."
+      :code-length="4"
+      security-code="1234"
       @cancel="showSecurityModal = false"
       @confirm="handleSecurityConfirm"
     />

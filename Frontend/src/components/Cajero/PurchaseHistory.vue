@@ -24,26 +24,62 @@
             :key="index"
             class="history-product"
           >
-            {{ item.nombre }} x{{ item.cantidad }}
+            {{ item.name }} x{{ item.cantidad }}
           </div>
         </div>
         
-        <div class="history-total">
-          Total: ${{ purchase.total.toLocaleString() }}
+        <div class="history-footer">
+          <div class="history-total">
+            Total: ${{ purchase.total.toLocaleString() }}
+          </div>
+          <button class="btn-details" @click="showDetails(purchase)">Mostrar más detalles</button>
         </div>
       </div>
     </div>
+
+    <PurchaseDetailModal 
+      v-if="showDetailModal"
+      :purchase="selectedPurchase"
+      @close="showDetailModal = false"
+      @delete-purchase="handleDelete"
+    />
   </div>
 </template>
 
 <script>
+import { ref } from 'vue';
+import PurchaseDetailModal from './PurchaseDetailModal.vue';
+
 export default {
   name: 'PurchaseHistory',
+  components: { PurchaseDetailModal },
   props: {
     purchases: {
       type: Array,
       required: true
     }
+  },
+  emits: ['delete-purchase'],
+  setup(props, { emit }) {
+    const selectedPurchase = ref(null);
+    const showDetailModal = ref(false);
+
+    const showDetails = (purchase) => {
+      selectedPurchase.value = purchase;
+      showDetailModal.value = true;
+    };
+
+    const handleDelete = (purchaseId) => {
+      emit('delete-purchase', purchaseId);
+      showDetailModal.value = false;
+    };
+
+    return { 
+      selectedPurchase, 
+      showDetailModal, 
+      showDetails, 
+      handleDelete 
+    };
   }
 };
 </script>
@@ -110,14 +146,28 @@ export default {
   padding: 0.125rem 0;
 }
 
+.history-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+
 .history-total {
   text-align: right;
   font-weight: bold;
   font-size: 1.125rem;
   color: #1f2937;
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid #e5e7eb;
+}
+
+.btn-details {
+    background: none;
+    border: none;
+    color: #7c3aed;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 /* Scrollbar personalizada */

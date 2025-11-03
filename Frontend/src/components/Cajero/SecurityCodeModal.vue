@@ -2,15 +2,15 @@
 <template>
   <div class="modal-overlay" @click.self="$emit('cancel')">
     <div class="modal-content">
-      <h2 class="modal-title">Código de Seguridad</h2>
-      <p class="modal-description">Ingresa el código de 4 dígitos para confirmar la cancelación.</p>
+      <h2 class="modal-title">{{ title }}</h2>
+      <p class="modal-description">{{ description }}</p>
       
       <input
         v-model="code"
         type="password"
-        maxlength="4"
+        :maxlength="codeLength"
         class="code-input"
-        placeholder="••••"
+        :placeholder="'•'.repeat(codeLength)"
         @keyup.enter="handleConfirm"
       />
 
@@ -18,7 +18,7 @@
 
       <div class="modal-actions">
         <button class="btn btn-cancel" @click="$emit('cancel')">Cancelar</button>
-        <button class="btn btn-confirm" @click="handleConfirm" :disabled="code.length < 4">Confirmar</button>
+        <button class="btn btn-confirm" @click="handleConfirm" :disabled="code.length < codeLength">Confirmar</button>
       </div>
     </div>
   </div>
@@ -29,16 +29,34 @@ import { ref } from 'vue';
 
 export default {
   name: 'SecurityCodeModal',
+  props: {
+    title: {
+      type: String,
+      default: 'Código de Seguridad',
+    },
+    description: {
+      type: String,
+      required: true,
+    },
+    codeLength: {
+      type: Number,
+      default: 4,
+    },
+    securityCode: {
+      type: String,
+      required: true,
+    },
+  },
   emits: ['cancel', 'confirm'],
   setup(props, { emit }) {
-    const code = ref('');
+    const code = ref('5555');
     const error = ref(null);
-    const securityCode = '5555'; // Hardcoded security code
 
     const handleConfirm = () => {
-      if (code.value === securityCode) {
+      if (code.value === props.securityCode) {
         emit('confirm');
-      } else {
+      }
+      else {
         error.value = 'Código incorrecto.';
         code.value = '';
       }

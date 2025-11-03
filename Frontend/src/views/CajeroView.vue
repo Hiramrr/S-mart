@@ -16,7 +16,7 @@
           />
           
           <!-- Historial de compra -->
-          <PurchaseHistory :purchases="purchaseHistory" />
+          <PurchaseHistory :purchases="purchaseHistory" @delete-purchase="deletePurchase" />
         </div>
         
         <!-- Columna derecha -->
@@ -44,6 +44,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue';
 import { useProductStore } from '@/stores/products';
+import { useAuthStore } from '@/stores/auth';
 import Header from '@/componets/PrincipalComponents/Header.vue';
 import ProductSelector from '@/components/Cajero/ProductSelector.vue';
 import ShoppingCart from '@/components/Cajero/ShoppingCart.vue';
@@ -61,6 +62,7 @@ export default {
   },
   setup() {
     const productStore = useProductStore();
+    const authStore = useAuthStore();
     const cartItems = ref([]);
     const purchaseHistory = ref([]);
 
@@ -102,7 +104,7 @@ export default {
 
     const total = computed(() => subtotal.value);
 
-    const handleCheckout = () => {
+    const handleCheckout = (paymentMethod) => {
       if (cartItems.value.length === 0) {
         alert('El carrito está vacío');
         return;
@@ -118,7 +120,9 @@ export default {
           minute: '2-digit'
         }),
         items: [...cartItems.value],
-        total: total.value
+        total: total.value,
+        paymentMethod: paymentMethod,
+        cajero: authStore.perfil?.nombre || authStore.usuario?.email
       };
       
       purchaseHistory.value.unshift(purchase);
@@ -131,6 +135,10 @@ export default {
       cartItems.value = [];
     };
 
+    const deletePurchase = (purchaseId) => {
+        purchaseHistory.value = purchaseHistory.value.filter(p => p.id !== purchaseId);
+    };
+
     return {
       products: computed(() => productStore.products),
       cartItems,
@@ -141,7 +149,8 @@ export default {
       subtotal,
       total,
       handleCheckout,
-      handleCancelPurchase
+      handleCancelPurchase,
+      deletePurchase
     };
   }
 };
