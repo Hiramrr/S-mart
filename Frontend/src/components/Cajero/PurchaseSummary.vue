@@ -65,16 +65,19 @@ export default {
     total: {
       type: Number,
       required: true
+    },
+    paymentMethod: {
+        type: String,
+        default: null
     }
   },
-  emits: ['checkout', 'cancel-purchase'],
+  emits: ['checkout', 'cancel-purchase', 'update:paymentMethod'],
   setup(props, { emit }) {
     const showModal = ref(false);
     const showSecurityModal = ref(false);
-    const paymentMethod = ref(null);
 
     const handlePaymentContinue = (method) => {
-      paymentMethod.value = method;
+      emit('update:paymentMethod', method);
       showModal.value = false;
     };
 
@@ -83,7 +86,7 @@ export default {
     }
 
     const handleSecurityConfirm = () => {
-      paymentMethod.value = null;
+      emit('update:paymentMethod', null);
       showSecurityModal.value = false;
       emit('cancel-purchase');
     }
@@ -91,7 +94,6 @@ export default {
     return { 
       showModal, 
       showSecurityModal,
-      paymentMethod, 
       handlePaymentContinue,
       handleCancelPurchase,
       handleSecurityConfirm

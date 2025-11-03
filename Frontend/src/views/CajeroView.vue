@@ -32,6 +32,7 @@
           <PurchaseSummary 
             :subtotal="subtotal"
             :total="total"
+            v-model:paymentMethod="paymentMethod"
             @checkout="handleCheckout"
             @cancel-purchase="handleCancelPurchase"
           />
@@ -65,6 +66,7 @@ export default {
     const authStore = useAuthStore();
     const cartItems = ref([]);
     const purchaseHistory = ref([]);
+    const paymentMethod = ref(null);
 
     onMounted(() => {
       productStore.fetchProducts();
@@ -104,7 +106,7 @@ export default {
 
     const total = computed(() => subtotal.value);
 
-    const handleCheckout = (paymentMethod) => {
+    const handleCheckout = (method) => {
       if (cartItems.value.length === 0) {
         alert('El carrito está vacío');
         return;
@@ -121,18 +123,20 @@ export default {
         }),
         items: [...cartItems.value],
         total: total.value,
-        paymentMethod: paymentMethod,
+        paymentMethod: method,
         cajero: authStore.perfil?.nombre || authStore.usuario?.email
       };
       
       purchaseHistory.value.unshift(purchase);
       cartItems.value = [];
+      paymentMethod.value = null;
       
       alert('Compra realizada exitosamente');
     };
 
     const handleCancelPurchase = () => {
       cartItems.value = [];
+      paymentMethod.value = null;
     };
 
     const deletePurchase = (purchaseId) => {
@@ -143,6 +147,7 @@ export default {
       products: computed(() => productStore.products),
       cartItems,
       purchaseHistory,
+      paymentMethod,
       addProduct,
       updateQuantity,
       removeItem,
