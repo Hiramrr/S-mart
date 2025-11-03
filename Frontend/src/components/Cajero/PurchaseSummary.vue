@@ -17,19 +17,42 @@
       </div>
     </div>
 
-    <button 
-      @click="$emit('checkout')"
-      :disabled="total === 0"
-      class="btn-checkout"
-    >
-      Finalizar Compra
-    </button>
+    <div v-if="!paymentMethod">
+      <button 
+        @click="showModal = true"
+        :disabled="total === 0"
+        class="btn-checkout"
+      >
+          Método de pago
+      </button>
+    </div>
+    <div v-else class="post-payment-actions">
+        <button @click="$emit('checkout')" class="btn-checkout">Finalizar compra</button>
+        <button @click="handleCancelPurchase" class="btn-cancel-purchase">Cancelar compra</button>
+    </div>
+
+    <PaymentMethodModal 
+      v-if="showModal" 
+      @cancel="showModal = false" 
+      @continue="handlePaymentContinue"
+    />
+
+    <SecurityCodeModal
+      v-if="showSecurityModal"
+      @cancel="showSecurityModal = false"
+      @confirm="handleSecurityConfirm"
+    />
   </div>
 </template>
 
 <script>
+import { ref } from 'vue';
+import PaymentMethodModal from './PaymentMethodModal.vue';
+import SecurityCodeModal from './SecurityCodeModal.vue';
+
 export default {
   name: 'PurchaseSummary',
+  components: { PaymentMethodModal, SecurityCodeModal },
   props: {
     subtotal: {
       type: Number,
@@ -40,7 +63,36 @@ export default {
       required: true
     }
   },
-  emits: ['checkout']
+  emits: ['checkout', 'cancel-purchase'],
+  setup(props, { emit }) {
+    const showModal = ref(false);
+    const showSecurityModal = ref(false);
+    const paymentMethod = ref(null);
+
+    const handlePaymentContinue = (method) => {
+      paymentMethod.value = method;
+      showModal.value = false;
+    };
+
+    const handleCancelPurchase = () => {
+      showSecurityModal.value = true;
+    }
+
+    const handleSecurityConfirm = () => {
+      paymentMethod.value = null;
+      showSecurityModal.value = false;
+      emit('cancel-purchase');
+    }
+
+    return { 
+      showModal, 
+      showSecurityModal,
+      paymentMethod, 
+      handlePaymentContinue,
+      handleCancelPurchase,
+      handleSecurityConfirm
+    };
+  }
 };
 </script>
 
@@ -121,5 +173,28 @@ export default {
 .btn-checkout:disabled {
   background-color: #9ca3af;
   cursor: not-allowed;
+}
+
+.post-payment-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.btn-cancel-purchase {
+    width: 100%;
+    background-color: #ef4444;
+    color: white;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-cancel-purchase:hover {
+    background-color: #dc2626;
 }
 </style>

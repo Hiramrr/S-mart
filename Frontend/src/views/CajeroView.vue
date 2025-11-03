@@ -33,6 +33,7 @@
             :subtotal="subtotal"
             :total="total"
             @checkout="handleCheckout"
+            @cancel-purchase="handleCancelPurchase"
           />
         </div>
       </div>
@@ -126,6 +127,10 @@ export default {
       alert('Compra realizada exitosamente');
     };
 
+    const handleCancelPurchase = () => {
+      cartItems.value = [];
+    };
+
     return {
       products: computed(() => productStore.products),
       cartItems,
@@ -135,7 +140,8 @@ export default {
       removeItem,
       subtotal,
       total,
-      handleCheckout
+      handleCheckout,
+      handleCancelPurchase
     };
   }
 };
