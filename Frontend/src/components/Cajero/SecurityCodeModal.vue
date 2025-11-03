@@ -49,7 +49,7 @@ export default {
   },
   emits: ['cancel', 'confirm'],
   setup(props, { emit }) {
-    const code = ref('5555');
+    const code = ref('');
     const error = ref(null);
 
     const handleConfirm = () => {

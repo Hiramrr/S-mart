@@ -42,7 +42,7 @@
       title="Cancelar Compra"
       description="Ingresa el código de 4 dígitos para confirmar la cancelación."
       :code-length="4"
-      security-code="1234"
+      security-code="5555"
       @cancel="showSecurityModal = false"
       @confirm="handleSecurityConfirm"
     />
