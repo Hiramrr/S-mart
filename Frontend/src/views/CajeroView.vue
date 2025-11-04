@@ -39,11 +39,18 @@
         </div>
       </div>
     </div>
+
+    <!-- Ticket for PDF Generation (hidden from view) -->
+    <div style="position: absolute; left: -9999px; top: 0;">
+      <Ticket v-if="ticketData" :purchase="ticketData" ref="ticketRef" />
+    </div>
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { useProductStore } from '@/stores/products';
 import { useAuthStore } from '@/stores/auth';
 import Header from '@/componets/PrincipalComponents/Header.vue';
@@ -51,6 +58,7 @@ import ProductSelector from '@/components/Cajero/ProductSelector.vue';
 import ShoppingCart from '@/components/Cajero/ShoppingCart.vue';
 import PurchaseSummary from '@/components/Cajero/PurchaseSummary.vue';
 import PurchaseHistory from '@/components/Cajero/PurchaseHistory.vue';
+import Ticket from '@/components/Cajero/Ticket.vue';
 
 export default {
   name: 'CajeroView',
@@ -59,7 +67,8 @@ export default {
     ProductSelector,
     ShoppingCart,
     PurchaseSummary,
-    PurchaseHistory
+    PurchaseHistory,
+    Ticket
   },
   setup() {
     const productStore = useProductStore();
@@ -67,10 +76,45 @@ export default {
     const cartItems = ref([]);
     const purchaseHistory = ref([]);
     const paymentMethod = ref(null);
+    const ticketData = ref(null);
+    const ticketRef = ref(null);
 
     onMounted(() => {
       productStore.fetchProducts();
     });
+
+    const generatePdf = async (purchase) => {
+      ticketData.value = purchase;
+      await nextTick();
+
+      const ticketElement = ticketRef.value?.$el;
+      if (!ticketElement) {
+        console.error("Ticket element not found!");
+        return;
+      }
+
+      try {
+        const canvas = await html2canvas(ticketElement);
+        const imgData = canvas.toDataURL('image/png');
+        
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'px',
+          format: [canvas.width, canvas.height]
+        });
+
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        
+        const fileName = `ticket-${purchase.id}.pdf`;
+        pdf.save(fileName);
+
+      } catch (error) {
+        console.error("Error generating PDF:", error);
+        alert("Hubo un error al generar el ticket en PDF.");
+      } finally {
+        ticketData.value = null;
+      }
+    };
 
     const addProduct = (product) => {
       const existingItem = cartItems.value.find(item => item.id === product.id);
@@ -128,10 +172,11 @@ export default {
       };
       
       purchaseHistory.value.unshift(purchase);
+      
+      generatePdf(purchase);
+
       cartItems.value = [];
       paymentMethod.value = null;
-      
-      alert('Compra realizada exitosamente');
     };
 
     const handleCancelPurchase = () => {
@@ -148,6 +193,8 @@ export default {
       cartItems,
       purchaseHistory,
       paymentMethod,
+      ticketData,
+      ticketRef,
       addProduct,
       updateQuantity,
       removeItem,
