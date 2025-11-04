@@ -25,7 +25,7 @@ function removeItem(productId) {
 }
 
 function handleCheckout() {
-  router.push('/agregar-domicilio')
+  router.push('/seleccionar-direccion')
 }
 </script>
 

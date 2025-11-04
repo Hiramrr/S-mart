@@ -2,8 +2,11 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
+import { supabase } from '@/lib/supabase.js'
+import { useAuthStore } from '@/stores/auth.js'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const domicilio = ref({
   direccion: '',
   codigoPostal: '',
@@ -12,13 +15,34 @@ const domicilio = ref({
   localidad: '',
   colonia: '',
   numeroExterior: '',
-  tipo: ''
+  tipo: '',
+  indicaciones: ''
 })
 
-function registrarDomicilio() {
-  // Aquí podrías guardar el domicilio en el backend
+async function registrarDomicilio() {
+  const id_usuario = authStore.usuario?.id
+  if (!id_usuario) {
+    alert('No se encontró usuario autenticado')
+    return
+  }
+  const { error } = await supabase.from('direcciones').insert({
+    id_usuario,
+    direccion: domicilio.value.direccion,
+    codigo_postal: domicilio.value.codigoPostal,
+    estado: domicilio.value.estado,
+    municipio: domicilio.value.municipio,
+    localidad: domicilio.value.localidad,
+    colonia: domicilio.value.colonia,
+    numero_exterior: domicilio.value.numeroExterior,
+    tipo_domicilio: domicilio.value.tipo,
+    indicaciones_entrega: domicilio.value.indicaciones
+  })
+  if (error) {
+    alert('Error al registrar domicilio: ' + error.message)
+    return
+  }
   alert('Domicilio registrado correctamente')
-  router.push('/carrito') // Redirige de vuelta al carrito o a donde corresponda
+  router.push('/carrito')
 }
 </script>
 
@@ -69,6 +93,10 @@ function registrarDomicilio() {
               <option value="Otro">Otro</option>
             </select>
           </div>
+        </div>
+        <div class="domicilio-field" style="margin-top:2rem;">
+          <label>Indicaciones de entrega</label>
+          <textarea v-model="domicilio.indicaciones" placeholder="Ej: Tocar el timbre, dejar en portería, etc." rows="3" class="domicilio-textarea"></textarea>
         </div>
         <div class="domicilio-actions">
           <button type="button" class="btn-cancelar" @click="router.push('/carrito')">Cancelar</button>

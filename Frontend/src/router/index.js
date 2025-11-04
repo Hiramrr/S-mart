@@ -10,6 +10,7 @@ import EditarProductoView from '../views/EditarProductoView.vue'
 import ProductoDetalleView from '../views/ProductoDetalleView.vue'
 import CarritoView from '../views/CarritoView.vue'
 import AgregarDomicilioView from '../views/AgregarDomicilioView.vue'
+import SeleccionarDireccionView from '../views/SeleccionarDireccionView.vue'
 import PerfilView from '../views/PerfilView.vue'
 
 const router = createRouter({
@@ -37,6 +38,13 @@ const router = createRouter({
       component: CarritoView,
       meta: { title: 'Carrito - S-mart' },
     },
+
+      {
+        path: '/seleccionar-direccion',
+        name: 'seleccionar-direccion',
+        component: SeleccionarDireccionView,
+        meta: { title: 'Seleccionar Dirección - S-mart' },
+      },
 
       {
         path: '/agregar-domicilio',
