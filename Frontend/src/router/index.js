@@ -101,6 +101,16 @@ const router = createRouter({
       },
     },
     {
+      path: '/admin/usuarios',
+      name: 'admin-usuarios',
+      component: () => import('../views/AdminUsuariosView.vue'),
+      meta: {
+        title: 'Usuarios - Admin',
+        requiresAuth: true,
+        requiresRoles: ['administrador'],
+      },
+    },
+    {
       path: '/EditarProducto/:id',
       name: 'EditarProducto',
       component: EditarProductoView,

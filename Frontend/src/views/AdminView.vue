@@ -26,7 +26,7 @@ const router = useRouter()
           <div class="action-card">
             <h3>Gestión de Usuarios</h3>
             <p>Administrar usuarios del sistema</p>
-            <button>Ver usuarios</button>
+            <button @click="router.push('/admin/usuarios')">Ver usuarios</button>
           </div>
           <div class="action-card">
             <h3>Gestión de Productos</h3>
