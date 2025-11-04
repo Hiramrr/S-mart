@@ -19,11 +19,11 @@
 
     <div v-if="!paymentMethod">
       <button 
-        @click="showModal = true"
+        @click="skipPaymentModal ? $emit('checkout') : showModal = true"
         :disabled="total === 0"
         class="btn-checkout"
       >
-          Método de pago
+          {{ buttonLabel || 'Método de pago' }}
       </button>
     </div>
     <div v-else class="post-payment-actions">
@@ -66,10 +66,18 @@ export default {
       type: Number,
       required: true
     },
-    paymentMethod: {
-        type: String,
-        default: null
-    }
+  paymentMethod: {
+    type: String,
+    default: null
+  },
+  buttonLabel: {
+    type: String,
+    default: ''
+  },
+  skipPaymentModal: {
+    type: Boolean,
+    default: false
+  }
   },
   emits: ['checkout', 'cancel-purchase', 'update:paymentMethod'],
   setup(props, { emit }) {

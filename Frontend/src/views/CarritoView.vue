@@ -25,8 +25,7 @@ function removeItem(productId) {
 }
 
 function handleCheckout() {
-  alert('Simulando pago...')
-  // Aquí puedes redirigir a una página de pago real
+  router.push('/agregar-domicilio')
 }
 </script>
 
@@ -57,6 +56,8 @@ function handleCheckout() {
           <PurchaseSummary 
             :subtotal="subtotal"
             :total="total"
+            button-label="Continuar compra"
+            skip-payment-modal
             @checkout="handleCheckout"
           />
         </div>
