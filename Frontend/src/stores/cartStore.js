@@ -23,10 +23,12 @@ export const useCartStore = defineStore('cart', () => {
   function addProduct(product, quantity = 1) {
     const existingItem = items.value.find(item => item.id === product.id)
 
-    if (existingItem) {
-      // Si ya existe, solo incrementa la cantidad
-      existingItem.cantidad += quantity
-    } else {
+      const stock = product.stock ?? Infinity; // Si no hay stock, permite infinito
+      if (existingItem) {
+        // Si ya existe, solo incrementa la cantidad, pero no excede el stock
+        const nuevaCantidad = existingItem.cantidad + quantity;
+        existingItem.cantidad = nuevaCantidad > stock ? stock : nuevaCantidad;
+      } else {
       // Si es nuevo, añádelo al array
       // Es crucial tomar el precio numérico correcto
       const precioFinal = product.precio_descuento && product.precio_descuento > 0 
@@ -35,16 +37,11 @@ export const useCartStore = defineStore('cart', () => {
 
       items.value.push({
         id: product.id,
-        
-        // --- INICIO DE LA MODIFICACIÓN ---
-        // Aquí leemos 'product.nombre' (de Supabase) 
-        // y lo guardamos como 'name' (que es lo que ShoppingCart.vue espera)
-        name: product.nombre, 
-        // --- FIN DE LA MODIFICACIÓN ---
-
-        precio: precioFinal, // Asegúrate de guardar el precio numérico
+        name: product.nombre,
+        precio: precioFinal,
         imagen_url: product.imagen_url,
-        cantidad: quantity,
+        cantidad: quantity > stock ? stock : quantity,
+        stock: stock,
       })
     }
     saveCartToStorage()
@@ -53,15 +50,17 @@ export const useCartStore = defineStore('cart', () => {
   // 5. ACCIÓN: Actualizar la cantidad de un item (como en CajeroView)
   function updateQuantity(productId, newQuantity) {
     const item = items.value.find(item => item.id === productId)
-    if (item) {
-      if (newQuantity > 0) {
-        item.cantidad = newQuantity
-      } else {
-        // Si la cantidad es 0, elimínalo
-        removeItem(productId)
+      if (item) {
+        // Validar stock máximo
+        const stock = item.stock ?? Infinity;
+        if (newQuantity > 0) {
+          item.cantidad = Math.min(newQuantity, stock);
+        } else {
+          // Si la cantidad es 0, elimínalo
+          removeItem(productId)
+        }
       }
-    }
-    saveCartToStorage()
+      saveCartToStorage()
   }
 
   // 6. ACCIÓN: Eliminar un item del carrito
