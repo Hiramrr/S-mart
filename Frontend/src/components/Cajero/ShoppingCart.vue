@@ -47,9 +47,14 @@
               </svg>
             </button>
           </div>
-          <span class="item-total">
-            ${{ (item.precio * item.cantidad).toLocaleString() }}
-          </span>
+          <div class="price-container">
+            <span v-if="item.precio < item.precioOriginal" class="original-price">
+              ${{ (item.precioOriginal * item.cantidad).toLocaleString() }}
+            </span>
+            <span class="item-total">
+              ${{ (item.precio * item.cantidad).toLocaleString() }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -192,5 +197,23 @@ export default {
   font-weight: 600;
   color: #1f2937;
   font-size: 1.05rem;
+}
+
+.price-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.original-price {
+  text-decoration: line-through;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.item-total {
+  font-weight: 700;
+  color: #7c3aed;
+  font-size: 1.1rem;
 }
 </style>

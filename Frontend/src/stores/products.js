@@ -48,8 +48,8 @@ export const useProductStore = defineStore('products', () => {
             : null,
           description: p.descripcion,
           imageUrl: p.imagen_url,
-          // I will also add the original price to be used in the CajeroView
-          precio: p.precio_venta,
+          precio: tieneDescuento ? p.precio_descuento : p.precio_venta,
+          precioOriginal: p.precio_venta,
         };
       });
     } catch (err) {
