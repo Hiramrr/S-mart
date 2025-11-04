@@ -136,6 +136,9 @@ const goToAdmin = () => {
   showUserMenu.value = false
   showMobileMenu.value = false
 }
+const goToCajero = () => {
+  router.push('/cajero')
+}
 const handleLogout = async () => {
   await authStore.cerrarSesion()
   notificationStore.clearAlerts()
@@ -292,6 +295,10 @@ const getUserAvatar = computed(() => {
             <button v-if="isAdmin" class="dropdown-item" @click="goToAdmin">
               Panel de administración
             </button>
+            <button v-if="authStore.esCajero || authStore.esAdmin" class="dropdown-item" @click="goToCajero">
+             Panel Cajero
+            </button>
+
             <div class="dropdown-divider"></div>
             <button class="dropdown-item" @click="handleLogout">Cerrar sesión</button>
           </div>
