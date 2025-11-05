@@ -144,10 +144,16 @@ export default {
     };
 
     const addProduct = (product) => {
-      if (!verificarSuspension()) return
-      
-      const existingItem = cartItems.value.find(item => item.id === product.id);
-      
+      if (!verificarSuspension()) return;
+
+      const existingItem = cartItems.value.find((item) => item.id === product.id);
+      const cartQuantity = existingItem ? existingItem.cantidad : 0;
+
+      if (product.stock <= cartQuantity) {
+        alert('No hay más stock disponible para este producto.');
+        return;
+      }
+
       if (existingItem) {
         existingItem.cantidad++;
       } else {
@@ -156,22 +162,50 @@ export default {
           cantidad: 1
         });
       }
+      productStore.decreaseStock(product.id, 1);
     };
 
     const updateQuantity = (productId, newQuantity) => {
-      if (!verificarSuspension()) return
-      
-      const item = cartItems.value.find(item => item.id === productId);
-      if (item && newQuantity > 0) {
+      if (!verificarSuspension()) return;
+
+      const item = cartItems.value.find((item) => item.id === productId);
+      if (!item) return;
+
+      const product = productStore.products.find((p) => p.id === productId);
+      if (!product) return;
+
+      const quantityDiff = newQuantity - item.cantidad;
+
+      if (quantityDiff > 0) {
+        // increasing quantity
+        if (product.stock < quantityDiff) {
+          alert('No hay suficiente stock.');
+          item.cantidad = product.stock + item.cantidad; // set to max available
+          productStore.decreaseStock(productId, product.stock);
+          return;
+        }
+        productStore.decreaseStock(productId, quantityDiff);
+      } else {
+        // decreasing quantity
+        productStore.increaseStock(productId, -quantityDiff);
+      }
+
+      if (newQuantity > 0) {
         item.cantidad = newQuantity;
-      } else if (newQuantity === 0) {
+      } else {
         removeItem(productId);
       }
     };
 
     const removeItem = (productId) => {
-      if (!verificarSuspension()) return
-      cartItems.value = cartItems.value.filter(item => item.id !== productId);
+      if (!verificarSuspension()) return;
+
+      const item = cartItems.value.find((item) => item.id === productId);
+      if (item) {
+        productStore.increaseStock(productId, item.cantidad);
+      }
+
+      cartItems.value = cartItems.value.filter((item) => item.id !== productId);
     };
 
     const subtotal = computed(() => {
@@ -183,13 +217,15 @@ export default {
     const total = computed(() => subtotal.value);
 
     const handleCheckout = (method) => {
-      if (!verificarSuspension()) return
-      
+      if (!verificarSuspension()) return;
+
       if (cartItems.value.length === 0) {
         alert('El carrito está vacío');
         return;
       }
-      
+
+      productStore.updateStockInDB(cartItems.value);
+
       const purchase = {
         id: Date.now(),
         fecha: new Date().toLocaleString('es-MX', {
@@ -204,9 +240,9 @@ export default {
         paymentMethod: method,
         cajero: authStore.perfil?.nombre || authStore.usuario?.email
       };
-      
+
       purchaseHistory.value.unshift(purchase);
-      
+
       generatePdf(purchase);
 
       cartItems.value = [];
@@ -214,7 +250,12 @@ export default {
     };
 
     const handleCancelPurchase = () => {
-      if (!verificarSuspension()) return
+      if (!verificarSuspension()) return;
+
+      cartItems.value.forEach(item => {
+        productStore.increaseStock(item.id, item.cantidad);
+      });
+
       cartItems.value = [];
       paymentMethod.value = null;
     };

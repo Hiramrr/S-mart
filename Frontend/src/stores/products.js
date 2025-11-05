@@ -50,6 +50,7 @@ export const useProductStore = defineStore('products', () => {
           imageUrl: p.imagen_url,
           precio: tieneDescuento ? p.precio_descuento : p.precio_venta,
           precioOriginal: p.precio_venta,
+          stock: p.stock,
         };
       });
     } catch (err) {
@@ -60,10 +61,71 @@ export const useProductStore = defineStore('products', () => {
     }
   }
 
+  function decreaseStock(productId, quantity) {
+    const product = products.value.find(p => p.id === productId);
+    if (product) {
+      product.stock -= quantity;
+    }
+  }
+
+  function increaseStock(productId, quantity) {
+    const product = products.value.find(p => p.id === productId);
+    if (product) {
+      product.stock += quantity;
+    }
+  }
+
+  async function updateStockInDB(cartItems) {
+    console.log("Iniciando actualización de stock en la base de datos...");
+    console.log("Artículos del carrito:", cartItems);
+
+    try {
+      const updates = cartItems.map(item => {
+        const product = products.value.find(p => p.id === item.id);
+        if (product) {
+          console.log(`Preparando actualización para producto ID ${item.id}. Nuevo stock: ${product.stock}`);
+          return supabase
+            .from('productos')
+            .update({ stock: product.stock })
+            .eq('id', item.id)
+            .select();
+        }
+        console.log(`Producto ID ${item.id} no encontrado en el store local.`);
+        return Promise.resolve();
+      });
+
+      if (updates.length === 0) {
+        console.log("No hay actualizaciones de stock para realizar.");
+        return;
+      }
+
+      console.log("Enviando actualizaciones a Supabase...");
+      const results = await Promise.all(updates);
+      console.log("Resultados de Supabase:", results);
+
+      results.forEach((res, index) => {
+        if (res.error) {
+          console.error(`Error al actualizar el producto ID ${cartItems[index].id}:`, res.error);
+          throw res.error;
+        }
+        console.log(`Stock para el producto ID ${cartItems[index].id} actualizado correctamente.`);
+      });
+
+      console.log("La actualización del stock en la base de datos ha finalizado.");
+
+    } catch (err) {
+      console.error('Error general al actualizar el stock en la base de datos:', err);
+      alert('Hubo un error al actualizar el stock en la base de datos. Por favor, revisa la consola para más detalles.');
+    }
+  }
+
   return {
     products,
     loading,
     error,
     fetchProducts,
+    decreaseStock,
+    increaseStock,
+    updateStockInDB,
   };
 });

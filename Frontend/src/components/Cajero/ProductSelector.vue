@@ -19,6 +19,7 @@
             <th>ID</th>
             <th>Nombre</th>
             <th>Precio</th>
+            <th>Stock</th>
             <th>Acción</th>
           </tr>
         </thead>
@@ -27,6 +28,7 @@
             <td>{{ product.id }}</td>
             <td>{{ product.name }}</td>
             <td>${{ product.precio.toLocaleString() }}</td>
+            <td>{{ product.stock }}</td>
             <td>
               <button 
                 @click="$emit('add-product', product)"
@@ -37,7 +39,7 @@
             </td>
           </tr>
           <tr v-if="filteredProducts.length === 0">
-            <td colspan="4" class="no-results">
+            <td colspan="5" class="no-results">
               No se encontraron productos
             </td>
           </tr>
