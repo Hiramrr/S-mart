@@ -9,6 +9,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const direcciones = ref([])
 const loading = ref(true)
+const direccionSeleccionada = ref(null)
 
 async function cargarDirecciones() {
   loading.value = true
@@ -38,8 +39,18 @@ function irEditarDomicilio(id) {
   router.push(`/editar-domicilio/${id}`)
 }
 
+
 function irAgregarDomicilio() {
   router.push('/agregar-domicilio')
+}
+
+function seleccionarDireccion(id) {
+  direccionSeleccionada.value = id
+}
+
+function continuarConPago() {
+  // Aquí puedes poner la lógica para continuar con el pago, por ejemplo navegar a la vista de pago
+  router.push('/pago-tarjeta')
 }
 </script>
 
@@ -48,7 +59,10 @@ function irAgregarDomicilio() {
   <div class="direcciones-page">
     <div class="direcciones-header">
       <h1 class="direcciones-title">Selecciona una dirección de entrega</h1>
-      <button class="btn-nueva-direccion" @click="irAgregarDomicilio">Registrar dirección nueva &rarr;</button>
+      <div style="display: flex; gap: 1rem; align-items: center;">
+        <button v-if="direccionSeleccionada" class="btn-continuar-pago" @click="continuarConPago">Continuar con pago</button>
+        <button class="btn-nueva-direccion" @click="irAgregarDomicilio">Registrar dirección nueva &rarr;</button>
+      </div>
     </div>
     <div v-if="loading" class="direcciones-loading">Cargando direcciones...</div>
     <div v-else>
@@ -56,7 +70,7 @@ function irAgregarDomicilio() {
         No tienes direcciones registradas.
       </div>
         <div class="direcciones-grid">
-          <div v-for="dir in direcciones" :key="dir.id" class="direccion-tarjeta">
+          <div v-for="dir in direcciones" :key="dir.id" class="direccion-tarjeta" :class="{ seleccionada: direccionSeleccionada === dir.id }" @click="seleccionarDireccion(dir.id)" style="cursor:pointer; border-width: 2px; border-style: solid;" :style="direccionSeleccionada === dir.id ? 'border-color: #2563eb;' : 'border-color: #f3f4f6;'">
             <div class="direccion-titulo">{{ dir.direccion }}</div>
             <div class="direccion-descripcion">
               <span><strong>N° Exterior:</strong> {{ dir.numero_exterior }}</span>
@@ -66,11 +80,11 @@ function irAgregarDomicilio() {
               <span><strong>Código Postal:</strong> {{ dir.codigo_postal }}</span>
             </div>
             <div class="direccion-actions">
-              <button class="btn-editar" title="Editar dirección" @click="irEditarDomicilio(dir.id)">
+              <button class="btn-editar" title="Editar dirección" @click.stop="irEditarDomicilio(dir.id)">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#2563eb" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487a2.06 2.06 0 1 1 2.915 2.915l-10.1 10.1a2.06 2.06 0 0 1-.82.51l-3.07.92a.5.5 0 0 1-.62-.62l.92-3.07a2.06 2.06 0 0 1 .51-.82l10.1-10.1z"/></svg>
                 Editar
               </button>
-              <button class="btn-eliminar" title="Eliminar dirección" @click="eliminarDireccion(dir.id)">
+              <button class="btn-eliminar" title="Eliminar dirección" @click.stop="eliminarDireccion(dir.id)">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#ef4444" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5a3 3 0 0 1 6 0v2m-9 0v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7"/></svg>
                 Eliminar
               </button>
@@ -82,6 +96,25 @@ function irAgregarDomicilio() {
 </template>
 
 <style scoped>
+/* ...existing styles... */
+.btn-continuar-pago {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 1rem;
+  padding: 0.7rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-continuar-pago:hover {
+  background: #1d4ed8;
+}
+.direccion-tarjeta.seleccionada {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 2px #2563eb33;
+}
 .direccion-actions {
   display: flex;
   gap: 0.7rem;
