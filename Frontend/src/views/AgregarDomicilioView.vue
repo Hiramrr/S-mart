@@ -42,7 +42,7 @@ async function registrarDomicilio() {
     return
   }
   alert('Domicilio registrado correctamente')
-  router.push('/carrito')
+  router.push('/seleccionar-direccion')
 }
 </script>
 

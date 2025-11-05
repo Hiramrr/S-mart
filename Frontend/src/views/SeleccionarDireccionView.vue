@@ -107,6 +107,8 @@ function continuarConPago() {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
+  margin-top: 0;
+  align-self: flex-start;
 }
 .btn-continuar-pago:hover {
   background: #1d4ed8;
