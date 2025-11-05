@@ -34,6 +34,10 @@ async function eliminarDireccion(id) {
 
 onMounted(cargarDirecciones)
 
+function irEditarDomicilio(id) {
+  router.push(`/editar-domicilio/${id}`)
+}
+
 function irAgregarDomicilio() {
   router.push('/agregar-domicilio')
 }
@@ -62,7 +66,7 @@ function irAgregarDomicilio() {
               <span><strong>Código Postal:</strong> {{ dir.codigo_postal }}</span>
             </div>
             <div class="direccion-actions">
-              <button class="btn-editar" title="Editar dirección">
+              <button class="btn-editar" title="Editar dirección" @click="irEditarDomicilio(dir.id)">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#2563eb" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487a2.06 2.06 0 1 1 2.915 2.915l-10.1 10.1a2.06 2.06 0 0 1-.82.51l-3.07.92a.5.5 0 0 1-.62-.62l.92-3.07a2.06 2.06 0 0 1 .51-.82l10.1-10.1z"/></svg>
                 Editar
               </button>

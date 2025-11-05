@@ -53,6 +53,16 @@ const router = createRouter({
         meta: { title: 'Registrar Domicilio - S-mart' },
       },
 
+      {
+        path: '/editar-domicilio/:id',
+        name: 'editar-domicilio',
+        component: () => import('../views/EditarDomicilioView.vue'),
+        meta: {
+          title: 'Editar Domicilio - S-mart',
+          requiresAuth: true,
+        },
+      },
+
     {
       path: '/tienda',
       name: 'tienda',
