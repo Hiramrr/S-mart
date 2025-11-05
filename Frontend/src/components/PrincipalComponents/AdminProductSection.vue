@@ -137,6 +137,7 @@ function handleCouponCreated(coupon) {
           :description="product.description"
           :image-url="product.imageUrl"
           :is-seller="true"
+          :hide-actions="true"
           @create-coupon="handleCreateCoupon"
         />
       </div>
