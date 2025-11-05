@@ -41,38 +41,37 @@ const router = createRouter({
     },
 
     {
-        path: '/pago-tarjeta',
-        name: 'pago-tarjeta',
-        component: PagoTarjetaView,
-        meta: { 
-          title: 'Pago con Tarjeta - S-mart',
-          requiresAuth: true,
-        },
+      path: '/pago-tarjeta',
+      name: 'pago-tarjeta',
+      component: PagoTarjetaView,
+      meta: {
+        title: 'Pago con Tarjeta - S-mart',
+        requiresAuth: true,
       },
+    },
 
-      {
-        path: '/seleccionar-direccion',
-        name: 'seleccionar-direccion',
-        component: SeleccionarDireccionView,
-        meta: { title: 'Seleccionar Dirección - S-mart' },
-      },
+    {
+      path: '/seleccionar-direccion',
+      name: 'seleccionar-direccion',
+      component: SeleccionarDireccionView,
+      meta: { title: 'Seleccionar Dirección - S-mart' },
+    },
+    {
+      path: '/agregar-domicilio',
+      name: 'agregar-domicilio',
+      component: AgregarDomicilioView,
+      meta: { title: 'Registrar Domicilio - S-mart' },
+    },
 
-      {
-        path: '/agregar-domicilio',
-        name: 'agregar-domicilio',
-        component: AgregarDomicilioView,
-        meta: { title: 'Registrar Domicilio - S-mart' },
+    {
+      path: '/editar-domicilio/:id',
+      name: 'editar-domicilio',
+      component: () => import('../views/EditarDomicilioView.vue'),
+      meta: {
+        title: 'Editar Domicilio - S-mart',
+        requiresAuth: true,
       },
-
-      {
-        path: '/editar-domicilio/:id',
-        name: 'editar-domicilio',
-        component: () => import('../views/EditarDomicilioView.vue'),
-        meta: {
-          title: 'Editar Domicilio - S-mart',
-          requiresAuth: true,
-        },
-      },
+    },
 
     {
       path: '/tienda',
@@ -83,9 +82,9 @@ const router = createRouter({
     {
       path: '/producto/:id', // URL dinámica que captura el ID
       name: 'producto-detalle', // Nombre único para la ruta
-      component: ProductoDetalleView, 
-      props: true, 
-      meta: { title: 'Producto - S-mart' }, 
+      component: ProductoDetalleView,
+      props: true,
+      meta: { title: 'Producto - S-mart' },
     },
     {
       path: '/AgregarProducto',
@@ -176,7 +175,7 @@ const router = createRouter({
         title: 'Mi Perfil - S-mart',
         requiresAuth: true,
         // Permitimos que todos los roles vean su perfil
-        requiresRoles: ['cliente', 'vendedor', 'administrador', 'cajero'], 
+        requiresRoles: ['cliente', 'vendedor', 'administrador', 'cajero'],
       },
     },
 
@@ -189,7 +188,11 @@ const router = createRouter({
         requiresAuth: true,
         requiresRoles: ['cajero', 'administrador'],
       },
-
+    },
+    {
+      path: '/reset-password',
+      name: 'reset-password',
+      component: () => import('@/views/ResetPasswordView.vue'),
     },
     /* {
       path: '/perfil',
