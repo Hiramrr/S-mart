@@ -194,8 +194,30 @@ async function registrarDomicilio() {
 }
 .domicilio-field input:focus,
 .domicilio-field select:focus {
-  border-color: #111827;
+  border-color: #2563eb;
   outline: none;
+}
+.domicilio-field input:hover,
+.domicilio-field select:hover,
+.domicilio-textarea:hover {
+  border-color: #2563eb;
+}
+.domicilio-textarea {
+  min-height: 60px;
+  resize: vertical;
+  background: #f9fafb;
+  border: 1px solid #d1d5db;
+  border-radius: 0.7rem;
+  font-size: 1rem;
+  padding: 0.8rem 1rem;
+  transition: border 0.2s;
+}
+.domicilio-textarea:focus {
+  border-color: #2563eb;
+  outline: none;
+}
+.domicilio-textarea:hover {
+  border-color: #2563eb;
 }
 .domicilio-actions {
   display: flex;

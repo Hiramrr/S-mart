@@ -22,6 +22,16 @@ async function cargarDirecciones() {
   loading.value = false
 }
 
+async function eliminarDireccion(id) {
+  if (!confirm('¿Seguro que deseas eliminar esta dirección?')) return;
+  const { error } = await supabase.from('direcciones').delete().eq('id', id)
+  if (error) {
+    alert('Error al eliminar la dirección: ' + error.message)
+    return
+  }
+  direcciones.value = direcciones.value.filter(d => d.id !== id)
+}
+
 onMounted(cargarDirecciones)
 
 function irAgregarDomicilio() {
@@ -41,23 +51,63 @@ function irAgregarDomicilio() {
       <div v-if="direcciones.length === 0" class="direcciones-empty">
         No tienes direcciones registradas.
       </div>
-      <div class="direcciones-grid">
-        <div v-for="dir in direcciones" :key="dir.id" class="direccion-tarjeta">
-          <div class="direccion-titulo">{{ dir.direccion }}</div>
-          <div class="direccion-descripcion">
-            <span><strong>N° Exterior:</strong> {{ dir.numero_exterior }}</span>
-            <span><strong>Municipio:</strong> {{ dir.municipio }}</span>
-            <span><strong>Localidad:</strong> {{ dir.localidad }}</span>
-            <span><strong>Estado:</strong> {{ dir.estado }}</span>
-            <span><strong>Código Postal:</strong> {{ dir.codigo_postal }}</span>
+        <div class="direcciones-grid">
+          <div v-for="dir in direcciones" :key="dir.id" class="direccion-tarjeta">
+            <div class="direccion-titulo">{{ dir.direccion }}</div>
+            <div class="direccion-descripcion">
+              <span><strong>N° Exterior:</strong> {{ dir.numero_exterior }}</span>
+              <span><strong>Municipio:</strong> {{ dir.municipio }}</span>
+              <span><strong>Localidad:</strong> {{ dir.localidad }}</span>
+              <span><strong>Estado:</strong> {{ dir.estado }}</span>
+              <span><strong>Código Postal:</strong> {{ dir.codigo_postal }}</span>
+            </div>
+            <div class="direccion-actions">
+              <button class="btn-editar" title="Editar dirección">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#2563eb" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487a2.06 2.06 0 1 1 2.915 2.915l-10.1 10.1a2.06 2.06 0 0 1-.82.51l-3.07.92a.5.5 0 0 1-.62-.62l.92-3.07a2.06 2.06 0 0 1 .51-.82l10.1-10.1z"/></svg>
+                Editar
+              </button>
+              <button class="btn-eliminar" title="Eliminar dirección" @click="eliminarDireccion(dir.id)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#ef4444" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5a3 3 0 0 1 6 0v2m-9 0v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7"/></svg>
+                Eliminar
+              </button>
+            </div>
           </div>
         </div>
-      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.direccion-actions {
+  display: flex;
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+.btn-editar, .btn-eliminar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #f3f4f6;
+  color: #2563eb;
+  border: none;
+  border-radius: 0.7rem;
+  padding: 0.45rem 1.1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-editar:hover {
+  background: #e0e7ff;
+  color: #1d4ed8;
+}
+.btn-eliminar {
+  color: #ef4444;
+}
+.btn-eliminar:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
 .direcciones-page {
   min-height: 100vh;
   background: #f9fafb;
