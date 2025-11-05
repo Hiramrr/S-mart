@@ -1,6 +1,17 @@
 <!-- CajeroView.vue -->
 <template>
   <div class="cajero-view">
+    <div v-if="authStore.estaSuspendido" class="suspension-overlay">
+      <div class="suspension-message">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+        </svg>
+        <h2>Cuenta Suspendida</h2>
+        <p>Tu cuenta ha sido suspendida por un administrador.</p>
+        <p>No puedes realizar ninguna acción en el sistema.</p>
+      </div>
+    </div>
     <Header />
     
     <div class="container">
@@ -49,6 +60,7 @@
 
 <script>
 import { ref, computed, onMounted, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useProductStore } from '@/stores/products';
@@ -73,13 +85,28 @@ export default {
   setup() {
     const productStore = useProductStore();
     const authStore = useAuthStore();
+    const router = useRouter();
     const cartItems = ref([]);
     const purchaseHistory = ref([]);
     const paymentMethod = ref(null);
     const ticketData = ref(null);
     const ticketRef = ref(null);
 
-    onMounted(() => {
+    const verificarSuspension = () => {
+      if (authStore.estaSuspendido) {
+        alert('Tu cuenta ha sido suspendida. No puedes realizar esta acción.')
+        return false
+      }
+      return true
+    }
+
+    onMounted(async () => {
+      if (authStore.estaSuspendido) {
+        alert('Tu cuenta ha sido suspendida. No puedes acceder al sistema.')
+        await authStore.cerrarSesion()
+        router.push('/login')
+        return
+      }
       productStore.fetchProducts();
     });
 
@@ -117,6 +144,8 @@ export default {
     };
 
     const addProduct = (product) => {
+      if (!verificarSuspension()) return
+      
       const existingItem = cartItems.value.find(item => item.id === product.id);
       
       if (existingItem) {
@@ -130,6 +159,8 @@ export default {
     };
 
     const updateQuantity = (productId, newQuantity) => {
+      if (!verificarSuspension()) return
+      
       const item = cartItems.value.find(item => item.id === productId);
       if (item && newQuantity > 0) {
         item.cantidad = newQuantity;
@@ -139,6 +170,7 @@ export default {
     };
 
     const removeItem = (productId) => {
+      if (!verificarSuspension()) return
       cartItems.value = cartItems.value.filter(item => item.id !== productId);
     };
 
@@ -151,6 +183,8 @@ export default {
     const total = computed(() => subtotal.value);
 
     const handleCheckout = (method) => {
+      if (!verificarSuspension()) return
+      
       if (cartItems.value.length === 0) {
         alert('El carrito está vacío');
         return;
@@ -180,12 +214,14 @@ export default {
     };
 
     const handleCancelPurchase = () => {
+      if (!verificarSuspension()) return
       cartItems.value = [];
       paymentMethod.value = null;
     };
 
     const deletePurchase = (purchaseId) => {
-        purchaseHistory.value = purchaseHistory.value.filter(p => p.id !== purchaseId);
+      if (!verificarSuspension()) return
+      purchaseHistory.value = purchaseHistory.value.filter(p => p.id !== purchaseId);
     };
 
     return {
@@ -195,6 +231,7 @@ export default {
       paymentMethod,
       ticketData,
       ticketRef,
+      authStore,
       addProduct,
       updateQuantity,
       removeItem,
@@ -212,6 +249,46 @@ export default {
 .cajero-view {
   min-height: 100vh;
   background-color: #f9fafb;
+  position: relative;
+}
+
+.suspension-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.suspension-message {
+  background: #fff;
+  padding: 3rem;
+  border-radius: 16px;
+  text-align: center;
+  max-width: 500px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+.suspension-message svg {
+  color: #dc2626;
+  margin-bottom: 1.5rem;
+}
+
+.suspension-message h2 {
+  font-size: 1.75rem;
+  color: #111827;
+  margin: 0 0 1rem 0;
+}
+
+.suspension-message p {
+  color: #6b7280;
+  margin: 0.5rem 0;
+  font-size: 1rem;
 }
 
 .container {

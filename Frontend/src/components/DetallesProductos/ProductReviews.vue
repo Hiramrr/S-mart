@@ -20,7 +20,7 @@ const newEstrellas = ref(5)
 const submitting = ref(false)
 
 const canPostReview = computed(() => {
-  return authStore.usuario && (authStore.esCliente || authStore.esVendedor);
+  return authStore.usuario && (authStore.esCliente || authStore.esVendedor) && !authStore.estaSuspendido;
 });
 
 async function fetchReviews() {
@@ -52,6 +52,10 @@ async function fetchReviews() {
 }
 
 async function handleSubmitReview() {
+  if (authStore.estaSuspendido) {
+    alert('Tu cuenta ha sido suspendida. No puedes publicar reseñas.')
+    return
+  }
   if (!canPostReview.value) {
     alert('Necesitas iniciar sesión con una cuenta de cliente o vendedor para dejar una reseña.')
     return
@@ -127,7 +131,7 @@ onMounted(fetchReviews)
   <div class="reviews-section">
     <h3 class="section-title">Opiniones del producto</h3>
 
-    <div v-if="canPostReview" class="review-form">
+    <div v-if="canPostReview && !authStore.estaSuspendido" class="review-form">
       <h4>Deja tu opinión</h4>
        <div v-if="error && submitting" class="error-message-inline">{{ error }}</div>
       <form @submit.prevent="handleSubmitReview">
@@ -155,6 +159,13 @@ onMounted(fetchReviews)
           {{ submitting ? 'Enviando...' : 'Publicar reseña' }}
         </button>
       </form>
+    </div>
+    <div v-else-if="authStore.estaSuspendido" class="suspension-prompt">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+      </svg>
+      <p>Tu cuenta está suspendida. No puedes publicar reseñas.</p>
     </div>
     <div v-else-if="!authStore.usuario" class="login-prompt">
          <p>Debes <router-link to="/login">iniciar sesión</router-link> como cliente o vendedor para dejar una reseña.</p>
@@ -295,6 +306,28 @@ onMounted(fetchReviews)
 }
 .login-prompt a:hover {
   text-decoration: underline;
+}
+.suspension-prompt {
+  text-align: center;
+  padding: 1.5rem;
+  background: #fee2e2;
+  border: 2px solid #fca5a5;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  color: #991b1b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+.suspension-prompt svg {
+  flex-shrink: 0;
+  color: #dc2626;
+}
+.suspension-prompt p {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
 }
 .error-message-inline {
     color: #dc2626;

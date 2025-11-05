@@ -2,6 +2,7 @@
 import { ref, onMounted, computed, watch} from 'vue'
 import { supabase } from '@/lib/supabase.js'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 import ImageGallery from '@/components/DetallesProductos/ImageGallery.vue';
 import ProductInfo from '@/components/DetallesProductos/ProductInfo.vue';
@@ -11,6 +12,7 @@ import ProductReviews from '@/components/DetallesProductos/ProductReviews.vue';
 
 import { useCartStore } from '@/stores/cartStore' // 1. Importa tu nuevo store
 const cartStore = useCartStore() // 2. Inicializa el store
+const authStore = useAuthStore()
 
 const props = defineProps({
   id: {
@@ -93,6 +95,10 @@ watch(() => props.id, (newId, oldId) => {
 
 // Funciones para manejar acciones (agregar al carrito, comprar)
 const handleAddToCart = (quantity) => {
+  if (authStore.estaSuspendido) {
+    alert('Tu cuenta ha sido suspendida. No puedes realizar compras.')
+    return
+  }
   if (product.value) {
     // 3. Llama a la acción del store
     cartStore.addProduct(product.value, quantity) 
@@ -101,6 +107,10 @@ const handleAddToCart = (quantity) => {
 }
 
 const handleBuyNow = (quantity) => {
+  if (authStore.estaSuspendido) {
+    alert('Tu cuenta ha sido suspendida. No puedes realizar compras.')
+    return
+  }
   if (product.value) {
     // También puedes añadir al carrito y luego redirigir
     cartStore.addProduct(product.value, quantity)
@@ -114,6 +124,13 @@ const handleBuyNow = (quantity) => {
 
 <template>
   <div class="product-detail-page">
+    <div v-if="authStore.estaSuspendido" class="suspension-banner">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+      </svg>
+      <span>Tu cuenta está suspendida. No puedes realizar compras ni publicar reseñas.</span>
+    </div>
     <LandingHeader />
 
     <main class="content-container">
@@ -160,7 +177,8 @@ const handleBuyNow = (quantity) => {
         
         <ProductReviews 
           :key="`reviews-${product.id}`"
-          :product-id="product.id" 
+          :product-id="product.id"
+          :user-suspended="authStore.estaSuspendido"
         />
         
       </div>
@@ -173,6 +191,27 @@ const handleBuyNow = (quantity) => {
   min-height: 100vh;
   background-color: #f9fafb;
   padding-top: 80px; /* Espacio para el header fijo */
+}
+
+.suspension-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #fee2e2;
+  border-bottom: 2px solid #dc2626;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  z-index: 9998;
+  color: #991b1b;
+  font-weight: 600;
+}
+
+.suspension-banner svg {
+  flex-shrink: 0;
 }
 
 .content-container {

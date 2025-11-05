@@ -15,6 +15,7 @@ export const useAuthStore = defineStore('auth', () => {
   const esVendedor = computed(() => rolUsuario.value === 'vendedor')
   const esCajero = computed(() => rolUsuario.value === 'cajero')
   const esInvitado = computed(() => rolUsuario.value === 'invitado')
+  const estaSuspendido = computed(() => perfil.value?.suspendido || false)
 
   async function cargarPerfil() {
     if (!usuario.value) return
@@ -120,6 +121,7 @@ export const useAuthStore = defineStore('auth', () => {
     esVendedor,
     esCajero,
     esInvitado,
+    estaSuspendido,
     cargarPerfil,
     crearPerfil,
     inicializarSesion,

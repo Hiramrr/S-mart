@@ -10,6 +10,14 @@ import CouponModal from '@/components/PrincipalComponents/CouponModal.vue'
 const authStore = useAuthStore()
 const router = useRouter()
 
+const verificarSuspension = () => {
+  if (authStore.estaSuspendido) {
+    alert('Tu cuenta ha sido suspendida. No puedes realizar esta acción.')
+    return false
+  }
+  return true
+}
+
 const products = ref([])
 const loading = ref(true)
 const error = ref(null)
@@ -94,7 +102,13 @@ async function cargarMisProductos() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  if (authStore.estaSuspendido) {
+    alert('Tu cuenta ha sido suspendida. No puedes acceder al sistema.')
+    await authStore.cerrarSesion()
+    router.push('/login')
+    return
+  }
   cargarMisProductos()
 })
 
@@ -106,6 +120,7 @@ const filteredProducts = computed(() => {
 })
 
 function goToVender() {
+  if (!verificarSuspension()) return
   router.push('/AgregarProducto')
 }
 
@@ -115,14 +130,16 @@ const handleLogout = async () => {
 }
 
 function handleEditProduct(productId) {
-  if (!productId) return;
-  router.push(`/EditarProducto/${productId}`);
+  if (!productId) return
+  if (!verificarSuspension()) return
+  router.push(`/EditarProducto/${productId}`)
 }
 
 function handleDeleteProduct(productId) {
-  if (!productId) return;
-  productToDelete.value = products.value.find(p => p.id === productId);
-  showDeleteModal.value = true;
+  if (!productId) return
+  if (!verificarSuspension()) return
+  productToDelete.value = products.value.find(p => p.id === productId)
+  showDeleteModal.value = true
 }
 
 function cancelDelete() {
@@ -149,8 +166,9 @@ async function confirmDelete() {
 }
 
 function handleCreateCoupon(productId, productName) {
-  selectedProduct.value = { id: productId, name: productName };
-  showCouponModal.value = true;
+  if (!verificarSuspension()) return
+  selectedProduct.value = { id: productId, name: productName }
+  showCouponModal.value = true
 }
 
 function handleCouponCreated(coupon) {
@@ -161,6 +179,17 @@ function handleCouponCreated(coupon) {
 
 <template>
   <div class="vendedor-container">
+    <div v-if="authStore.estaSuspendido" class="suspension-overlay">
+      <div class="suspension-message">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+        </svg>
+        <h2>Cuenta Suspendida</h2>
+        <p>Tu cuenta ha sido suspendida por un administrador.</p>
+        <p>No puedes realizar ninguna acción en el sistema.</p>
+      </div>
+    </div>
     <header>
       <LandingHeader />
     </header>
@@ -700,6 +729,45 @@ function handleCouponCreated(coupon) {
 
 .btn-confirm-delete:hover {
   background: #b91c1c;
+}
+
+.suspension-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.suspension-message {
+  background: #fff;
+  padding: 3rem;
+  border-radius: 16px;
+  text-align: center;
+  max-width: 500px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+.suspension-message svg {
+  color: #dc2626;
+  margin-bottom: 1.5rem;
+}
+
+.suspension-message h2 {
+  font-size: 1.75rem;
+  color: #111827;
+  margin: 0 0 1rem 0;
+}
+
+.suspension-message p {
+  color: #6b7280;
+  margin: 0.5rem 0;
+  font-size: 1rem;
 }
 
 /* Responsive */
