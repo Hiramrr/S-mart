@@ -233,6 +233,10 @@ onMounted(() => {
   cargarTarjetas()
 })
 
+function handleCancelOrder() {
+  router.push('/carrito');
+}
+
 </script>
 
 <template>
@@ -307,10 +311,11 @@ onMounted(() => {
             </div>
         </div>
         <div class="tarjeta-actions">
-          <button type="button" class="btn-cancelar" @click="router.back()" :disabled="loading">Volver</button>
-          <button type="button" class="btn-registrar" @click="handlePaymentConfirm" :disabled="loading || cvvInput.length < 3">
-            {{ loading ? 'Procesando pago...' : 'Pagar y Continuar →' }}
-          </button>
+            <button type="button" class="btn-cancelar" @click="router.back()" :disabled="loading">Volver</button>
+            <button type="button" class="btn-cancelar-pedido" @click="handleCancelOrder" :disabled="loading">Cancelar pedido</button>
+            <button type="button" class="btn-registrar" @click="handlePaymentConfirm" :disabled="loading || cvvInput.length < 3">
+              {{ loading ? 'Procesando pago...' : 'Pagar y Continuar →' }}
+            </button>
         </div>
       </div>
 
@@ -586,6 +591,23 @@ onMounted(() => {
 }
 .btn-cancelar:hover:not(:disabled) {
   background: #d1d5db;
+}
+
+.btn-cancelar-pedido {
+  background: #ffeaea;
+  color: #b91c1c;
+  border: 2px solid #fca5a5;
+  border-radius: 1rem;
+  padding: 0.7rem 1.5rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s, border 0.2s;
+  box-sizing: border-box;
+}
+.btn-cancelar-pedido:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: #ef4444;
 }
 .btn-registrar {
   background: #111827;
