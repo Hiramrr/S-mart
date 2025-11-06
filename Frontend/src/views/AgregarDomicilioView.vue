@@ -61,7 +61,15 @@ async function registrarDomicilio() {
           </div>
           <div class="domicilio-field">
             <label>Código Postal</label>
-            <input v-model="domicilio.codigoPostal" placeholder="Ej: 12345" required />
+            <input 
+              v-model="domicilio.codigoPostal"
+              placeholder="Ej: 12345"
+              required
+              inputmode="numeric"
+              pattern="\d{5}"
+              maxlength="5"
+              @input="domicilio.codigoPostal = domicilio.codigoPostal.replace(/\D/g, '').slice(0, 5)"
+            />
           </div>
           <div class="domicilio-field">
             <label>Estado</label>
