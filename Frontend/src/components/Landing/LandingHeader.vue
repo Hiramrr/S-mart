@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useRole } from '@/composables/useRole'
 import { useNotificationStore } from '@/stores/notificationStore'
 import { useCartStore } from '@/stores/cartStore'
+import ChatIndicator from '@/components/Chat/ChatIndicator.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -168,6 +169,11 @@ const goToVender = () => {
   showUserMenu.value = false
   showMobileMenu.value = false
 }
+const goToChats = () => {
+  router.push('/mis-chats')
+  showUserMenu.value = false
+  showMobileMenu.value = false
+}
 const goToAdmin = () => {
   router.push('/admin')
   showUserMenu.value = false
@@ -264,6 +270,9 @@ const getUserAvatar = computed(() => {
           </span>
         </button>
 
+        <!-- Chat Indicator -->
+        <ChatIndicator />
+
         <div v-if="canSell" class="notification-container">
           <button
             ref="notificationBtnRef"
@@ -356,6 +365,7 @@ const getUserAvatar = computed(() => {
             </div>
             <div class="dropdown-divider"></div>
             <button class="dropdown-item" @click="router.push('/perfil')">Mi perfil</button>
+            <button class="dropdown-item" @click="goToChats">Mis Chats</button>
             <button v-if="canSell" class="dropdown-item" @click="goToVender">
               Panel de ventas
             </button>
@@ -457,6 +467,7 @@ const getUserAvatar = computed(() => {
           </div>
 
           <button class="mobile-menu-option" @click="router.push('/perfil')">Mi perfil</button>
+          <button class="mobile-menu-option" @click="goToChats">💬 Mis Chats</button>
           <button v-if="canSell" class="mobile-menu-option" @click="goToVender">
             📦 Panel de ventas
           </button>

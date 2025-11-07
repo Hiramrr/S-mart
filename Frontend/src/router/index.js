@@ -13,6 +13,7 @@ import AgregarDomicilioView from '../views/AgregarDomicilioView.vue'
 import SeleccionarDireccionView from '../views/SeleccionarDireccionView.vue'
 import PerfilView from '../views/PerfilView.vue'
 import PagoTarjetaView from '../views/PagoTarjetaView.vue'
+import MisChatsView from '../views/MisChatsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -178,6 +179,17 @@ const router = createRouter({
     },
 
     {
+      path: '/mis-chats',
+      name: 'mis-chats',
+      component: MisChatsView,
+      meta: {
+        title: 'Mis Chats - S-mart',
+        requiresAuth: true,
+        requiresRoles: ['cliente', 'vendedor', 'administrador'],
+      },
+    },
+
+    {
       path: '/cajero',
       name: 'cajero',
       component: () => import('../views/CajeroView.vue'),
@@ -224,15 +236,24 @@ router.beforeEach(async (to, from, next) => {
 
   const authStore = useAuthStore()
 
+  // Si está cargando, esperar máximo 3 segundos
   if (authStore.loading) {
-    await new Promise((resolve) => {
+    const timeout = new Promise((resolve) => setTimeout(resolve, 3000))
+    const loadingDone = new Promise((resolve) => {
       const unwatch = authStore.$subscribe(() => {
         if (!authStore.loading) {
           unwatch()
           resolve()
         }
       })
+      // Si ya no está loading cuando se crea la suscripción
+      if (!authStore.loading) {
+        unwatch()
+        resolve()
+      }
     })
+    
+    await Promise.race([loadingDone, timeout])
   }
 
   const isAuthenticated = !!authStore.usuario
@@ -241,10 +262,14 @@ router.beforeEach(async (to, from, next) => {
   // Si requiere ser invitado (como /login) pero ya está logueado
   if (to.meta.requiresGuest && isAuthenticated) {
     // Comprueba si hay una redirección guardada
-    const redirectPath = localStorage.getItem('authRedirect')
-    if (redirectPath) {
-      localStorage.removeItem('authRedirect') // Limpia el storage
-      return next(redirectPath) // Envía al usuario a donde quería ir
+    try {
+      const redirectPath = localStorage.getItem('authRedirect')
+      if (redirectPath) {
+        localStorage.removeItem('authRedirect') // Limpia el storage
+        return next(redirectPath) // Envía al usuario a donde quería ir
+      }
+    } catch (e) {
+      console.warn('Error leyendo authRedirect:', e)
     }
     // Si no hay nada guardado, envía a 'home'
     return next({ name: 'home' })
@@ -253,7 +278,11 @@ router.beforeEach(async (to, from, next) => {
   // Si requiere autenticación y NO está logueado
   if (to.meta.requiresAuth && !isAuthenticated) {
     // Guarda la ruta completa (incluyendo queries) a la que intentaba acceder
-    localStorage.setItem('authRedirect', to.fullPath)
+    try {
+      localStorage.setItem('authRedirect', to.fullPath)
+    } catch (e) {
+      console.warn('Error guardando authRedirect:', e)
+    }
     return next({ name: 'login' })
   }
 
@@ -261,7 +290,11 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresRoles && Array.isArray(to.meta.requiresRoles)) {
     if (!isAuthenticated) {
       // Guarda la ruta completa y manda a login
-      localStorage.setItem('authRedirect', to.fullPath)
+      try {
+        localStorage.setItem('authRedirect', to.fullPath)
+      } catch (e) {
+        console.warn('Error guardando authRedirect:', e)
+      }
       return next({ name: 'login' })
     }
 

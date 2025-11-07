@@ -9,14 +9,16 @@ import ProductInfo from '@/components/DetallesProductos/ProductInfo.vue'
 import PurchaseActions from '@/components/DetallesProductos/PurchaseActions.vue'
 import RelatedProducts from '@/components/DetallesProductos/RelatedProducts.vue'
 import ProductReviews from '@/components/DetallesProductos/ProductReviews.vue'
+import ChatButton from '@/components/Chat/ChatButton.vue'
+import ChatModal from '@/components/Chat/ChatModal.vue'
 
 import { useCartStore } from '@/stores/cartStore'
-import { useRole } from '@/composables/useRole' // 1. Importa el composable de roles
+import { useRole } from '@/composables/useRole'
 
 const cartStore = useCartStore()
 const authStore = useAuthStore()
 const router = useRouter()
-const { requireAuth } = useRole() // 2. Inicializa la función que necesitas
+const { requireAuth } = useRole()
 
 const props = defineProps({
   id: {
@@ -28,6 +30,8 @@ const props = defineProps({
 const product = ref(null)
 const loading = ref(true)
 const error = ref(null)
+const chatAbierto = ref(false)
+const conversacionActual = ref(null)
 
 async function cargarDetalleProducto() {
   product.value = null
@@ -143,6 +147,16 @@ const handleBuyNow = (quantity) => {
     })
   }
 }
+
+function abrirChat(conversacion) {
+  conversacionActual.value = conversacion
+  chatAbierto.value = true
+}
+
+function cerrarChat() {
+  chatAbierto.value = false
+  conversacionActual.value = null
+}
 </script>
 
 <template>
@@ -189,6 +203,15 @@ const handleBuyNow = (quantity) => {
               @add-to-cart="handleAddToCart"
               @buy-now="handleBuyNow"
             />
+
+            <!-- Botón de chat con el vendedor -->
+            <ChatButton
+              v-if="product.vendedor_id"
+              :producto-id="product.id"
+              :vendedor-id="product.vendedor_id"
+              :producto-nombre="product.nombre"
+              @abrir-chat="abrirChat"
+            />
           </div>
         </div>
 
@@ -206,6 +229,13 @@ const handleBuyNow = (quantity) => {
         
       </div>
     </main>
+
+    <!-- Modal de Chat -->
+    <ChatModal
+      v-if="chatAbierto && conversacionActual"
+      :conversacion="conversacionActual"
+      @cerrar="cerrarChat"
+    />
   </div>
 </template>
 

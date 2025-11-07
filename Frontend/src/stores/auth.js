@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase.js'
 export const useAuthStore = defineStore('auth', () => {
   const usuario = ref(null)
   const perfil = ref(null)
-  const loading = ref(false)
+  const loading = ref(true) // Empieza en true para bloquear hasta que termine la inicialización
   const router = ref(null) // 1. Referencia para el router
 
   const rolUsuario = computed(() => perfil.value?.rol || null)
@@ -92,6 +92,8 @@ export const useAuthStore = defineStore('auth', () => {
       }
     } catch (error) {
       console.error('Error al inicializar sesión:', error)
+      usuario.value = null
+      perfil.value = null
     } finally {
       loading.value = false
     }
@@ -101,7 +103,11 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       loading.value = true
       // 3. Limpia el redirect guardado al cerrar sesión
-      localStorage.removeItem('authRedirect')
+      try {
+        localStorage.removeItem('authRedirect')
+      } catch (e) {
+        console.warn('Error al limpiar authRedirect:', e)
+      }
       
       const { error } = await supabase.auth.signOut()
       if (error) throw error
@@ -123,6 +129,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 2. Lógica de redirección mejorada
   supabase.auth.onAuthStateChange(async (event, session) => {
+    // Ignorar eventos mientras está inicializando para evitar race conditions
+    if (loading.value) {
+      return
+    }
     
     if (event === 'SIGNED_IN' && session?.user) {
       // Usuario ha iniciado sesión
@@ -130,13 +140,15 @@ export const useAuthStore = defineStore('auth', () => {
       await cargarPerfil() // Espera a que el perfil esté listo
       
       if (router.value) {
-        const redirectPath = localStorage.getItem('authRedirect')
-        
-        if (redirectPath) {
-          localStorage.removeItem('authRedirect') // Limpia el storage
-          router.value.push(redirectPath) // Redirige a la ruta guardada
-        } else if (router.value.currentRoute.value.name === 'login') {
-          router.value.push({ name: 'home' })
+        try {
+          const redirectPath = localStorage.getItem('authRedirect')
+          
+          if (redirectPath) {
+            localStorage.removeItem('authRedirect') // Limpia el storage
+            router.value.push(redirectPath) // Redirige a la ruta guardada
+          }
+        } catch (storageError) {
+          console.warn('Error al manejar authRedirect:', storageError)
         }
       }
     } else if (event === 'SIGNED_OUT') {
@@ -145,14 +157,10 @@ export const useAuthStore = defineStore('auth', () => {
       if (router.value) {
         router.value.push({ name: 'home' })
       }
-    } else if (session?.user) {
-      usuario.value = session.user
-      if (!perfil.value) {
-        await cargarPerfil()
+    } else if (event === 'TOKEN_REFRESHED') {
+      if (session?.user) {
+        usuario.value = session.user
       }
-    } else {
-      usuario.value = null
-      perfil.value = null
     }
   })
 

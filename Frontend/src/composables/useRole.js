@@ -46,7 +46,11 @@ export function useRole() {
   const requireAuth = (redirectTo = '/login') => {
     if (!isAuthenticated.value) {
       // Guarda la ruta actual completa (con query params)
-      localStorage.setItem('authRedirect', route.fullPath)
+      try {
+        localStorage.setItem('authRedirect', route.fullPath)
+      } catch (e) {
+        console.warn('Error guardando authRedirect:', e)
+      }
       router.push(redirectTo)
       return false
     }
