@@ -1,12 +1,18 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 import { supabase } from '@/lib/supabase.js'
 import { useAuthStore } from '@/stores/auth.js'
+import { useCartStore } from '@/stores/cartStore.js'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
+import Ticket from '@/components/Cajero/Ticket.vue' // Asegúrate que la ruta sea correcta
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
+const cartStore = useCartStore()
 
 // --- ESTADO ---
 const tarjetasGuardadas = ref([])
@@ -15,12 +21,17 @@ const cvvInput = ref('')
 const loading = ref(false)
 const error = ref(null)
 const mostrarFormularioNuevaTarjeta = ref(false)
+const itemsParaComprar = ref([])
 
-// Estado para la nueva tarjeta (mantenemos la estructura para agregar)
+// Refs para el Ticket (como en CajeroView)
+const ticketData = ref(null)
+const ticketRef = ref(null)
+
+// Estado para la nueva tarjeta
 const nuevaTarjeta = ref({
   titular: '',
   numero: '',
-  vencimiento: '', // Formato MM/YY
+  vencimiento: '',
   cvv: ''
 })
 
@@ -31,66 +42,77 @@ const tarjetaSeleccionada = computed(() => {
 
 const cvvRequerido = computed(() => tarjetaSeleccionadaId.value !== null && !mostrarFormularioNuevaTarjeta.value)
 
+// Total (ahora usa 'cantidad' y 'precio')
+const checkoutTotal = computed(() => {
+  return itemsParaComprar.value.reduce((total, item) => {
+    // Usamos 'precio' que ya definimos en el cartStore como el precio final
+    const price = parseFloat(item.precio || item.precio_venta || 0); 
+    const qty = parseInt(item.cantidad || 1, 10);
+    return total + (price * qty);
+  }, 0);
+});
+
 // --- MÉTODOS DE UTILIDAD ---
+// (Tus funciones de utilidad: validateCardNumber, formatCardNumber, etc. van aquí. Sin cambios.)
 const validateCardNumber = (number) => {
-    const cleanNumber = number.replace(/\D/g, '')
-    return cleanNumber.length === 16 ? cleanNumber : null
+    const cleanNumber = number.replace(/\D/g, '')
+    return cleanNumber.length === 16 ? cleanNumber : null
 }
 const validateExpirationDate = (date) => {
-    const regex = /^(0[1-9]|1[0-2])\/?([0-9]{2}|[0-9]{4})$/
-    if (!regex.test(date)) return false
-    
-    const [monthStr, yearStr] = date.split('/').map(s => s.trim())
-    const month = parseInt(monthStr, 10)
-    let year = parseInt(yearStr, 10)
+    const regex = /^(0[1-9]|1[0-2])\/?([0-9]{2}|[0-9]{4})$/
+    if (!regex.test(date)) return false
+    
+    const [monthStr, yearStr] = date.split('/').map(s => s.trim())
+    const month = parseInt(monthStr, 10)
+    let year = parseInt(yearStr, 10)
 
-    if (yearStr.length === 2) {
-        const currentYearPrefix = new Date().getFullYear().toString().substring(0, 2);
-        year = parseInt(currentYearPrefix + yearStr, 10);
-    }
+    if (yearStr.length === 2) {
+        const currentYearPrefix = new Date().getFullYear().toString().substring(0, 2);
+        year = parseInt(currentYearPrefix + yearStr, 10);
+    }
 
-    const now = new Date()
-    const currentYear = now.getFullYear()
-    const currentMonth = now.getMonth() + 1
-    
-    if (year < currentYear) return false
-    
-    if (year === currentYear && month < currentMonth) return false
-    
-    return true
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    const currentMonth = now.getMonth() + 1
+    
+    if (year < currentYear) return false
+    
+    if (year === currentYear && month < currentMonth) return false
+    
+    return true
 }
 const formatCardNumber = (event) => {
-    let value = event.target.value.replace(/\D/g, '')
-    const parts = []
-    for (let i = 0; i < value.length; i += 4) {
-        parts.push(value.substring(i, i + 4))
-    }
-    nuevaTarjeta.value.numero = parts.join(' ')
+    let value = event.target.value.replace(/\D/g, '')
+    const parts = []
+    for (let i = 0; i < value.length; i += 4) {
+        parts.push(value.substring(i, i + 4))
+    }
+    nuevaTarjeta.value.numero = parts.join(' ')
 }
 const formatExpirationDate = (event) => {
-    let value = event.target.value.replace(/\D/g, '')
-    if (value.length > 4) value = value.substring(0, 4)
-    if (value.length > 2) value = value.substring(0, 2) + '/' + value.substring(2)
-    nuevaTarjeta.value.vencimiento = value
+    let value = event.target.value.replace(/\D/g, '')
+    if (value.length > 4) value = value.substring(0, 4)
+    if (value.length > 2) value = value.substring(0, 2) + '/' + value.substring(2)
+    nuevaTarjeta.value.vencimiento = value
 }
 const getLastFour = (number) => number ? number.substring(number.length - 4) : 'XXXX'
 const getCardType = (number) => {
-    if (!number) return 'Card'
-    const cleanNumber = String(number).replace(/\D/g, '')
-    if (cleanNumber.startsWith('4')) return 'Visa'
-    if (cleanNumber.match(/^5[1-5]/)) return 'MasterCard'
-    if (cleanNumber.match(/^3[47]/)) return 'Amex'
-    return 'Tarjeta'
+    if (!number) return 'Card'
+    const cleanNumber = String(number).replace(/\D/g, '')
+    if (cleanNumber.startsWith('4')) return 'Visa'
+    if (cleanNumber.match(/^5[1-5]/)) return 'MasterCard'
+    if (cleanNumber.match(/^3[47]/)) return 'Amex'
+    return 'Tarjeta'
 }
 const formatExpiryDisplay = (isoDate) => {
-    if (!isoDate) return ''
-    const date = new Date(isoDate)
-    const month = date.getUTCMonth() + 1
-    const year = date.getUTCFullYear() % 100
-    return `${month < 10 ? '0' + month : month}/${year < 10 ? '0' + year : year}`
+    if (!isoDate) return ''
+    const date = new Date(isoDate)
+    const month = date.getUTCMonth() + 1
+    const year = date.getUTCFullYear() % 100
+    return `${month < 10 ? '0' + month : month}/${year < 10 ? '0' + year : year}`
 }
 
-// --- MÉTODOS DE PAGO ---
+// --- MÉTODOS DE DATOS ---
 
 async function cargarTarjetas() {
   loading.value = true
@@ -98,8 +120,6 @@ async function cargarTarjetas() {
   const idCliente = authStore.usuario?.id
   if (!idCliente) {
     loading.value = false
-    // Solo mostrar error si no hay usuario, pero no bloquear la UI por completo
-    // error.value = 'Error: No se encontró usuario autenticado para cargar tarjetas.' 
     return
   }
   
@@ -124,76 +144,75 @@ async function cargarTarjetas() {
 }
 
 async function guardarNuevaTarjeta() {
+  // ... tu función guardarNuevaTarjeta (sin cambios) ...
   loading.value = true
-  error.value = null
-  
-  const idCliente = authStore.usuario?.id
-  if (!idCliente) {
-    error.value = 'No se encontró usuario autenticado. No se puede guardar la tarjeta.'
-    loading.value = false
-    return
-  }
-  
-  const numero_tarjeta_limpio = validateCardNumber(nuevaTarjeta.value.numero)
-  if (!numero_tarjeta_limpio) {
-    error.value = 'El número de tarjeta debe ser de 16 dígitos.'
-    loading.value = false
-    return
-  }
+  error.value = null
+  
+  const idCliente = authStore.usuario?.id
+  if (!idCliente) {
+    error.value = 'No se encontró usuario autenticado. No se puede guardar la tarjeta.'
+    loading.value = false
+    return
+  }
+  
+  const numero_tarjeta_limpio = validateCardNumber(nuevaTarjeta.value.numero)
+  if (!numero_tarjeta_limpio) {
+    error.value = 'El número de tarjeta debe ser de 16 dígitos.'
+    loading.value = false
+    return
+  }
 
-  if (!validateExpirationDate(nuevaTarjeta.value.vencimiento)) {
-    error.value = 'La fecha de vencimiento no es válida o está en el pasado (formato MM/YY).'
-    loading.value = false
-    return
-  }
-  
-  const cvv_limpio = nuevaTarjeta.value.cvv.replace(/\D/g, '')
-  if (cvv_limpio.length < 3 || cvv_limpio.length > 4) {
-    error.value = 'El CVV debe ser de 3 o 4 dígitos.'
-    loading.value = false
-    return
-  }
-  
-  try {
-    const [month, year] = nuevaTarjeta.value.vencimiento.split('/')
-    const fullYear = year.length === 2 ? `20${year}` : year
-    const lastDayOfMonth = new Date(fullYear, month, 0).getDate()
-    const vencimientoISO = `${fullYear}-${month}-${lastDayOfMonth}T23:59:59Z`
+  if (!validateExpirationDate(nuevaTarjeta.value.vencimiento)) {
+    error.value = 'La fecha de vencimiento no es válida o está en el pasado (formato MM/YY).'
+    loading.value = false
+    return
+  }
+  
+  const cvv_limpio = nuevaTarjeta.value.cvv.replace(/\D/g, '')
+  if (cvv_limpio.length < 3 || cvv_limpio.length > 4) {
+    error.value = 'El CVV debe ser de 3 o 4 dígitos.'
+    loading.value = false
+    return
+  }
+  
+  try {
+    const [month, year] = nuevaTarjeta.value.vencimiento.split('/')
+    const fullYear = year.length === 2 ? `20${year}` : year
+    const lastDayOfMonth = new Date(fullYear, month, 0).getDate()
+    const vencimientoISO = `${fullYear}-${month}-${lastDayOfMonth}T23:59:59Z`
 
-    const tarjeta_a_guardar = {
-      idcliente: idCliente,
-      numero_tarjeta: numero_tarjeta_limpio, 
-      titular: nuevaTarjeta.value.titular.trim(),
-      fecha_vencimiento: vencimientoISO,
-    }
+    const tarjeta_a_guardar = {
+      idcliente: idCliente,
+      numero_tarjeta: numero_tarjeta_limpio, 
+      titular: nuevaTarjeta.value.titular.trim(),
+      fecha_vencimiento: vencimientoISO,
+    }
 
-    const { data: nuevaTarjetaData, error: supabaseError } = await supabase
-      .from('tarjetas')
-      .insert([tarjeta_a_guardar])
-      .select('id')
-      .single()
+    const { data: nuevaTarjetaData, error: supabaseError } = await supabase
+      .from('tarjetas')
+      .insert([tarjeta_a_guardar])
+      .select('id')
+      .single()
 
-    if (supabaseError) throw supabaseError
-
-    alert('Tarjeta registrada correctamente')
-    
-    await cargarTarjetas() 
-    
-    if (nuevaTarjetaData?.id) {
-        tarjetaSeleccionadaId.value = nuevaTarjetaData.id
-    }
-    
-    mostrarFormularioNuevaTarjeta.value = false
-    nuevaTarjeta.value = { titular: '', numero: '', vencimiento: '', cvv: '' } 
-    cvvInput.value = '' 
-    
-  } catch (err) {
-    console.error('Error al registrar tarjeta:', err)
-    const errorMessage = err.message.includes('duplicate key') ? 'Esta tarjeta ya se encuentra registrada.' : 'Error al registrar la tarjeta: ' + err.message
-    error.value = errorMessage
-  } finally {
-    loading.value = false
-  }
+  M0s;
+    
+    await cargarTarjetas() 
+    
+    if (nuevaTarjetaData?.id) {
+        tarjetaSeleccionadaId.value = nuevaTarjetaData.id
+    }
+    
+    mostrarFormularioNuevaTarjeta.value = false
+    nuevaTarjeta.value = { titular: '', numero: '', vencimiento: '', cvv: '' } 
+    cvvInput.value = '' 
+    
+  } catch (err) {
+    console.error('Error al registrar tarjeta:', err)
+    const errorMessage = err.message.includes('duplicate key') ? 'Esta tarjeta ya se encuentra registrada.' : 'Error al registrar la tarjeta: ' + err.message
+    error.value = errorMessage
+  } finally {
+    loading.value = false
+  }
 }
 
 function selectCard(cardId) {
@@ -203,7 +222,106 @@ function selectCard(cardId) {
   error.value = null
 }
 
-function handlePaymentConfirm() {
+function handleAddNewCard() {
+  mostrarFormularioNuevaTarjeta.value = true;
+  tarjetaSeleccionadaId.value = null; 
+  error.value = null;
+}
+
+function handleCancelOrder() {
+  router.push('/carrito');
+}
+
+// Carga los items que se van a pagar (Buy Now o Carrito)
+async function cargarItemsParaCheckout() {
+  try {
+    const { buyNowId, qty } = route.query;
+
+    if (buyNowId) {
+      // --- Caso "Comprar Ahora" ---
+      loading.value = true;
+      const { data, error: dbError } = await supabase
+        .from('productos')
+        .select('*')
+        .eq('id', buyNowId)
+        .single();
+      
+      if (dbError) throw dbError;
+      
+      if (data) {
+        // *** CORRECCIÓN CLAVE ***
+        // Usamos 'cantidad' y el precio correcto
+        const precioFinal = data.precio_descuento && data.precio_descuento > 0 
+                             ? data.precio_descuento 
+                             : data.precio_venta;
+
+        itemsParaComprar.value = [{
+          ...data,
+          cantidad: parseInt(qty, 10) || 1,
+          precio: precioFinal, // Asignamos el precio de compra
+          name: data.nombre // Aseguramos que el nombre esté
+        }];
+      } else {
+        throw new Error('Producto no encontrado');
+      }
+    } else {
+      // --- Caso "Carrito Completo" ---
+      if (!cartStore.items || cartStore.items.length === 0) {
+         throw new Error('Tu carrito está vacío');
+      }
+      // El cartStore ya usa 'cantidad' y 'precio'
+      itemsParaComprar.value = [...cartStore.items];
+    }
+  } catch (err) {
+    console.error('Error al cargar items:', err);
+    error.value = err.message;
+    itemsParaComprar.value = [];
+  } finally {
+    loading.value = false;
+  }
+}
+
+// --- FUNCIÓN DE GENERAR PDF (Adaptada de CajeroView) ---
+const generatePdf = async (purchase) => {
+  ticketData.value = purchase;
+  await nextTick(); // Esperar que el DOM se actualice
+
+  const ticketElement = ticketRef.value?.$el;
+  if (!ticketElement) {
+    console.error("El elemento del Ticket no se encontró!");
+    throw new Error("Error al generar el ticket: Componente no renderizado.");
+  }
+
+  try {
+    const canvas = await html2canvas(ticketElement, { scale: 2 }); // Aumentar escala para mejor calidad
+    const imgData = canvas.toDataURL('image/png');
+    
+    // Ajustar dimensiones del PDF al canvas
+    const pdfWidth = canvas.width;
+    const pdfHeight = canvas.height;
+    
+    const pdf = new jsPDF({
+      orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
+      unit: 'px',
+      format: [pdfWidth, pdfHeight]
+    });
+
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    
+    const fileName = `ticket-smart-${purchase.id}.pdf`;
+    pdf.save(fileName);
+
+  } catch (error) {
+    console.error("Error generando el PDF:", error);
+    alert("Hubo un error al generar el ticket en PDF.");
+  } finally {
+    ticketData.value = null; // Limpiar para ocultar el componente
+  }
+};
+
+
+// --- FUNCIÓN DE PAGO PRINCIPAL (Corregida) ---
+async function handlePaymentConfirm() {
   if (!tarjetaSeleccionada.value) {
     error.value = 'Selecciona una tarjeta o agrega una nueva.'
     return
@@ -212,33 +330,84 @@ function handlePaymentConfirm() {
     error.value = 'Por favor, ingresa el CVV/CVC de tu tarjeta.'
     return
   }
+  if (itemsParaComprar.value.length === 0) {
+    error.value = 'No hay items para comprar. Volviendo al carrito...';
+    setTimeout(() => router.push('/carrito'), 1500);
+    return;
+  }
   
   loading.value = true
   error.value = null
   
-  setTimeout(() => {
-    loading.value = false
-    alert(`Pago simulado con tarjeta terminada en ${tarjetaSeleccionada.value.numero_tarjeta_display}. CVV/CVC verificado.`)
-    router.push('/carrito') 
-  }, 1000)
+  try {
+    // --- PASO 1: (Simulación de pago) ---
+    console.log(`Pago simulado con tarjeta terminada en ${tarjetaSeleccionada.value.numero_tarjeta_display} y CVV ${cvvInput.value}.`);
+    // Simular un pequeño retraso de la pasarela de pago
+    await new Promise(resolve => setTimeout(resolve, 500)); 
+
+    // --- PASO 2: Preparar y ejecutar la actualización de Stock (RPC) ---
+    const itemsPayload = itemsParaComprar.value.map(item => ({
+      p_id: item.id,       
+      p_qty: item.cantidad // *** CORRECCIÓN CLAVE ***
+    }));
+
+    const { error: rpcError } = await supabase.rpc('actualizar_stock_multi', { 
+      items: itemsPayload 
+    });
+
+    if (rpcError) {
+      console.error('Error en RPC:', rpcError);
+      throw new Error(`Error al actualizar el stock: ${rpcError.message}`);
+    }
+
+    // --- PASO 3: Generar Ticket PDF ---
+    const purchaseData = {
+      id: Date.now().toString().slice(-6), // Un ID de compra simple
+      fecha: new Date().toLocaleString('es-MX', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit'
+      }),
+      items: itemsParaComprar.value.map(item => ({
+        ...item,
+         // *** CORRECCIÓN CLAVE ***
+         // Aseguramos que el ticket reciba 'precio' y 'cantidad'
+        nombre: item.name || item.nombre, // Aseguramos nombre
+        precio: item.precio || item.precio_venta, 
+        cantidad: item.cantidad
+      })),
+      total: checkoutTotal.value,
+      paymentMethod: `Tarjeta ${getCardType(tarjetaSeleccionada.value?.numero_tarjeta)} (•••• ${tarjetaSeleccionada.value?.numero_tarjeta_display})`,
+      cajero: authStore.perfil?.nombre || authStore.usuario?.email
+    };
+
+    await generatePdf(purchaseData);
+
+    // --- PASO 4: Limpiar Carrito ---
+    const purchasedIds = itemsParaComprar.value.map(item => item.id);
+    
+    // Esta función ya existe en el store actualizado
+    cartStore.removeProductsByIds(purchasedIds); 
+    
+    // --- PASO 5: Redirigir al Home ---
+    alert('¡Gracias por tu compra! Tu ticket se ha descargado.');
+    router.push('/'); 
+
+  } catch (err) {
+    console.error('Error en el proceso de pago:', err);
+    error.value = err.message || 'Ocurrió un error inesperado al procesar el pago.';
+  } finally {
+    loading.value = false;
+  }
 }
 
-function handleAddNewCard() {
-  mostrarFormularioNuevaTarjeta.value = true;
-  tarjetaSeleccionadaId.value = null; 
-  error.value = null;
-}
 
 onMounted(() => {
-  cargarTarjetas()
+  Promise.all([
+    cargarTarjetas(),
+    cargarItemsParaCheckout()
+  ]);
 })
-
-function handleCancelOrder() {
-  router.push('/carrito');
-}
-
 </script>
-
 <template>
   <div class="tarjeta-minimal-container">
     <LandingHeader />
@@ -373,6 +542,9 @@ function handleCancelOrder() {
         </div>
       </form>
     </div>
+  </div>
+  <div style="position: absolute; left: -9999px; top: 0;">
+     <Ticket v-if="ticketData" :purchase="ticketData" ref="ticketRef" />
   </div>
 </template>
 

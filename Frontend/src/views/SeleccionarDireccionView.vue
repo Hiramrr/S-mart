@@ -1,60 +1,85 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '@/lib/supabase.js'
 import { useAuthStore } from '@/stores/auth.js'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 
 const router = useRouter()
+const route = useRoute() // 2. Instancia 'route'
 const authStore = useAuthStore()
 const direcciones = ref([])
 const loading = ref(true)
 const direccionSeleccionada = ref(null)
 
 async function cargarDirecciones() {
-  loading.value = true
-  const id_usuario = authStore.usuario?.id
-  if (!id_usuario) return
-  const { data, error } = await supabase
-    .from('direcciones')
-    .select('*')
-    .eq('id_usuario', id_usuario)
-  if (!error) direcciones.value = data || []
-  loading.value = false
+  loading.value = true
+  const id_usuario = authStore.usuario?.id
+  if (!id_usuario) return
+  const { data, error } = await supabase
+    .from('direcciones')
+    .select('*')
+    .eq('id_usuario', id_usuario)
+  if (!error) direcciones.value = data || []
+  loading.value = false
 }
 
 async function eliminarDireccion(id) {
-  if (!confirm('¿Seguro que deseas eliminar esta dirección?')) return;
-  const { error } = await supabase.from('direcciones').delete().eq('id', id)
-  if (error) {
-    alert('Error al eliminar la dirección: ' + error.message)
-    return
-  }
-  direcciones.value = direcciones.value.filter(d => d.id !== id)
+  if (!confirm('¿Seguro que deseas eliminar esta dirección?')) return;
+  const { error } = await supabase.from('direcciones').delete().eq('id', id)
+  if (error) {
+    alert('Error al eliminar la dirección: ' + error.message)
+    return
+  }
+  direcciones.value = direcciones.value.filter(d => d.id !== id)
 }
 
 onMounted(cargarDirecciones)
 
 function irEditarDomicilio(id) {
-  router.push(`/editar-domicilio/${id}`)
+  router.push(`/editar-domicilio/${id}`)
 }
 
 
 function irAgregarDomicilio() {
-  router.push('/agregar-domicilio')
+  router.push('/agregar-domicilio')
 }
 
 function seleccionarDireccion(id) {
-  direccionSeleccionada.value = id
+  direccionSeleccionada.value = id
 }
 
+// --- ¡FUNCIÓN CORREGIDA! ---
 function continuarConPago() {
-  router.push('/pago-tarjeta')
+  // 3. Valida que se haya seleccionado una dirección
+  if (!direccionSeleccionada.value) {
+    alert('Por favor, selecciona una dirección para continuar.');
+    return;
+  }
+
+  // 4. Lee los parámetros 'buyNowId' y 'qty' de la URL actual
+  const { buyNowId, qty } = route.query
+
+  // 5. Prepara el objeto de navegación
+  const navigationOptions = {
+    path: '/pago-tarjeta',
+    query: {} // Inicia la query vacía
+  }
+
+  if (buyNowId && qty) {
+    // 6. Si existen los parámetros "Comprar Ahora", los añade a la navegación
+    navigationOptions.query = { buyNowId, qty }
+  }
+
+  // 7. Navega a la vista de pago, "arrastrando" los parámetros si existían.
+  // Si no existían, irá a /pago-tarjeta sin query, y la vista de pago
+  // cargará el carrito (comportamiento correcto).
+  router.push(navigationOptions)
 }
 
 function cancelarPedido() {
-  // Navega de regreso al carrito de compras
-  router.push('/carrito')
+  // Navega de regreso al carrito de compras
+  router.push('/carrito')
 }
 </script>
 
