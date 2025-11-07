@@ -24,7 +24,7 @@
             :key="index"
             class="history-product"
           >
-            {{ item.name }} x{{ item.cantidad }}
+            {{ item.name }}
           </div>
         </div>
         
@@ -108,7 +108,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-height: 400px;
+  max-height: 350px;
   overflow-y: auto;
 }
 

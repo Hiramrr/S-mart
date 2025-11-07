@@ -15,7 +15,7 @@
     <div class="table-container">
       <table class="products-table">
         <thead>
-          <tr>
+          <tr class="Section">
             <th>ID</th>
             <th>Nombre</th>
             <th>Precio</th>
@@ -28,7 +28,7 @@
             <td>{{ product.id }}</td>
             <td>{{ product.name }}</td>
             <td>${{ product.precio.toLocaleString() }}</td>
-            <td>{{ product.stock }}</td>
+            <td>{{ product.stock || 0 }}</td>
             <td>
               <button 
                 @click="$emit('add-product', product)"
@@ -115,6 +115,8 @@ export default {
 }
 
 .table-container {
+  max-height: 400px;
+  overflow-y: auto;
   overflow-x: auto;
 }
 
@@ -124,6 +126,9 @@ export default {
 }
 
 .products-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   background-color: #f3f4f6;
 }
 
@@ -134,6 +139,7 @@ export default {
   color: #4b5563;
   font-size: 0.95rem;
 }
+
 
 .products-table td {
   padding: 0.75rem 1rem;

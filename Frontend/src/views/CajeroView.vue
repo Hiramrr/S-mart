@@ -65,6 +65,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useProductStore } from '@/stores/products';
 import { useAuthStore } from '@/stores/auth';
+import { supabase } from '@/lib/supabase';
 import Header from '@/componets/PrincipalComponents/Header.vue';
 import ProductSelector from '@/components/Cajero/ProductSelector.vue';
 import ShoppingCart from '@/components/Cajero/ShoppingCart.vue';
@@ -100,6 +101,50 @@ export default {
       return true
     }
 
+    const fetchPurchaseHistory = async () => {
+      try {
+        const { data: purchaseData, error: purchaseError } = await supabase
+          .from('purchase_history')
+          .select('id, created_at, total_amount, payment_method, products, cashier_id')
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (purchaseError) {
+          console.error('Error al cargar el historial de compras:', purchaseError);
+          // Check for specific PostgREST errors if needed
+          if (purchaseError.code === 'PGRST205') {
+            alert('La tabla para el historial de compras no fue encontrada.');
+          } else {
+            alert('No se pudo cargar el historial de compras.');
+          }
+          return; // Stop execution if there's an error
+        }
+        
+        if (!purchaseData) {
+          purchaseHistory.value = []; // Set to empty array if no data
+          return;
+        }
+
+        // Mapear los datos para la vista
+        purchaseHistory.value = purchaseData.map(p => ({
+          id: p.id,
+          fecha: new Date(p.created_at).toLocaleString('es-MX'),
+          total: p.total_amount,
+          paymentMethod: p.payment_method,
+          cajero: p.cashier_id ? p.cashier_id.substring(0, 8) : 'N/A', // Mostrar primeros 8 caracteres del ID
+          items: p.products.map(item => ({
+            name: item.name,
+            cantidad: item.quantity,
+            precio: item.price
+          }))
+        }));
+
+      } catch (error) {
+        console.error('Error inesperado al cargar el historial de compras:', error);
+        alert('Ocurrió un error inesperado al cargar el historial.');
+      }
+    };
+
     onMounted(async () => {
       if (authStore.estaSuspendido) {
         alert('Tu cuenta ha sido suspendida. No puedes acceder al sistema.')
@@ -108,6 +153,7 @@ export default {
         return
       }
       productStore.fetchProducts();
+      fetchPurchaseHistory(); // Cargar historial al montar
     });
 
     const generatePdf = async (purchase) => {
@@ -177,16 +223,14 @@ export default {
       const quantityDiff = newQuantity - item.cantidad;
 
       if (quantityDiff > 0) {
-        // increasing quantity
         if (product.stock < quantityDiff) {
           alert('No hay suficiente stock.');
-          item.cantidad = product.stock + item.cantidad; // set to max available
+          item.cantidad = product.stock + item.cantidad;
           productStore.decreaseStock(productId, product.stock);
           return;
         }
         productStore.decreaseStock(productId, quantityDiff);
       } else {
-        // decreasing quantity
         productStore.increaseStock(productId, -quantityDiff);
       }
 
@@ -216,7 +260,8 @@ export default {
 
     const total = computed(() => subtotal.value);
 
-    const handleCheckout = (method) => {
+    // REESCRITO para usar Supabase con la tabla purchase_history
+    const handleCheckout = async (method) => {
       if (!verificarSuspension()) return;
 
       if (cartItems.value.length === 0) {
@@ -224,29 +269,57 @@ export default {
         return;
       }
 
-      productStore.updateStockInDB(cartItems.value);
+      const userId = authStore.usuario?.id;
+      if (!userId) {
+        alert('Error: No se pudo identificar al usuario. Por favor, inicia sesión de nuevo.');
+        return;
+      }
 
-      const purchase = {
-        id: Date.now(),
-        fecha: new Date().toLocaleString('es-MX', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        items: [...cartItems.value],
+      const productsToSave = cartItems.value.map(item => ({
+        product_id: item.id,
+        name: item.nombre,
+        quantity: item.cantidad,
+        price: item.precio
+      }));
+
+      const { data: purchaseData, error: purchaseError } = await supabase
+        .from('purchase_history')
+        .insert({
+          cashier_id: userId,
+          products: productsToSave,
+          total_amount: total.value,
+          payment_method: method
+        })
+        .select()
+        .single();
+
+      if (purchaseError) {
+        console.error('Error al registrar la compra:', purchaseError);
+        alert('Hubo un error al registrar la compra. Por favor, inténtalo de nuevo.');
+        return;
+      }
+
+      // Actualizar el stock en la base de datos
+      await productStore.updateStockInDB(cartItems.value);
+
+      // Generar el PDF
+      const cajeroNombre = authStore.perfil?.nombre || authStore.usuario?.email;
+      const purchaseForPdf = {
+        id: purchaseData.id,
+        fecha: new Date(purchaseData.created_at).toLocaleString('es-MX'),
+        items: cartItems.value.map(item => ({...item})),
         total: total.value,
-        paymentMethod: method,
-        cajero: authStore.perfil?.nombre || authStore.usuario?.email
+        cajero: cajeroNombre,
+        paymentMethod: method
       };
+      generatePdf(purchaseForPdf);
 
-      purchaseHistory.value.unshift(purchase);
-
-      generatePdf(purchase);
-
+      // Limpiar estado local
       cartItems.value = [];
       paymentMethod.value = null;
+
+      // Refrescar el historial de compras desde la DB
+      fetchPurchaseHistory();
     };
 
     const handleCancelPurchase = () => {
@@ -261,8 +334,8 @@ export default {
     };
 
     const deletePurchase = (purchaseId) => {
-      if (!verificarSuspension()) return
-      purchaseHistory.value = purchaseHistory.value.filter(p => p.id !== purchaseId);
+      if (!verificarSuspension()) return;
+      alert('La eliminación de compras aún no está disponible.');
     };
 
     return {
