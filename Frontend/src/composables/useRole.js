@@ -1,10 +1,12 @@
+// Frontend/src/composables/useRole.js
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router' // <-- Importar useRoute
 
 export function useRole() {
   const authStore = useAuthStore()
   const router = useRouter()
+  const route = useRoute() // <-- Instanciar useRoute
 
   const isAuthenticated = computed(() => !!authStore.usuario)
   const currentRole = computed(() => authStore.rolUsuario)
@@ -39,8 +41,12 @@ export function useRole() {
     return true
   }
 
+  // --- FUNCIÓN CORREGIDA ---
+  // Esta función ahora guarda la ruta actual antes de redirigir a login
   const requireAuth = (redirectTo = '/login') => {
     if (!isAuthenticated.value) {
+      // Guarda la ruta actual completa (con query params)
+      localStorage.setItem('authRedirect', route.fullPath)
       router.push(redirectTo)
       return false
     }
@@ -70,8 +76,8 @@ export function useRole() {
     hasAnyRole,
     hasAllRoles,
     requireRole,
-    requireAuth,
-
+    requireAuth, 
+    
     // Roles específicos
     isAdmin,
     isVendedor,

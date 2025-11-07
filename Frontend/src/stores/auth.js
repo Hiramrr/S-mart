@@ -2,11 +2,13 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { supabase } from '@/lib/supabase.js'
+// No importes 'useRouter' aquí, lo inyectaremos.
 
 export const useAuthStore = defineStore('auth', () => {
   const usuario = ref(null)
   const perfil = ref(null)
   const loading = ref(false)
+  const router = ref(null) // 1. Referencia para el router
 
   const rolUsuario = computed(() => perfil.value?.rol || null)
 
@@ -16,6 +18,15 @@ export const useAuthStore = defineStore('auth', () => {
   const esCajero = computed(() => rolUsuario.value === 'cajero')
   const esInvitado = computed(() => rolUsuario.value === 'invitado')
   const estaSuspendido = computed(() => perfil.value?.suspendido || false)
+
+  /**
+   * Inyecta la instancia del router de Vue en el store.
+   * Debe llamarse desde main.js
+   * @param {import('vue-router').Router} routerInstance
+   */
+  function setRouter(routerInstance) {
+    router.value = routerInstance
+  }
 
   async function cargarPerfil() {
     if (!usuario.value) return
@@ -89,11 +100,20 @@ export const useAuthStore = defineStore('auth', () => {
   async function cerrarSesion() {
     try {
       loading.value = true
+      // 3. Limpia el redirect guardado al cerrar sesión
+      localStorage.removeItem('authRedirect')
+      
       const { error } = await supabase.auth.signOut()
       if (error) throw error
 
       usuario.value = null
       perfil.value = null
+
+      // 3. Redirige a home usando el router inyectado
+      if (router.value) {
+        router.value.push('/')
+      }
+
     } catch (error) {
       console.error('Error al cerrar sesión:', error)
     } finally {
@@ -101,10 +121,35 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  supabase.auth.onAuthStateChange((event, session) => {
-    if (session?.user) {
+  // 2. Lógica de redirección mejorada
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    
+    if (event === 'SIGNED_IN' && session?.user) {
+      // Usuario ha iniciado sesión
       usuario.value = session.user
-      cargarPerfil()
+      await cargarPerfil() // Espera a que el perfil esté listo
+      
+      if (router.value) {
+        const redirectPath = localStorage.getItem('authRedirect')
+        
+        if (redirectPath) {
+          localStorage.removeItem('authRedirect') // Limpia el storage
+          router.value.push(redirectPath) // Redirige a la ruta guardada
+        } else if (router.value.currentRoute.value.name === 'login') {
+          router.value.push({ name: 'home' })
+        }
+      }
+    } else if (event === 'SIGNED_OUT') {
+      usuario.value = null
+      perfil.value = null
+      if (router.value) {
+        router.value.push({ name: 'home' })
+      }
+    } else if (session?.user) {
+      usuario.value = session.user
+      if (!perfil.value) {
+        await cargarPerfil()
+      }
     } else {
       usuario.value = null
       perfil.value = null
@@ -122,6 +167,7 @@ export const useAuthStore = defineStore('auth', () => {
     esCajero,
     esInvitado,
     estaSuspendido,
+    setRouter, 
     cargarPerfil,
     crearPerfil,
     inicializarSesion,
