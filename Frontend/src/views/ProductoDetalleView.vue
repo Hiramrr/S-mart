@@ -1,18 +1,22 @@
 <script setup>
-import { ref, onMounted, computed, watch} from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { supabase } from '@/lib/supabase.js'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
-import ImageGallery from '@/components/DetallesProductos/ImageGallery.vue';
-import ProductInfo from '@/components/DetallesProductos/ProductInfo.vue';
-import PurchaseActions from '@/components/DetallesProductos/PurchaseActions.vue';
-import RelatedProducts from '@/components/DetallesProductos/RelatedProducts.vue';
-import ProductReviews from '@/components/DetallesProductos/ProductReviews.vue';
+import ImageGallery from '@/components/DetallesProductos/ImageGallery.vue'
+import ProductInfo from '@/components/DetallesProductos/ProductInfo.vue'
+import PurchaseActions from '@/components/DetallesProductos/PurchaseActions.vue'
+import RelatedProducts from '@/components/DetallesProductos/RelatedProducts.vue'
+import ProductReviews from '@/components/DetallesProductos/ProductReviews.vue'
 
-import { useCartStore } from '@/stores/cartStore' // 1. Importa tu nuevo store
-const cartStore = useCartStore() // 2. Inicializa el store
+import { useCartStore } from '@/stores/cartStore'
+import { useRole } from '@/composables/useRole' // 1. Importa el composable de roles
+
+const cartStore = useCartStore()
 const authStore = useAuthStore()
+const router = useRouter()
+const { requireAuth } = useRole() // 2. Inicializa la función que necesitas
 
 const props = defineProps({
   id: {
@@ -21,13 +25,12 @@ const props = defineProps({
   },
 })
 
-const router = useRouter()
 const product = ref(null)
 const loading = ref(true)
 const error = ref(null)
 
 async function cargarDetalleProducto() {
-  product.value = null // Limpia el producto anterior
+  product.value = null
   loading.value = true
   error.value = null
 
@@ -37,23 +40,22 @@ async function cargarDetalleProducto() {
 
     const { data, error: supabaseError } = await supabase
       .from('productos')
-      .select('*') 
+      .select('*')
       .eq('id', props.id)
-      .single() 
+      .single()
 
     if (supabaseError) {
       if (supabaseError.code === 'PGRST116') {
         throw new Error('Producto no encontrado.')
       }
-      throw supabaseError // Lanza otros errores
+      throw supabaseError
     }
 
     if (!data) {
       throw new Error('Producto no encontrado.')
     }
 
-    product.value = data // Guardamos los datos completos del producto
-
+    product.value = data
   } catch (err) {
     console.error('Error al cargar detalle del producto:', err)
     error.value = err.message || 'Error al cargar la información del producto.'
@@ -62,64 +64,88 @@ async function cargarDetalleProducto() {
   }
 }
 
-// Formatear precio para mostrarlo
+// ... (tus computed properties 'finalPrice' y 'originalPrice' están perfectas) ...
 const finalPrice = computed(() => {
   if (!product.value) return ''
-  const tieneDescuento = product.value.precio_descuento && product.value.precio_descuento > 0 && product.value.precio_descuento < product.value.precio_venta
-  
+  const tieneDescuento =
+    product.value.precio_descuento &&
+    product.value.precio_descuento > 0 &&
+    product.value.precio_descuento < product.value.precio_venta
+
   return tieneDescuento
     ? `$${product.value.precio_descuento.toFixed(2)}`
     : `$${product.value.precio_venta.toFixed(2)}`
 })
 
-// 'originalPrice' es el precio tachado (solo si hay descuento)
 const originalPrice = computed(() => {
   if (!product.value) return null
-  const tieneDescuento = product.value.precio_descuento && product.value.precio_descuento > 0 && product.value.precio_descuento < product.value.precio_venta
-  
-  return tieneDescuento
-    ? `$${product.value.precio_venta.toFixed(2)}`
-    : null
+  const tieneDescuento =
+    product.value.precio_descuento &&
+    product.value.precio_descuento > 0 &&
+    product.value.precio_descuento < product.value.precio_venta
+
+  return tieneDescuento ? `$${product.value.precio_venta.toFixed(2)}` : null
 })
-// Cargar datos cuando el componente se monta
+
 onMounted(() => {
   cargarDetalleProducto()
 })
 
-// Observa cambios en la prop 'id'. Si cambia, vuelve a cargar los datos.
-watch(() => props.id, (newId, oldId) => {
-  if (newId !== oldId && newId) {
-    cargarDetalleProducto()
+watch(
+  () => props.id,
+  (newId, oldId) => {
+    if (newId !== oldId && newId) {
+      cargarDetalleProducto()
+    }
   }
-})
+)
 
-// Funciones para manejar acciones (agregar al carrito, comprar)
+// --- FUNCIÓN "AÑADIR A CARRITO" ACTUALIZADA ---
 const handleAddToCart = (quantity) => {
   if (authStore.estaSuspendido) {
     alert('Tu cuenta ha sido suspendida. No puedes realizar compras.')
     return
   }
+
+  // 3. Verifica la autenticación
+  // Si el usuario no está logueado, requireAuth() lo redirige y retorna 'false'
+  if (!requireAuth()) {
+    return // Detiene la ejecución aquí
+  }
+
+  // Si el usuario SÍ está logueado (el código continúa):
   if (product.value) {
-    // 3. Llama a la acción del store
-    cartStore.addProduct(product.value, quantity) 
+    cartStore.addProduct(product.value, quantity)
     alert(`${quantity} ${product.value?.nombre} añadido(s) al carrito.`)
   }
 }
 
+// --- FUNCIÓN "COMPRAR AHORA" ACTUALIZADA ---
 const handleBuyNow = (quantity) => {
   if (authStore.estaSuspendido) {
     alert('Tu cuenta ha sido suspendida. No puedes realizar compras.')
     return
   }
+
+  // 4. Verifica la autenticación (exactamente igual que en 'Añadir a Carrito')
+  // Si no está logueado, guarda esta página y redirige a login
+  if (!requireAuth()) {
+    return // Detiene la ejecución aquí
+  }
+
+  // Si el usuario SÍ está logueado:
   if (product.value) {
-    // También puedes añadir al carrito y luego redirigir
-    cartStore.addProduct(product.value, quantity)
-    // Cuando tengas la página de checkout, rediriges:
-    // router.push('/checkout')
-    alert(`Iniciando compra de ${quantity} ${product.value?.nombre} (simulado).`)
+    // 5. Redirige a 'checkout' con la info del producto en la URL
+    // ¡Esto SALTA el carrito!
+    router.push({
+      name: 'checkout', // Debes crear esta ruta
+      query: {
+        buyNowId: product.value.id,
+        qty: quantity,
+      },
+    })
   }
 }
-
 </script>
 
 <template>
@@ -142,7 +168,7 @@ const handleBuyNow = (quantity) => {
       <div v-else-if="error" class="status-message error-state">
         <p>⚠️ {{ error }}</p>
         <button @click="cargarDetalleProducto" class="retry-button">Reintentar</button>
-         <button @click="router.push('/tienda')" class="back-button">Volver a la tienda</button>
+        <button @click="router.push('/tienda')" class="back-button">Volver a la tienda</button>
       </div>
 
       <div v-else-if="product" :key="product.id">
@@ -154,7 +180,7 @@ const handleBuyNow = (quantity) => {
 
             <ProductInfo
               :name="product.nombre"
-              :price="finalPrice"           
+              :price="finalPrice"         
               :original-price="originalPrice" 
               :description="product.descripcion"
               :category="product.categoria"
@@ -187,6 +213,8 @@ const handleBuyNow = (quantity) => {
 </template>
 
 <style scoped>
+/* Tu CSS se mantiene exactamente igual. */
+/* ... (todo tu código de <style> va aquí) ... */
 .product-detail-page {
   min-height: 100vh;
   background-color: #f9fafb;
