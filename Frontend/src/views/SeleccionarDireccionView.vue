@@ -49,7 +49,6 @@ function seleccionarDireccion(id) {
 }
 
 function continuarConPago() {
-  // Aquí puedes poner la lógica para continuar con el pago, por ejemplo navegar a la vista de pago
   router.push('/pago-tarjeta')
 }
 

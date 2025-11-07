@@ -106,7 +106,6 @@ const handleAddToCart = (quantity) => {
     alert('Tu cuenta ha sido suspendida. No puedes realizar compras.')
     return
   }
-
   // 3. Verifica la autenticación
   // Si el usuario no está logueado, requireAuth() lo redirige y retorna 'false'
   if (!requireAuth()) {
@@ -119,31 +118,30 @@ const handleAddToCart = (quantity) => {
   }
 }
 
-// --- FUNCIÓN "COMPRAR AHORA" ACTUALIZADA ---
 const handleBuyNow = (quantity) => {
-  if (authStore.estaSuspendido) {
-    alert('Tu cuenta ha sido suspendida. No puedes realizar compras.')
-    return
-  }
+  // 1. Verifica suspensión (como ya lo tenías)
+  if (authStore.estaSuspendido) {
+    alert('Tu cuenta ha sido suspendida. No puedes realizar compras.')
+    return
+  }
 
-  // 4. Verifica la autenticación (exactamente igual que en 'Añadir a Carrito')
-  // Si no está logueado, guarda esta página y redirige a login
-  if (!requireAuth()) {
-    return // Detiene la ejecución aquí
-  }
+  // 2. Verifica la autenticación
+  // Si no está logueado, requireAuth() lo redirige y retorna 'false'
+  if (!requireAuth()) {
+    return // Detiene la ejecución aquí
+  }
 
-  // Si el usuario SÍ está logueado:
-  if (product.value) {
-    // 5. Redirige a 'checkout' con la info del producto en la URL
-    // ¡Esto SALTA el carrito!
-    router.push({
-      name: 'checkout', // Debes crear esta ruta
-      query: {
-        buyNowId: product.value.id,
-        qty: quantity,
-      },
-    })
-  }
+  // 3. Si el usuario SÍ está logueado:
+  if (product.value) {
+    // 4. Redirige a 'seleccionar-direccion' con la info del producto en la URL
+    router.push({
+      name: 'seleccionar-direccion', // <-- ¡Ruta actualizada!
+      query: {
+        buyNowId: product.value.id,
+        qty: quantity,
+      },
+    })
+  }
 }
 </script>
 
