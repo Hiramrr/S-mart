@@ -12,6 +12,7 @@ import CarritoView from '../views/CarritoView.vue'
 import AgregarDomicilioView from '../views/AgregarDomicilioView.vue'
 import SeleccionarDireccionView from '../views/SeleccionarDireccionView.vue'
 import PerfilView from '../views/PerfilView.vue'
+import PagoTarjetaView from '../views/PagoTarjetaView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
