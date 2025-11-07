@@ -116,7 +116,6 @@ const handleAddToCart = (quantity) => {
   // Si el usuario SÍ está logueado (el código continúa):
   if (product.value) {
     cartStore.addProduct(product.value, quantity)
-    alert(`${quantity} ${product.value?.nombre} añadido(s) al carrito.`)
   }
 }
 
