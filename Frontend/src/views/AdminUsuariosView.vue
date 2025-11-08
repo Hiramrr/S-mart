@@ -17,18 +17,39 @@ const nuevoUsuario = ref({
   rol: 'cliente',
 })
 
+const mostrarModalCodigo = ref(false)
+const usuarioParaCodigo = ref(null)
+const nuevoCodigoCierre = ref('')
+
 const cargarUsuarios = async () => {
   try {
     cargando.value = true
     error.value = null
 
+    // Hacemos el "join" para traer los códigos
     const { data, error: err } = await supabase
       .from('usuarios')
-      .select('*')
+      .select(`
+        *,
+        codigo_entrada_cajero ( codigo )
+      `)
       .order('email', { ascending: true })
 
     if (err) throw err
-    usuarios.value = data || []
+    
+    // Mapeamos los datos para aplanar la estructura
+    usuarios.value = (data || []).map(u => {
+      const { codigo_entrada_cajero, ...userData } = u;
+      let cierre_code = null;
+      if (codigo_entrada_cajero && codigo_entrada_cajero.length > 0) {
+        cierre_code = codigo_entrada_cajero[0].codigo;
+      }
+      return {
+        ...userData,
+        cierre_code // Añadimos la propiedad 'cierre_code'
+      };
+    });
+
   } catch (err) {
     console.error('Error al cargar usuarios:', err)
     error.value = 'Error al cargar los usuarios'
@@ -55,13 +76,6 @@ const guardarRol = async () => {
   try {
     cargando.value = true
     error.value = null
-
-    console.log('Actualizando rol:', {
-      id: usuarioEditando.value.id,
-      rolAnterior: usuarioEditando.value.rol,
-      rolNuevo: nuevoUsuario.value.rol
-    })
-
     const { data, error: err } = await supabase
       .from('usuarios')
       .update({
@@ -70,13 +84,7 @@ const guardarRol = async () => {
       .eq('id', usuarioEditando.value.id)
       .select()
 
-    if (err) {
-      console.error('Error de Supabase:', err)
-      throw err
-    }
-
-    console.log('Respuesta de actualización:', data)
-
+    if (err) throw err
     await cargarUsuarios()
     cerrarFormulario()
   } catch (err) {
@@ -101,26 +109,71 @@ const cerrarModalSuspension = () => {
 
 const confirmarSuspension = async () => {
   if (!usuarioASuspender.value) return
-
   const nuevoEstado = !usuarioASuspender.value.suspendido
   const mensaje = nuevoEstado ? 'suspender' : 'reactivar'
-
   try {
     cargando.value = true
     error.value = null
-
     const { error: err } = await supabase
       .from('usuarios')
       .update({ suspendido: nuevoEstado })
       .eq('id', usuarioASuspender.value.id)
-
     if (err) throw err
-
     await cargarUsuarios()
     cerrarModalSuspension()
   } catch (err) {
     console.error('Error al cambiar estado de suspensión:', err)
     error.value = `Error al ${mensaje} el usuario`
+  } finally {
+    cargando.value = false
+  }
+}
+
+const abrirModalCodigo = (usuario) => {
+  usuarioParaCodigo.value = usuario
+  nuevoCodigoCierre.value = usuario.cierre_code || '' 
+  mostrarModalCodigo.value = true
+  error.value = null
+}
+
+const cerrarModalCodigo = () => {
+  mostrarModalCodigo.value = false
+  usuarioParaCodigo.value = null
+  nuevoCodigoCierre.value = ''
+  error.value = null
+}
+
+const guardarCodigoCierre = async () => {
+  if (nuevoCodigoCierre.value.length !== 4) {
+    error.value = 'El código debe ser de 4 dígitos.'
+    return
+  }
+  try {
+    cargando.value = true
+    error.value = null
+    
+    // Usamos 'upsert' en la tabla 'codigo_entrada_cajero'
+    const { error: err } = await supabase
+      .from('codigo_entrada_cajero')
+      .upsert({ 
+        usuario_id: usuarioParaCodigo.value.id, 
+        codigo: nuevoCodigoCierre.value 
+      }, {
+        onConflict: 'usuario_id' // Le dice a Supabase que 'usuario_id' es la clave de conflicto
+      })
+
+    if (err) {
+      if (err.code === '23505') { 
+        throw new Error('Ese código ya está en uso por otro usuario. Elige uno diferente.')
+      }
+      throw err
+    }
+
+    await cargarUsuarios() // Recarga la lista de usuarios
+    cerrarModalCodigo()
+  } catch (err) {
+    console.error('Error al guardar código:', err)
+    error.value = err.message || 'Error al guardar el código'
   } finally {
     cargando.value = false
   }
@@ -145,7 +198,7 @@ onMounted(() => {
     <div class="usuarios-container">
       <div class="header-section">
         <h1>Gestión de Usuarios</h1>
-        <p class="subtitle">Administra los roles de los usuarios del sistema</p>
+        <p class="subtitle">Administra los roles y permisos de los usuarios del sistema</p>
       </div>
 
       <div v-if="cargando && usuarios.length === 0" class="loading-state">
@@ -165,7 +218,11 @@ onMounted(() => {
             </h3>
             <p class="usuario-email">{{ usuario.email }}</p>
             <span class="usuario-rol" :class="`rol-${usuario.rol}`">{{ usuario.rol }}</span>
-          </div>
+            
+            <p v-if="usuario.cierre_code" class="usuario-codigo">
+              Código: <strong>{{ usuario.cierre_code }}</strong>
+            </p>
+            </div>
           <div class="usuario-actions">
             <button class="icon-btn edit-btn" title="Cambiar rol" @click="abrirFormulario(usuario)" :disabled="usuario.suspendido">
               <svg
@@ -181,7 +238,20 @@ onMounted(() => {
                 <path d="M12 20h9" />
                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
               </svg>
-              <span class="btn-label">Cambiar rol</span>
+              <span class="btn-label">Rol</span>
+            </button>
+            
+            <button 
+              v-if="usuario.rol === 'cajero' || usuario.rol === 'administrador'"
+              class="icon-btn code-btn" 
+              :title="usuario.cierre_code ? 'Cambiar código' : 'Asignar código'"
+              @click="abrirModalCodigo(usuario)"
+              :disabled="usuario.suspendido"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+              </svg>
+              <span class="btn-label">{{ usuario.cierre_code ? 'Cambiar' : 'Asignar' }} Código</span>
             </button>
             <button 
               class="icon-btn" 
@@ -222,7 +292,6 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Modal para suspender/reactivar usuario -->
     <div v-if="mostrarModalSuspension" class="modal-overlay" @click.self="cerrarModalSuspension">
       <div class="modal-content modal-suspension">
         <div class="modal-header">
@@ -349,7 +418,53 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Modal para editar rol -->
+    <div v-if="mostrarModalCodigo" class="modal-overlay" @click.self="cerrarModalCodigo">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Asignar Código de Cierre</h2>
+          <button class="btn-cerrar" @click="cerrarModalCodigo">&times;</button>
+        </div>
+        
+        <div v-if="error" class="error-message-modal">
+          {{ error }}
+        </div>
+
+        <form @submit.prevent="guardarCodigoCierre" class="form-usuario">
+          <div class="form-group">
+            <label>Usuario</label>
+            <p class="usuario-detail">{{ usuarioParaCodigo?.nombre || 'Sin nombre' }}</p>
+            <p class="usuario-detail-email">{{ usuarioParaCodigo?.email }}</p>
+          </div>
+          
+          <div class="form-group">
+            <label for="codigo-cierre">Código de 4 dígitos</label>
+            <input
+              id="codigo-cierre"
+              v-model="nuevoCodigoCierre"
+              type="text" 
+              placeholder="••••"
+              maxlength="4"
+              pattern="\d{4}"
+              inputmode="numeric"
+              required
+              :disabled="cargando"
+              @input="nuevoCodigoCierre = nuevoCodigoCierre.replace(/\D/g, '').substring(0, 4)"
+              class="codigo-input-style"
+            />
+          </div>
+          
+          <div class="form-actions">
+            <button type="button" class="btn-cancelar" @click="cerrarModalCodigo" :disabled="cargando">
+              Cancelar
+            </button>
+            <button type="submit" class="btn-guardar" :disabled="cargando || nuevoCodigoCierre.length !== 4">
+              {{ cargando ? 'Guardando...' : 'Guardar Código' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <div v-if="mostrarFormulario" class="modal-overlay" @click.self="cerrarFormulario">
       <div class="modal-content">
         <div class="modal-header">
@@ -466,6 +581,17 @@ onMounted(() => {
   color: #6b7280;
   font-size: 0.9rem;
   margin-bottom: 0.75rem;
+  word-break: break-all; /* Para correos largos */
+}
+
+.usuario-codigo {
+  font-size: 0.9rem;
+  color: #4b5563;
+  margin-top: 0.75rem;
+  background: #f3f4f6;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
 }
 
 .usuario-rol {
@@ -499,6 +625,7 @@ onMounted(() => {
 
 .usuario-actions {
   display: flex;
+  flex-wrap: wrap; /* Para que los botones se ajusten */
   justify-content: center;
   gap: 0.75rem;
   margin-top: 1rem;
@@ -517,7 +644,7 @@ onMounted(() => {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.icon-btn:hover {
+.icon-btn:hover:not(:disabled) {
   background: #e5e7eb;
   transform: translateY(-2px);
 }
@@ -529,6 +656,14 @@ onMounted(() => {
 
 .edit-btn svg {
   stroke: #3b82f6;
+}
+
+/* Estilo para el nuevo botón de código */
+.code-btn svg {
+  stroke: #f59e0b; /* Color ámbar/naranja */
+}
+.code-btn:hover:not(:disabled) {
+  background: #fef9c3;
 }
 
 .suspend-btn {
@@ -648,7 +783,8 @@ onMounted(() => {
   margin: 0.25rem 0 0 0;
 }
 
-.form-group select {
+.form-group select,
+.form-group input {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #d1d5db;
@@ -659,7 +795,15 @@ onMounted(() => {
   background: #fff;
 }
 
-.form-group select:focus {
+/* Estilo para el input del código en el modal */
+.codigo-input-style {
+  font-size: 1.5rem;
+  text-align: center;
+  letter-spacing: 0.5em; /* Espaciar los dígitos */
+}
+
+.form-group select:focus,
+.form-group input:focus {
   outline: none;
   border-color: #3b82f6;
 }
@@ -945,8 +1089,6 @@ onMounted(() => {
 
 .btn-suspender:hover:not(:disabled) {
   background: #b91c1c;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px rgba(220, 38, 38, 0.25);
 }
 
 .btn-reactivar {
@@ -956,8 +1098,6 @@ onMounted(() => {
 
 .btn-reactivar:hover:not(:disabled) {
   background: #047857;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px rgba(5, 150, 105, 0.25);
 }
 
 .btn-confirmar:disabled {

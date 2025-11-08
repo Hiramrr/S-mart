@@ -1,4 +1,3 @@
-<!-- CajeroView.vue -->
 <template>
   <div class="cajero-view">
     <div v-if="authStore.estaSuspendido" class="suspension-overlay">
@@ -18,28 +17,22 @@
       <h1 class="title">Producto/s</h1>
       
       <div class="grid-layout">
-        <!-- Columna izquierda -->
         <div class="left-column">
-          <!-- Selector de productos -->
           <ProductSelector 
             :products="products"
             @add-product="addProduct" 
           />
           
-          <!-- Historial de compra -->
-          <PurchaseHistory :purchases="purchaseHistory" @delete-purchase="deletePurchase" />
+          <PurchaseHistory :purchases="purchaseHistory" @delete-purchase="handleDeleteRequest" />
         </div>
         
-        <!-- Columna derecha -->
         <div class="right-column">
-          <!-- Carrito de compras -->
           <ShoppingCart 
             :items="cartItems" 
             @update-quantity="updateQuantity"
             @remove-item="removeItem"
           />
           
-          <!-- Resumen de compra -->
           <PurchaseSummary 
             :subtotal="subtotal"
             :total="total"
@@ -47,15 +40,49 @@
             @checkout="handleCheckout"
             @cancel-purchase="handleCancelPurchase"
           />
-        </div>
+
+          <button 
+            class="btn-cierre-caja" 
+            @click="iniciarCierreCaja" 
+            :disabled="authStore.estaSuspendido"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3v18h18"/>
+              <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+              <polyline points="15 8 18.7 8 18.7 11.7"/>
+            </svg>
+            <span>Hacer Cierre de Caja</span>
+          </button>
+          </div>
       </div>
     </div>
 
-    <!-- Ticket for PDF Generation (hidden from view) -->
     <div style="position: absolute; left: -9999px; top: 0;">
       <Ticket v-if="ticketData" :purchase="ticketData" ref="ticketRef" />
     </div>
-  </div>
+
+    <div style="position: absolute; left: -9999px; top: 0;">
+      <CierreCajaReport v-if="cierreCajaData" :report="cierreCajaData" ref="cierreCajaReportRef" />
+    </div>
+    <SecurityCodeModal
+      v-if="showCierreCajaModal"
+      title="Cierre de Caja"
+      description="Ingresa tu código de 4 dígitos para generar el reporte de cierre."
+      :code-length="4"
+      :security-code="authStore.perfil?.cierre_code || 'INVALID'"
+      @cancel="showCierreCajaModal = false"
+      @confirm="handleCierreCajaConfirm"
+    />
+    <SecurityCodeModal
+      v-if="showDeleteSecurityModal"
+      title="Eliminar Venta"
+      description="Ingresa tu código de 4 dígitos para confirmar la eliminación."
+      :code-length="4"
+      :security-code="authStore.perfil?.cierre_code || 'INVALID'"
+      @cancel="showDeleteSecurityModal = false; purchaseToDelete = null;"
+      @confirm="handleDeleteConfirm"
+    />
+    </div>
 </template>
 
 <script>
@@ -72,6 +99,8 @@ import ShoppingCart from '@/components/Cajero/ShoppingCart.vue';
 import PurchaseSummary from '@/components/Cajero/PurchaseSummary.vue';
 import PurchaseHistory from '@/components/Cajero/PurchaseHistory.vue';
 import Ticket from '@/components/Cajero/Ticket.vue';
+import CierreCajaReport from '@/components/Cajero/CierreCajaReport.vue'; // <-- 1. Importar reporte
+import SecurityCodeModal from '@/components/Cajero/SecurityCodeModal.vue'; // <-- 2. Importar modal
 
 export default {
   name: 'CajeroView',
@@ -81,7 +110,9 @@ export default {
     ShoppingCart,
     PurchaseSummary,
     PurchaseHistory,
-    Ticket
+    Ticket,
+    CierreCajaReport, // <-- 3. Registrar componente
+    SecurityCodeModal // <-- 4. Registrar componente
   },
   setup() {
     const productStore = useProductStore();
@@ -92,6 +123,14 @@ export default {
     const paymentMethod = ref(null);
     const ticketData = ref(null);
     const ticketRef = ref(null);
+
+    // --- INICIO: Nuevos refs para Cierre de Caja ---
+    const showCierreCajaModal = ref(false);
+    const cierreCajaData = ref(null);
+    const cierreCajaReportRef = ref(null);
+    const showDeleteSecurityModal = ref(false);
+    const purchaseToDelete = ref(null); 
+    // --- FIN: Nuevos refs ---
 
     const verificarSuspension = () => {
       if (authStore.estaSuspendido) {
@@ -333,10 +372,172 @@ export default {
       paymentMethod.value = null;
     };
 
+    // Abre el modal de seguridad para eliminar
+    const handleDeleteRequest = (purchaseId) => {
+      if (!verificarSuspension()) return;
+      if (!authStore.perfil?.cierre_code) {
+          alert('No tienes un código de seguridad asignado. Contacta a un administrador.');
+          return;
+      }
+      purchaseToDelete.value = purchaseId;
+      showDeleteSecurityModal.value = true;
+    };
+
+    // Se llama al confirmar el modal de seguridad de eliminación
+    const handleDeleteConfirm = () => {
+      showDeleteSecurityModal.value = false;
+      deletePurchase(purchaseToDelete.value);
+      purchaseToDelete.value = null;
+    };
+
+    // Lógica real de eliminación
     const deletePurchase = (purchaseId) => {
       if (!verificarSuspension()) return;
-      alert('La eliminación de compras aún no está disponible.');
+      alert(`La eliminación de compra (ID: ${purchaseId}) aún no está implementada en la base de datos.`);
+      // Aquí iría la llamada a Supabase para eliminar
+      // const { error } = await supabase.from('purchase_history').delete().eq('id', purchaseId)
+      // if (error) { ... }
+      // else { fetchPurchaseHistory() }
     };
+
+
+    // --- INICIO: NUEVAS FUNCIONES PARA CIERRE DE CAJA ---
+    
+    const iniciarCierreCaja = () => {
+      if (!verificarSuspension()) return;
+      
+      // Verificar que el cajero tenga un código
+      if (!authStore.perfil?.cierre_code) {
+        alert('No tienes un código de cierre asignado. Contacta a un administrador.');
+        return;
+      }
+      
+      // Verificar si hay ventas (usamos el historial local como proxy rápido)
+      // Idealmente, se consultaría la BD por ventas del día
+      if (purchaseHistory.value.length === 0) {
+        alert('No hay ventas registradas recientemente para incluir en el cierre.');
+        return;
+      }
+      
+      showCierreCajaModal.value = true;
+    };
+
+    const handleCierreCajaConfirm = async () => {
+      if (!verificarSuspension()) return;
+      showCierreCajaModal.value = false;
+
+      // 1. Fetch data for the report (all sales for today by this cashier)
+      try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Inicio del día
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1); // Inicio del día siguiente
+
+        const { data, error } = await supabase
+          .from('purchase_history')
+          .select('*')
+          .eq('cashier_id', authStore.usuario.id)
+          .gte('created_at', today.toISOString())
+          .lt('created_at', tomorrow.toISOString())
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          alert('No se encontraron ventas para el día de hoy.');
+          return;
+        }
+
+        // 2. Prepare data for the report component
+        const reportData = {
+          fecha: new Date().toLocaleString('es-MX'),
+          cajero: authStore.perfil?.nombre || authStore.usuario?.email,
+          purchases: data.map(p => ({ 
+            id: p.id,
+            total_amount: p.total_amount, // Asegúrate de usar el nombre correcto de la columna
+            paymentMethod: p.payment_method,
+            items: p.products // Asumimos que p.products es el array de items
+          }))
+        };
+
+        // 3. Generate PDF
+        await generateCierreCajaPdf(reportData);
+
+      } catch (err) {
+        console.error('Error al generar el cierre de caja:', err);
+        alert('Error al generar el reporte: ' + err.message);
+      }
+    };
+
+    const generateCierreCajaPdf = async (reportData) => {
+      cierreCajaData.value = reportData;
+      await nextTick(); // Esperar que el DOM se actualice
+
+      const reportElement = cierreCajaReportRef.value?.$el;
+      if (!reportElement) {
+        console.error("Elemento del reporte no encontrado!");
+        return;
+      }
+
+      try {
+        const canvas = await html2canvas(reportElement, { scale: 2 });
+        const imgData = canvas.toDataURL('image/png');
+        
+        // Usar A4 portrait para el reporte
+        const pdf = new jsPDF('p', 'px', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeightInPx = pdf.internal.pageSize.getHeight();
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const ratio = canvasHeight / canvasWidth;
+        
+        let pdfHeight = pdfWidth * ratio;
+        let position = 0;
+
+        // Si el contenido es más alto que una página
+        if (pdfHeight > pdfHeightInPx) {
+            let heightLeft = canvasHeight;
+            const pageHeightInCanvas = (pdfHeightInPx * canvasWidth) / pdfWidth;
+
+            // Dibuja la primera parte
+            const pageCanvas = document.createElement('canvas');
+            pageCanvas.width = canvasWidth;
+            pageCanvas.height = pageHeightInCanvas;
+            const pageCtx = pageCanvas.getContext('2d');
+            pageCtx.drawImage(canvas, 0, 0, canvasWidth, pageHeightInCanvas, 0, 0, canvasWidth, pageHeightInCanvas);
+            const pageImgData = pageCanvas.toDataURL('image/png');
+            
+            pdf.addImage(pageImgData, 'PNG', 0, 0, pdfWidth, pdfHeightInPx);
+            heightLeft -= pageHeightInCanvas;
+            let yPosition = -pdfHeightInPx;
+
+            while (heightLeft > 0) {
+                pdf.addPage();
+                
+                pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
+                pageCtx.drawImage(canvas, 0, pageHeightInCanvas * (position+1), canvasWidth, pageHeightInCanvas, 0, 0, canvasWidth, pageHeightInCanvas);
+                const nextPageImgData = pageCanvas.toDataURL('image/png');
+
+                pdf.addImage(nextPageImgData, 'PNG', 0, 0, pdfWidth, pdfHeightInPx);
+                heightLeft -= pageHeightInCanvas;
+                position++;
+            }
+        } else {
+             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        }
+        
+        const fileName = `cierre-caja-${new Date().toISOString().split('T')[0]}.pdf`;
+        pdf.save(fileName);
+
+      } catch (error) {
+        console.error("Error generando PDF de cierre:", error);
+        alert("Hubo un error al generar el reporte en PDF.");
+      } finally {
+        cierreCajaData.value = null; // Ocultar el componente
+      }
+    };
+
+    // --- FIN: NUEVAS FUNCIONES PARA CIERRE DE CAJA ---
+
 
     return {
       products: computed(() => productStore.products),
@@ -353,7 +554,16 @@ export default {
       total,
       handleCheckout,
       handleCancelPurchase,
-      deletePurchase
+      // Nuevos retornos
+      showCierreCajaModal,
+      cierreCajaData,
+      cierreCajaReportRef,
+      iniciarCierreCaja,
+      handleCierreCajaConfirm,
+      handleDeleteRequest,
+      handleDeleteConfirm,
+      showDeleteSecurityModal,
+      purchaseToDelete
     };
   }
 };
@@ -436,4 +646,37 @@ export default {
   flex-direction: column;
   gap: 1.5rem;
 }
+
+/* INICIO: Nuevo estilo para el botón de Cierre de Caja */
+.btn-cierre-caja {
+  width: 100%;
+  background-color: #059669; /* Verde */
+  color: white;
+  padding: 0.875rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.btn-cierre-caja:hover:not(:disabled) {
+  background-color: #047857;
+}
+
+.btn-cierre-caja:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.btn-cierre-caja svg {
+  width: 20px;
+  height: 20px;
+}
+/* FIN: Nuevo estilo */
 </style>

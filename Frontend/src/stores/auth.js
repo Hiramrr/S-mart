@@ -2,16 +2,14 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { supabase } from '@/lib/supabase.js'
-// No importes 'useRouter' aquí, lo inyectaremos.
 
 export const useAuthStore = defineStore('auth', () => {
   const usuario = ref(null)
   const perfil = ref(null)
-  const loading = ref(true) // Empieza en true para bloquear hasta que termine la inicialización
-  const router = ref(null) // 1. Referencia para el router
+  const loading = ref(true)
+  const router = ref(null)
 
   const rolUsuario = computed(() => perfil.value?.rol || null)
-
   const esAdmin = computed(() => rolUsuario.value === 'administrador')
   const esCliente = computed(() => rolUsuario.value === 'cliente')
   const esVendedor = computed(() => rolUsuario.value === 'vendedor')
@@ -19,11 +17,6 @@ export const useAuthStore = defineStore('auth', () => {
   const esInvitado = computed(() => rolUsuario.value === 'invitado')
   const estaSuspendido = computed(() => perfil.value?.suspendido || false)
 
-  /**
-   * Inyecta la instancia del router de Vue en el store.
-   * Debe llamarse desde main.js
-   * @param {import('vue-router').Router} routerInstance
-   */
   function setRouter(routerInstance) {
     router.value = routerInstance
   }
@@ -32,16 +25,29 @@ export const useAuthStore = defineStore('auth', () => {
     if (!usuario.value) return
 
     try {
+      // Hacemos un "join" para traer el código desde la tabla relacionada
       const { data, error } = await supabase
         .from('usuarios')
-        .select('*')
+        .select(`
+          *,
+          codigo_entrada_cajero ( codigo )
+        `)
         .eq('id', usuario.value.id)
         .maybeSingle()
 
       if (error) throw error
 
       if (data) {
-        perfil.value = data
+        // 'data' se verá así: { id: ..., rol: 'cajero', ..., codigo_entrada_cajero: [{ codigo: '1234' }] }
+        const { codigo_entrada_cajero, ...userData } = data
+        perfil.value = userData // Asignamos los datos base del usuario
+
+        // Extraemos el código y lo ponemos en el nivel superior del perfil
+        if (codigo_entrada_cajero && codigo_entrada_cajero.length > 0) {
+          perfil.value.cierre_code = codigo_entrada_cajero[0].codigo
+        } else {
+          perfil.value.cierre_code = null
+        }
       } else {
         await crearPerfil()
       }
@@ -53,7 +59,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function crearPerfil() {
     if (!usuario.value) return
-
     try {
       const { data, error } = await supabase
         .from('usuarios')
@@ -68,8 +73,8 @@ export const useAuthStore = defineStore('auth', () => {
         .single()
 
       if (error) throw error
-
       perfil.value = data
+      perfil.value.cierre_code = null 
     } catch (error) {
       console.error('Error al crear el perfil:', error)
       perfil.value = null
@@ -102,7 +107,6 @@ export const useAuthStore = defineStore('auth', () => {
   async function cerrarSesion() {
     try {
       loading.value = true
-      // 3. Limpia el redirect guardado al cerrar sesión
       try {
         localStorage.removeItem('authRedirect')
       } catch (e) {
@@ -115,7 +119,6 @@ export const useAuthStore = defineStore('auth', () => {
       usuario.value = null
       perfil.value = null
 
-      // 3. Redirige a home usando el router inyectado
       if (router.value) {
         router.value.push('/')
       }
@@ -127,25 +130,22 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // 2. Lógica de redirección mejorada
   supabase.auth.onAuthStateChange(async (event, session) => {
-    // Ignorar eventos mientras está inicializando para evitar race conditions
     if (loading.value) {
       return
     }
     
     if (event === 'SIGNED_IN' && session?.user) {
-      // Usuario ha iniciado sesión
       usuario.value = session.user
-      await cargarPerfil() // Espera a que el perfil esté listo
+      await cargarPerfil()
       
       if (router.value) {
         try {
           const redirectPath = localStorage.getItem('authRedirect')
           
           if (redirectPath) {
-            localStorage.removeItem('authRedirect') // Limpia el storage
-            router.value.push(redirectPath) // Redirige a la ruta guardada
+            localStorage.removeItem('authRedirect')
+            router.value.push(redirectPath)
           }
         } catch (storageError) {
           console.warn('Error al manejar authRedirect:', storageError)

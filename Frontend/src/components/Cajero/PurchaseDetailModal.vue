@@ -50,7 +50,7 @@
       <SecurityCodeModal
         v-if="showSecurityModal"
         title="Eliminar Venta"
-        description="Ingresa el código de 5 dígitos para confirmar la eliminación."
+        description="Ingresa el código de 4 dígitos para confirmar la eliminación."
         :code-length="4"
         security-code="5555"
         @cancel="showSecurityModal = false"
@@ -65,6 +65,7 @@ import { computed, ref } from 'vue';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import SecurityCodeModal from './SecurityCodeModal.vue';
+import { useAuthStore } from '@/stores/auth';
 
 export default {
   name: 'PurchaseDetailModal',
@@ -80,6 +81,7 @@ export default {
     const ticketContent = ref(null);
     const modalActions = ref(null);
     const showSecurityModal = ref(false);
+    const authStore = useAuthStore();
 
     const totalItems = computed(() => {
         if (!props.purchase || !props.purchase.items) return 0;
@@ -112,6 +114,11 @@ export default {
     };
 
     const handleDeleteRequest = () => {
+        // 3. Verificar que el cajero tenga un código asignado
+        if (!authStore.perfil?.cierre_code) {
+          alert('No tienes un código de seguridad asignado. Contacta a un administrador.');
+          return;
+        }
         showSecurityModal.value = true;
     };
 
@@ -127,7 +134,8 @@ export default {
         printTicket, 
         showSecurityModal, 
         handleDeleteRequest, 
-        handleSecurityConfirm 
+        handleSecurityConfirm,
+        authStore
     };
   }
 };
