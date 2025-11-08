@@ -38,16 +38,22 @@ export const useAuthStore = defineStore('auth', () => {
       if (error) throw error
 
       if (data) {
-        // 'data' se verá así: { id: ..., rol: 'cajero', ..., codigo_entrada_cajero: [{ codigo: '1234' }] }
+        // --- INICIO DE CORRECCIÓN ---
+        // 'data' se verá así: { id: ..., rol: 'cajero', ..., codigo_entrada_cajero: { codigo: '1234' } }
+        // O si no tiene código: { id: ..., rol: 'cajero', ..., codigo_entrada_cajero: null }
+        
         const { codigo_entrada_cajero, ...userData } = data
         perfil.value = userData // Asignamos los datos base del usuario
 
         // Extraemos el código y lo ponemos en el nivel superior del perfil
-        if (codigo_entrada_cajero && codigo_entrada_cajero.length > 0) {
-          perfil.value.cierre_code = codigo_entrada_cajero[0].codigo
+        // Verificamos si 'codigo_entrada_cajero' es un objeto y no es null
+        if (codigo_entrada_cajero && typeof codigo_entrada_cajero === 'object') {
+          perfil.value.cierre_code = codigo_entrada_cajero.codigo
         } else {
           perfil.value.cierre_code = null
         }
+        // --- FIN DE CORRECCIÓN ---
+
       } else {
         await crearPerfil()
       }

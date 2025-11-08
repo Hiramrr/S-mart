@@ -26,7 +26,6 @@ const cargarUsuarios = async () => {
     cargando.value = true
     error.value = null
 
-    // Hacemos el "join" para traer los códigos
     const { data, error: err } = await supabase
       .from('usuarios')
       .select(`
@@ -37,18 +36,23 @@ const cargarUsuarios = async () => {
 
     if (err) throw err
     
-    // Mapeamos los datos para aplanar la estructura
+    // --- INICIO DE CORRECCIÓN ---
+    // Corregimos el mapeo para que lea un objeto en lugar de un array
     usuarios.value = (data || []).map(u => {
       const { codigo_entrada_cajero, ...userData } = u;
-      let cierre_code = null;
-      if (codigo_entrada_cajero && codigo_entrada_cajero.length > 0) {
-        cierre_code = codigo_entrada_cajero[0].codigo;
-      }
+      
+      // Si 'codigo_entrada_cajero' existe (no es null) y es un objeto,
+      // entonces asignamos su propiedad 'codigo'.
+      const cierre_code = (codigo_entrada_cajero && typeof codigo_entrada_cajero === 'object') 
+                           ? codigo_entrada_cajero.codigo 
+                           : null;
+                           
       return {
         ...userData,
-        cierre_code // Añadimos la propiedad 'cierre_code'
+        cierre_code // Asignamos el código (o null si no existe)
       };
     });
+    // --- FIN DE CORRECCIÓN ---
 
   } catch (err) {
     console.error('Error al cargar usuarios:', err)
@@ -143,6 +147,7 @@ const cerrarModalCodigo = () => {
   error.value = null
 }
 
+// Esta función ya incluye el arreglo de la sesión anterior
 const guardarCodigoCierre = async () => {
   if (nuevoCodigoCierre.value.length !== 4) {
     error.value = 'El código debe ser de 4 dígitos.'
@@ -152,15 +157,16 @@ const guardarCodigoCierre = async () => {
     cargando.value = true
     error.value = null
     
-    // Usamos 'upsert' en la tabla 'codigo_entrada_cajero'
-    const { error: err } = await supabase
+    const { data: upsertData, error: err } = await supabase
       .from('codigo_entrada_cajero')
       .upsert({ 
         usuario_id: usuarioParaCodigo.value.id, 
         codigo: nuevoCodigoCierre.value 
       }, {
-        onConflict: 'usuario_id' // Le dice a Supabase que 'usuario_id' es la clave de conflicto
+        onConflict: 'usuario_id'
       })
+      .select('codigo') 
+      .single()         
 
     if (err) {
       if (err.code === '23505') { 
@@ -169,7 +175,15 @@ const guardarCodigoCierre = async () => {
       throw err
     }
 
-    await cargarUsuarios() // Recarga la lista de usuarios
+    // Actualizamos el estado local manualmente
+    const userIndex = usuarios.value.findIndex(u => u.id === usuarioParaCodigo.value.id)
+    if (userIndex !== -1 && upsertData) {
+      usuarios.value[userIndex].cierre_code = upsertData.codigo
+    }
+    
+    // Ya no es necesario recargar
+    // await cargarUsuarios() 
+
     cerrarModalCodigo()
   } catch (err) {
     console.error('Error al guardar código:', err)
@@ -912,6 +926,62 @@ onMounted(() => {
   color: #991b1b;
   margin-bottom: 1rem;
   font-size: 0.9rem;
+}
+
+.btn-add {
+  background: #111827;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.875rem 1.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+  margin-bottom: 2rem;
+}
+
+.btn-add:hover {
+  background: #000;
+  transform: translateY(-2px);
+}
+
+.product-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.icon-btn {
+  background: #f3f4f6;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.icon-btn:hover {
+  background: #e5e7eb;
+}
+.edit-btn svg {
+  stroke: #3b82f6;
+}
+.delete-btn svg {
+  stroke: #ef4444;
+}
+.btn-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #111827;
 }
 
 /* Estilos para modal de suspensión */
