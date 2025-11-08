@@ -193,8 +193,6 @@ async function guardarNuevaTarjeta() {
       .insert([tarjeta_a_guardar])
       .select('id')
       .single()
-
-  M0s;
     
     await cargarTarjetas() 
     
