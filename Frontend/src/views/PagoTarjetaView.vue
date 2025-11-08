@@ -144,7 +144,6 @@ async function cargarTarjetas() {
 }
 
 async function guardarNuevaTarjeta() {
-  // ... tu función guardarNuevaTarjeta (sin cambios) ...
   loading.value = true
   error.value = null
   
@@ -193,6 +192,8 @@ async function guardarNuevaTarjeta() {
       .insert([tarjeta_a_guardar])
       .select('id')
       .single()
+
+    // M0s; <-- ¡ERROR ELIMINADO!
     
     await cargarTarjetas() 
     
@@ -212,6 +213,42 @@ async function guardarNuevaTarjeta() {
     loading.value = false
   }
 }
+
+// --- ¡NUEVA FUNCIÓN PARA ELIMINAR TARJETA! ---
+async function handleDeleteCard(cardId) {
+  if (!confirm('¿Estás seguro de que deseas eliminar esta tarjeta? Esta acción no se puede deshacer.')) {
+    return
+  }
+
+  loading.value = true
+  error.value = null
+
+  try {
+    // 1. Eliminar de la base de datos
+    const { error: deleteError } = await supabase
+      .from('tarjetas')
+      .delete()
+      .eq('id', cardId)
+
+    if (deleteError) throw deleteError
+
+    // 2. Si se eliminó la tarjeta que estaba seleccionada, deselecciónala
+    if (tarjetaSeleccionadaId.value === cardId) {
+      tarjetaSeleccionadaId.value = null
+      cvvInput.value = '' // Limpiar el CVV también
+    }
+
+    // 3. Actualizar la lista local de tarjetas (sin recargar la página)
+    tarjetasGuardadas.value = tarjetasGuardadas.value.filter(t => t.id !== cardId)
+
+  } catch (err) {
+    console.error('Error al eliminar tarjeta:', err)
+    error.value = 'Error al eliminar la tarjeta: ' + err.message
+  } finally {
+    loading.value = false
+  }
+}
+// --- FIN DE LA NUEVA FUNCIÓN ---
 
 function selectCard(cardId) {
   tarjetaSeleccionadaId.value = cardId
@@ -442,7 +479,16 @@ onMounted(() => {
               <span class="card-number">•••• {{ tarjeta.numero_tarjeta_display }}</span>
               <span class="card-expiry">{{ formatExpiryDisplay(tarjeta.fecha_vencimiento) }}</span>
             </div>
-          </div>
+            
+            <button 
+                class="btn-eliminar-tarjeta" 
+                title="Eliminar tarjeta"
+                @click.stop="handleDeleteCard(tarjeta.id)" 
+                :disabled="loading"
+            >
+                &times;
+            </button>
+            </div>
         </div>
         
         <button 
@@ -625,6 +671,7 @@ onMounted(() => {
     border: 2px solid #e5e7eb;
     cursor: pointer;
     transition: all 0.2s;
+    position: relative; /* ¡NECESARIO PARA EL BOTÓN DE BORRAR! */
 }
 .tarjeta-opcion:hover {
     box-shadow: 0 4px 8px rgba(0,0,0,0.05);
@@ -746,7 +793,6 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 1rem;
 }
 .btn-cancelar {
   background: #e5e7eb;
@@ -795,6 +841,43 @@ onMounted(() => {
 }
 .btn-registrar:disabled, .btn-cancelar:disabled, .btn-nueva-tarjeta:disabled {
     opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* --- ¡ESTILOS NUEVOS PARA EL BOTÓN DE BORRAR! --- */
+.btn-eliminar-tarjeta {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    background: #f3f4f6;
+    color: #9ca3af;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    opacity: 0.7; /* Lo hacemos sutil */
+}
+
+.tarjeta-opcion:hover .btn-eliminar-tarjeta {
+    opacity: 1; /* Se muestra claramente al pasar el mouse sobre la tarjeta */
+}
+
+.btn-eliminar-tarjeta:hover {
+    background: #fee2e2;
+    color: #dc2626;
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.btn-eliminar-tarjeta:disabled {
+    opacity: 0.3;
     cursor: not-allowed;
 }
 </style>
