@@ -370,6 +370,9 @@ const getUserAvatar = computed(() => {
             <button v-if="canSell" class="dropdown-item" @click="goToVender">
               Panel de ventas
             </button>
+            <button v-if="canSell" class="dropdown-item" @click="router.push('/reportes')">
+              Reporte de ventas
+            </button>
             <button v-if="isAdmin" class="dropdown-item" @click="goToAdmin">
               Panel de administración
             </button>

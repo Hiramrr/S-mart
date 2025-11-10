@@ -1,4 +1,3 @@
-
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { supabase } from '@/lib/supabase';
@@ -19,7 +18,9 @@ export const useProductStore = defineStore('products', () => {
 
       const { data, error: supabaseError } = await supabase
         .from('productos')
-        .select('*')
+        .select(
+          'id, nombre, precio_venta, precio_descuento, descripcion, imagen_url, stock, vendedor_id'
+        )
         .order('id', { ascending: false });
 
       if (supabaseError) {
@@ -33,7 +34,10 @@ export const useProductStore = defineStore('products', () => {
 
       products.value = data.map((p) => {
         // Comprobar si hay un descuento válido
-        const tieneDescuento = p.precio_descuento && p.precio_descuento > 0 && p.precio_descuento < p.precio_venta;
+        const tieneDescuento =
+          p.precio_descuento &&
+          p.precio_descuento > 0 &&
+          p.precio_descuento < p.precio_venta;
 
         return {
           id: p.id,
@@ -50,7 +54,8 @@ export const useProductStore = defineStore('products', () => {
           imageUrl: p.imagen_url,
           precio: tieneDescuento ? p.precio_descuento : p.precio_venta,
           precioOriginal: p.precio_venta,
-          stock: p.stock,
+          stock: p.stock,          
+          vendedor_id: p.vendedor_id, 
         };
       });
     } catch (err) {
@@ -62,28 +67,30 @@ export const useProductStore = defineStore('products', () => {
   }
 
   function decreaseStock(productId, quantity) {
-    const product = products.value.find(p => p.id === productId);
+    const product = products.value.find((p) => p.id === productId);
     if (product) {
       product.stock -= quantity;
     }
   }
 
   function increaseStock(productId, quantity) {
-    const product = products.value.find(p => p.id === productId);
+    const product = products.value.find((p) => p.id === productId);
     if (product) {
       product.stock += quantity;
     }
   }
 
   async function updateStockInDB(cartItems) {
-    console.log("Iniciando actualización de stock en la base de datos...");
-    console.log("Artículos del carrito:", cartItems);
+    console.log('Iniciando actualización de stock en la base de datos...');
+    console.log('Artículos del carrito:', cartItems);
 
     try {
-      const updates = cartItems.map(item => {
-        const product = products.value.find(p => p.id === item.id);
+      const updates = cartItems.map((item) => {
+        const product = products.value.find((p) => p.id === item.id);
         if (product) {
-          console.log(`Preparando actualización para producto ID ${item.id}. Nuevo stock: ${product.stock}`);
+          console.log(
+            `Preparando actualización para producto ID ${item.id}. Nuevo stock: ${product.stock}`
+          );
           return supabase
             .from('productos')
             .update({ stock: product.stock })
@@ -95,27 +102,38 @@ export const useProductStore = defineStore('products', () => {
       });
 
       if (updates.length === 0) {
-        console.log("No hay actualizaciones de stock para realizar.");
+        console.log('No hay actualizaciones de stock para realizar.');
         return;
       }
 
-      console.log("Enviando actualizaciones a Supabase...");
+      console.log('Enviando actualizaciones a Supabase...');
       const results = await Promise.all(updates);
-      console.log("Resultados de Supabase:", results);
+      console.log('Resultados de Supabase:', results);
 
       results.forEach((res, index) => {
         if (res.error) {
-          console.error(`Error al actualizar el producto ID ${cartItems[index].id}:`, res.error);
+          console.error(
+            `Error al actualizar el producto ID ${cartItems[index].id}:`,
+            res.error
+          );
           throw res.error;
         }
-        console.log(`Stock para el producto ID ${cartItems[index].id} actualizado correctamente.`);
+        console.log(
+          `Stock para el producto ID ${cartItems[index].id} actualizado correctamente.`
+        );
       });
 
-      console.log("La actualización del stock en la base de datos ha finalizado.");
-
+      console.log(
+        'La actualización del stock en la base de datos ha finalizado.'
+      );
     } catch (err) {
-      console.error('Error general al actualizar el stock en la base de datos:', err);
-      alert('Hubo un error al actualizar el stock en la base de datos. Por favor, revisa la consola para más detalles.');
+      console.error(
+        'Error general al actualizar el stock en la base de datos:',
+        err
+      );
+      alert(
+        'Hubo un error al actualizar el stock en la base de datos. Por favor, revisa la consola para más detalles.'
+      );
     }
   }
 

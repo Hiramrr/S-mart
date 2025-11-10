@@ -61,7 +61,7 @@ onMounted(async () => {
           <div class="action-card">
             <h3>Reportes</h3>
             <p>Ver reportes y estadísticas</p>
-            <button>Ver reportes</button>
+            <button @click="router.push('/reportes')">Ver reportes</button>
           </div>
         </div>
       </div>

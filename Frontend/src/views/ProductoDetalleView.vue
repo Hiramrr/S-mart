@@ -44,7 +44,10 @@ async function cargarDetalleProducto() {
 
     const { data, error: supabaseError } = await supabase
       .from('productos')
-      .select('*')
+      .select(
+        'id, nombre, descripcion, precio_venta, precio_descuento, imagen_url, stock, categoria, vendedor_id'
+      )
+      // -------------------------
       .eq('id', props.id)
       .single()
 
@@ -59,6 +62,7 @@ async function cargarDetalleProducto() {
       throw new Error('Producto no encontrado.')
     }
 
+    // 'data' ahora contendrá el vendedor_id
     product.value = data
   } catch (err) {
     console.error('Error al cargar detalle del producto:', err)

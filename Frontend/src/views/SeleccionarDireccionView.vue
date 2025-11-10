@@ -31,55 +31,63 @@ async function eliminarDireccion(id) {
     alert('Error al eliminar la dirección: ' + error.message)
     return
   }
-  direcciones.value = direcciones.value.filter(d => d.id !== id)
+ direcciones.value = direcciones.value.filter(d => d.id !== id)
 }
 
 onMounted(cargarDirecciones)
 
 function irEditarDomicilio(id) {
-  router.push(`/editar-domicilio/${id}`)
+ router.push(`/editar-domicilio/${id}`)
 }
 
 
 function irAgregarDomicilio() {
-  router.push('/agregar-domicilio')
+ router.push('/agregar-domicilio')
 }
 
 function seleccionarDireccion(id) {
-  direccionSeleccionada.value = id
+ direccionSeleccionada.value = id
 }
 
 // --- ¡FUNCIÓN CORREGIDA! ---
+// En Frontend/src/views/SeleccionarDireccion.vue
+
+// ... (todas tus importaciones y lógica existente) ...
+
+// --- ¡FUNCIÓN CORREGIDA! ---
 function continuarConPago() {
-  // 3. Valida que se haya seleccionado una dirección
+  // 1. Valida que se haya seleccionado una dirección
   if (!direccionSeleccionada.value) {
     alert('Por favor, selecciona una dirección para continuar.');
     return;
   }
 
-  // 4. Lee los parámetros 'buyNowId' y 'qty' de la URL actual
-  const { buyNowId, qty } = route.query
+  // 2. Lee los parámetros 'buyNowId' y 'qty' de la URL actual
+  const { buyNowId, qty } = route.query;
 
-  // 5. Prepara el objeto de navegación
-  const navigationOptions = {
-    path: '/pago-tarjeta',
-    query: {} // Inicia la query vacía
-  }
+  // 3. Prepara el objeto query para la nueva ruta
+  const newQuery = {};
 
   if (buyNowId && qty) {
-    // 6. Si existen los parámetros "Comprar Ahora", los añade a la navegación
-    navigationOptions.query = { buyNowId, qty }
+    // 4. Si existen los parámetros "Comprar Ahora", los añade
+    newQuery.buyNowId = buyNowId;
+    newQuery.qty = qty;
   }
 
-  // 7. Navega a la vista de pago, "arrastrando" los parámetros si existían.
-  // Si no existían, irá a /pago-tarjeta sin query, y la vista de pago
-  // cargará el carrito (comportamiento correcto).
-  router.push(navigationOptions)
+  // 5. --- ¡AQUÍ ESTÁ EL CAMBIO CLAVE! ---
+  //    Añadimos el ID de la dirección al query
+  newQuery.direccionId = direccionSeleccionada.value;
+
+  // 6. Navega a la vista de pago con TODOS los query params
+  router.push({
+    path: '/pago-tarjeta',
+    query: newQuery 
+  });
 }
 
 function cancelarPedido() {
-  // Navega de regreso al carrito de compras
-  router.push('/carrito')
+ // Navega de regreso al carrito de compras
+ router.push('/carrito')
 }
 </script>
 

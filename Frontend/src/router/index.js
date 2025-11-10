@@ -14,6 +14,7 @@ import SeleccionarDireccionView from '../views/SeleccionarDireccionView.vue'
 import PerfilView from '../views/PerfilView.vue'
 import PagoTarjetaView from '../views/PagoTarjetaView.vue'
 import MisChatsView from '../views/MisChatsView.vue'
+import ReportesView from '../views/ReportesView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -203,6 +204,16 @@ const router = createRouter({
       path: '/reset-password',
       name: 'reset-password',
       component: () => import('@/views/ResetPasswordView.vue'),
+    },
+    {
+      path: '/reportes',
+      name: 'reportes',
+      component: ReportesView,
+      meta: {
+        title: 'Reporte de Ventas - S-mart',
+        requiresAuth: true,
+        requiresRoles: ['administrador', 'vendedor', 'cajero'],
+      },
     },
     /* {
       path: '/perfil',

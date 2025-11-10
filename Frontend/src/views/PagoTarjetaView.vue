@@ -7,23 +7,26 @@ import { useAuthStore } from '@/stores/auth.js'
 import { useCartStore } from '@/stores/cartStore.js'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
-import Ticket from '@/components/Cajero/Ticket.vue' // Asegúrate que la ruta sea correcta
+import Ticket from '@/components/Cajero/Ticket.vue'
+import { useVentasStore } from '@/stores/ventas.js'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const cartStore = useCartStore()
+const ventasStore = useVentasStore()
 
 // --- ESTADO ---
 const tarjetasGuardadas = ref([])
 const tarjetaSeleccionadaId = ref(null)
 const cvvInput = ref('')
-const loading = ref(false)
+const loading = ref(true) // Controlará toda la carga inicial
 const error = ref(null)
 const mostrarFormularioNuevaTarjeta = ref(false)
 const itemsParaComprar = ref([])
+const direccionSeleccionada = ref(null) // <-- Esta ref SÍ se va a poblar
 
-// Refs para el Ticket (como en CajeroView)
+// Refs para el Ticket
 const ticketData = ref(null)
 const ticketRef = ref(null)
 
@@ -44,16 +47,15 @@ const cvvRequerido = computed(
   () => tarjetaSeleccionadaId.value !== null && !mostrarFormularioNuevaTarjeta.value,
 )
 
-// Total (ahora usa 'cantidad' y 'precio')
 const checkoutTotal = computed(() => {
   return itemsParaComprar.value.reduce((total, item) => {
-    // Usamos 'precio' que ya definimos en el cartStore como el precio final
     const price = parseFloat(item.precio || item.precio_venta || 0)
     const qty = parseInt(item.cantidad || 1, 10)
     return total + price * qty
   }, 0)
 })
 
+// --- FUNCIONES FORMATTER (Sin cambios) ---
 const validateCardNumber = (number) => {
   const cleanNumber = number.replace(/\D/g, '')
   return cleanNumber.length === 16 ? cleanNumber : null
@@ -61,24 +63,18 @@ const validateCardNumber = (number) => {
 const validateExpirationDate = (date) => {
   const regex = /^(0[1-9]|1[0-2])\/?([0-9]{2}|[0-9]{4})$/
   if (!regex.test(date)) return false
-
   const [monthStr, yearStr] = date.split('/').map((s) => s.trim())
   const month = parseInt(monthStr, 10)
   let year = parseInt(yearStr, 10)
-
   if (yearStr.length === 2) {
     const currentYearPrefix = new Date().getFullYear().toString().substring(0, 2)
     year = parseInt(currentYearPrefix + yearStr, 10)
   }
-
   const now = new Date()
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth() + 1
-
   if (year < currentYear) return false
-
   if (year === currentYear && month < currentMonth) return false
-
   return true
 }
 const formatCardNumber = (event) => {
@@ -114,14 +110,10 @@ const formatExpiryDisplay = (isoDate) => {
 
 // --- MÉTODOS DE DATOS ---
 
+// (MODIFICADO: Se quitó el control de 'loading' y 'error' de esta función)
 async function cargarTarjetas() {
-  loading.value = true
-  error.value = null
   const idCliente = authStore.usuario?.id
-  if (!idCliente) {
-    loading.value = false
-    return
-  }
+  if (!idCliente) return
 
   try {
     const { data, error: supabaseError } = await supabase
@@ -137,11 +129,122 @@ async function cargarTarjetas() {
     }))
   } catch (err) {
     console.error('Error al cargar tarjetas:', err)
-    error.value = 'Error al cargar las tarjetas guardadas.'
+    throw new Error('Error al cargar las tarjetas guardadas.')
+  }
+}
+
+// (MODIFICADO: Se quitó el control de 'loading' de esta función)
+// (MODIFICADO: Se añadió validación de vendedor_id)
+async function cargarItemsParaCheckout() {
+  try {
+    const { buyNowId, qty } = route.query
+
+    if (buyNowId) {
+      // --- Caso "Comprar Ahora" ---
+      const { data, error: dbError } = await supabase
+        .from('productos')
+        .select('*') // 'vendedor_id' debe estar incluido aquí
+        .eq('id', buyNowId)
+        .single()
+
+      if (dbError) throw dbError
+
+      if (data) {
+        // --- VALIDACIÓN CRÍTICA ---
+        if (!data.vendedor_id) {
+          throw new Error(
+            `El producto "${data.nombre}" no tiene un vendedor asignado y no se puede comprar.`,
+          )
+        }
+
+        const precioFinal =
+          data.precio_descuento && data.precio_descuento > 0
+            ? data.precio_descuento
+            : data.precio_venta
+
+        itemsParaComprar.value = [
+          {
+            ...data,
+            cantidad: parseInt(qty, 10) || 1,
+            precio: precioFinal,
+            name: data.nombre,
+          },
+        ]
+      } else {
+        throw new Error('Producto no encontrado')
+      }
+    } else {
+      // --- Caso "Carrito Completo" ---
+      if (!cartStore.items || cartStore.items.length === 0) {
+        throw new Error('Tu carrito está vacío')
+      }
+
+      // --- VALIDACIÓN CRÍTICA ---
+      for (const item of cartStore.items) {
+        if (!item.vendedor_id) {
+          throw new Error(
+            `El producto "${item.name}" en tu carrito no tiene un vendedor asignado y no se puede comprar.`,
+          )
+        }
+      }
+      itemsParaComprar.value = [...cartStore.items]
+    }
+  } catch (err) {
+    console.error('Error al cargar items:', err)
+    itemsParaComprar.value = []
+    throw err // Lanzar el error para que onMounted lo capture
+  }
+}
+
+// --- onMounted (COMPLETAMENTE REESCRITO) ---
+onMounted(async () => {
+  loading.value = true
+  error.value = null
+
+  try {
+    // 1. Obtener ID de la dirección desde la URL
+    const idDireccion = route.query.direccionId
+    if (!idDireccion) {
+      throw new Error('No se proporcionó una dirección. Por favor, vuelve a seleccionarla.')
+    }
+
+    // 2. Cargar los datos de la dirección
+    const { data: direccionData, error: dirError } = await supabase
+      .from('direcciones')
+      .select('*')
+      .eq('id', idDireccion)
+      .single()
+
+    if (dirError) throw new Error(`Error al cargar la dirección: ${dirError.message}`)
+    if (!direccionData) throw new Error('No se pudo encontrar la dirección seleccionada.')
+
+    // 3. ¡CORRECTO! Almacenar el OBJETO de la dirección
+    direccionSeleccionada.value = direccionData
+
+    // 4. Cargar tarjetas e items en paralelo
+    await Promise.all([cargarTarjetas(), cargarItemsParaCheckout()])
+    
+    // Si no hay items (carrito vacío o producto no encontrado), mostrar error
+    if (itemsParaComprar.value.length === 0 && !error.value) {
+       throw new Error('No hay productos para comprar.')
+    }
+
+  } catch (err) {
+    console.error('Error al inicializar la página de pago:', err)
+    error.value = err.message
+    
+    // Redirigir si falla algo fundamental
+    if (err.message.includes('dirección')) {
+      setTimeout(() => router.push('/seleccionar-direccion'), 2500)
+    } else if (err.message.includes('carrito') || err.message.includes('Producto no encontrado')) {
+      setTimeout(() => router.push('/carrito'), 2500)
+    }
   } finally {
     loading.value = false
   }
-}
+})
+
+// --- OTRAS FUNCIONES (Sin cambios) ---
 
 async function guardarNuevaTarjeta() {
   loading.value = true
@@ -193,6 +296,9 @@ async function guardarNuevaTarjeta() {
       .select('id')
       .single()
 
+    // Aquí hay un error potencial: si supabaseError existe, no se lanza
+    if (supabaseError) throw supabaseError
+
     await cargarTarjetas()
 
     if (nuevaTarjetaData?.id) {
@@ -224,18 +330,13 @@ async function handleDeleteCard(cardId) {
   error.value = null
 
   try {
-    // 1. Eliminar de la base de datos
     const { error: deleteError } = await supabase.from('tarjetas').delete().eq('id', cardId)
-
     if (deleteError) throw deleteError
 
-    // 2. Si se eliminó la tarjeta que estaba seleccionada, deselecciónala
     if (tarjetaSeleccionadaId.value === cardId) {
       tarjetaSeleccionadaId.value = null
-      cvvInput.value = '' // Limpiar el CVV también
+      cvvInput.value = ''
     }
-
-    // 3. Actualizar la lista local de tarjetas (sin recargar la página)
     tarjetasGuardadas.value = tarjetasGuardadas.value.filter((t) => t.id !== cardId)
   } catch (err) {
     console.error('Error al eliminar tarjeta:', err)
@@ -244,7 +345,6 @@ async function handleDeleteCard(cardId) {
     loading.value = false
   }
 }
-// --- FIN DE LA NUEVA FUNCIÓN ---
 
 function selectCard(cardId) {
   tarjetaSeleccionadaId.value = cardId
@@ -263,62 +363,9 @@ function handleCancelOrder() {
   router.push('/carrito')
 }
 
-// Carga los items que se van a pagar (Buy Now o Carrito)
-async function cargarItemsParaCheckout() {
-  try {
-    const { buyNowId, qty } = route.query
-
-    if (buyNowId) {
-      // --- Caso "Comprar Ahora" ---
-      loading.value = true
-      const { data, error: dbError } = await supabase
-        .from('productos')
-        .select('*')
-        .eq('id', buyNowId)
-        .single()
-
-      if (dbError) throw dbError
-
-      if (data) {
-        // *** CORRECCIÓN CLAVE ***
-        // Usamos 'cantidad' y el precio correcto
-        const precioFinal =
-          data.precio_descuento && data.precio_descuento > 0
-            ? data.precio_descuento
-            : data.precio_venta
-
-        itemsParaComprar.value = [
-          {
-            ...data,
-            cantidad: parseInt(qty, 10) || 1,
-            precio: precioFinal, // Asignamos el precio de compra
-            name: data.nombre, // Aseguramos que el nombre esté
-          },
-        ]
-      } else {
-        throw new Error('Producto no encontrado')
-      }
-    } else {
-      // --- Caso "Carrito Completo" ---
-      if (!cartStore.items || cartStore.items.length === 0) {
-        throw new Error('Tu carrito está vacío')
-      }
-      // El cartStore ya usa 'cantidad' y 'precio'
-      itemsParaComprar.value = [...cartStore.items]
-    }
-  } catch (err) {
-    console.error('Error al cargar items:', err)
-    error.value = err.message
-    itemsParaComprar.value = []
-  } finally {
-    loading.value = false
-  }
-}
-
-// --- FUNCIÓN DE GENERAR PDF (Adaptada de CajeroView) ---
 const generatePdf = async (purchase) => {
   ticketData.value = purchase
-  await nextTick() // Esperar que el DOM se actualice
+  await nextTick() 
 
   const ticketElement = ticketRef.value?.$el
   if (!ticketElement) {
@@ -327,13 +374,10 @@ const generatePdf = async (purchase) => {
   }
 
   try {
-    const canvas = await html2canvas(ticketElement, { scale: 2 }) // Aumentar escala para mejor calidad
+    const canvas = await html2canvas(ticketElement, { scale: 2 })
     const imgData = canvas.toDataURL('image/png')
-
-    // Ajustar dimensiones del PDF al canvas
     const pdfWidth = canvas.width
     const pdfHeight = canvas.height
-
     const pdf = new jsPDF({
       orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
       unit: 'px',
@@ -341,18 +385,17 @@ const generatePdf = async (purchase) => {
     })
 
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
-
     const fileName = `ticket-smart-${purchase.id}.pdf`
     pdf.save(fileName)
   } catch (error) {
     console.error('Error generando el PDF:', error)
     alert('Hubo un error al generar el ticket en PDF.')
   } finally {
-    ticketData.value = null // Limpiar para ocultar el componente
+    ticketData.value = null
   }
 }
 
-// --- FUNCIÓN DE PAGO PRINCIPAL (Corregida) ---
+// --- FUNCIÓN DE PAGO PRINCIPAL (YA ESTABA BIEN, SIN CAMBIOS) ---
 async function handlePaymentConfirm() {
   if (!tarjetaSeleccionada.value) {
     error.value = 'Selecciona una tarjeta o agrega una nueva.'
@@ -362,6 +405,13 @@ async function handlePaymentConfirm() {
     error.value = 'Por favor, ingresa el CVV/CVC de tu tarjeta.'
     return
   }
+
+  // --- VALIDACIÓN (Ahora funcionará gracias a onMounted) ---
+  if (!direccionSeleccionada.value || !direccionSeleccionada.value.id) {
+    error.value = 'Por favor, selecciona una dirección de envío.'
+    return
+  }
+
   if (itemsParaComprar.value.length === 0) {
     error.value = 'No hay items para comprar. Volviendo al carrito...'
     setTimeout(() => router.push('/carrito'), 1500)
@@ -376,13 +426,12 @@ async function handlePaymentConfirm() {
     console.log(
       `Pago simulado con tarjeta terminada en ${tarjetaSeleccionada.value.numero_tarjeta_display} y CVV ${cvvInput.value}.`,
     )
-    // Simular un pequeño retraso de la pasarela de pago
     await new Promise((resolve) => setTimeout(resolve, 500))
 
     // --- PASO 2: Preparar y ejecutar la actualización de Stock (RPC) ---
     const itemsPayload = itemsParaComprar.value.map((item) => ({
       p_id: item.id,
-      p_qty: item.cantidad, // *** CORRECCIÓN CLAVE ***
+      p_qty: item.cantidad,
     }))
 
     const { error: rpcError } = await supabase.rpc('actualizar_stock_multi', {
@@ -390,13 +439,32 @@ async function handlePaymentConfirm() {
     })
 
     if (rpcError) {
-      console.error('Error en RPC:', rpcError)
+      console.error('Error en RPC de stock:', rpcError)
       throw new Error(`Error al actualizar el stock: ${rpcError.message}`)
     }
 
-    // --- PASO 3: Generar Ticket PDF ---
+    // --- PASO 3: Registrar la venta en la tabla 'venta_en_linea' ---
+    const metodoPago = `Tarjeta ${getCardType(tarjetaSeleccionada.value?.numero_tarjeta)} (•••• ${tarjetaSeleccionada.value?.numero_tarjeta_display})`
+    const direccionId = direccionSeleccionada.value.id // Usamos la ref del objeto
+
+    try {
+      await ventasStore.crearVentaEnLinea(
+        itemsParaComprar.value, // [{ id, name, cantidad, price, vendedor_id }, ...]
+        metodoPago,
+        direccionId,
+      )
+      console.log('Venta en línea registrada en la base de datos.')
+    } catch (ventaError) {
+      console.error('Error al guardar la venta:', ventaError)
+      throw new Error(
+        `El pago se procesó pero no se pudo registrar la venta: ${ventaError.message}`,
+      )
+    }
+    // --- FIN PASO 3 ---
+
+    // --- PASO 4: Generar Ticket PDF ---
     const purchaseData = {
-      id: Date.now().toString().slice(-6), // Un ID de compra simple
+      id: Date.now().toString().slice(-6),
       fecha: new Date().toLocaleString('es-MX', {
         year: 'numeric',
         month: '2-digit',
@@ -406,26 +474,22 @@ async function handlePaymentConfirm() {
       }),
       items: itemsParaComprar.value.map((item) => ({
         ...item,
-        // *** CORRECCIÓN CLAVE ***
-        // Aseguramos que el ticket reciba 'precio' y 'cantidad'
-        nombre: item.name || item.nombre, // Aseguramos nombre
+        nombre: item.name || item.nombre,
         precio: item.precio || item.precio_venta,
         cantidad: item.cantidad,
       })),
       total: checkoutTotal.value,
-      paymentMethod: `Tarjeta ${getCardType(tarjetaSeleccionada.value?.numero_tarjeta)} (•••• ${tarjetaSeleccionada.value?.numero_tarjeta_display})`,
-      cajero: authStore.perfil?.nombre || authStore.usuario?.email,
+      paymentMethod: metodoPago, 
+      cajero: authStore.perfil?.nombre || authStore.usuario?.email, 
     }
 
     await generatePdf(purchaseData)
 
-    // --- PASO 4: Limpiar Carrito ---
+    // --- PASO 5: Limpiar Carrito ---
     const purchasedIds = itemsParaComprar.value.map((item) => item.id)
-
-    // Esta función ya existe en el store actualizado
     cartStore.removeProductsByIds(purchasedIds)
 
-    // --- PASO 5: Redirigir al Home ---
+    // --- PASO 6: Redirigir al Home ---
     alert('¡Gracias por tu compra! Tu ticket se ha descargado.')
     router.push('/')
   } catch (err) {
@@ -435,11 +499,9 @@ async function handlePaymentConfirm() {
     loading.value = false
   }
 }
-
-onMounted(() => {
-  Promise.all([cargarTarjetas(), cargarItemsParaCheckout()])
-})
 </script>
+
+
 <template>
   <div class="tarjeta-minimal-container">
     <LandingHeader />
