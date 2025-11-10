@@ -4,38 +4,42 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const footerLinks = {
-  producto: [
+  comprar: [
+    { name: 'Tienda', href: '/tienda' },
+    { name: 'Carrito', href: '/carrito' },
     { name: 'Características', href: '#features' },
-    { name: 'Precios', href: '#pricing' },
-    { name: 'FAQ', href: '#' },
-    { name: 'Actualizaciones', href: '#' },
+    { name: 'Mi perfil', href: '/perfil' },
   ],
-  compania: [
-    { name: 'Sobre nosotros', href: '#' },
-    { name: 'Blog', href: '#' },
-    { name: 'Carreras', href: '#' },
-    { name: 'Contacto', href: '#' },
+  acceso: [
+    { name: 'Iniciar sesión', href: '/login' },
+    { name: 'Panel administrador', href: '/admin' },
+    { name: 'Panel vendedor', href: '/vendedor' },
+    { name: 'Panel cajero', href: '/cajero' },
   ],
-  legal: [
-    { name: 'Privacidad', href: '#' },
-    { name: 'Términos', href: '#' },
-    { name: 'Cookies', href: '#' },
-    { name: 'Licencias', href: '#' },
-  ],
-  recursos: [
-    { name: 'Documentación', href: '#' },
-    { name: 'Tutoriales', href: '#' },
-    { name: 'API', href: '#' },
-    { name: 'Soporte', href: '#' },
+  soporte: [
+    { name: 'Mis chats', href: '/mis-chats' },
+    { name: 'Mis direcciones', href: '/seleccionar-direccion' },
+    { name: 'Ayuda', href: 'https://github.com/Hiramrr/S-mart' },
+    { name: 'Contacto', href: 'https://github.com/Hiramrr/S-mart' },
   ],
 }
 
-const socialLinks = [
-  { name: 'Twitter', icon: '𝕏', href: '#' },
-  { name: 'Facebook', icon: 'f', href: '#' },
-  { name: 'Instagram', icon: '📷', href: '#' },
-  { name: 'LinkedIn', icon: 'in', href: '#' },
-]
+const socialLinks = [{ name: 'GitHub', icon: '⚡', href: 'https://github.com/Hiramrr/S-mart' }]
+
+const navigateTo = (href) => {
+  if (href === '#') {
+    return
+  }
+  if (href.startsWith('#')) {
+    scrollToSection(href.slice(1))
+  } else if (href.startsWith('/')) {
+    router.push(href).catch((err) => {
+      console.log('Error en navegación:', err)
+    })
+  } else if (href.startsWith('http')) {
+    window.open(href, '_blank')
+  }
+}
 
 const scrollToSection = (sectionId) => {
   const element = document.getElementById(sectionId)
@@ -73,34 +77,37 @@ const scrollToSection = (sectionId) => {
 
         <div class="footer-links">
           <div class="link-column">
-            <h4>Producto</h4>
+            <h4>Comprar</h4>
             <a
-              v-for="link in footerLinks.producto"
+              v-for="link in footerLinks.comprar"
               :key="link.name"
               :href="link.href"
-              @click.prevent="link.href.startsWith('#') && scrollToSection(link.href.slice(1))"
+              @click.prevent="navigateTo(link.href)"
             >
               {{ link.name }}
             </a>
           </div>
 
           <div class="link-column">
-            <h4>Compañía</h4>
-            <a v-for="link in footerLinks.compania" :key="link.name" :href="link.href">
+            <h4>Acceso rápido</h4>
+            <a
+              v-for="link in footerLinks.acceso"
+              :key="link.name"
+              :href="link.href"
+              @click.prevent="navigateTo(link.href)"
+            >
               {{ link.name }}
             </a>
           </div>
 
           <div class="link-column">
-            <h4>Legal</h4>
-            <a v-for="link in footerLinks.legal" :key="link.name" :href="link.href">
-              {{ link.name }}
-            </a>
-          </div>
-
-          <div class="link-column">
-            <h4>Recursos</h4>
-            <a v-for="link in footerLinks.recursos" :key="link.name" :href="link.href">
+            <h4>Soporte</h4>
+            <a
+              v-for="link in footerLinks.soporte"
+              :key="link.name"
+              :href="link.href"
+              @click.prevent="navigateTo(link.href)"
+            >
               {{ link.name }}
             </a>
           </div>
@@ -111,14 +118,10 @@ const scrollToSection = (sectionId) => {
 
       <div class="footer-bottom">
         <p class="copyright">
-          &copy; {{ new Date().getFullYear() }} S-mart. Todos los derechos reservados.
+          &copy; {{ new Date().getFullYear() }} S-mart. Sistema de gestión comercial.
         </p>
         <div class="footer-bottom-links">
-          <a href="#">Privacidad</a>
-          <span class="separator">•</span>
-          <a href="#">Términos</a>
-          <span class="separator">•</span>
-          <a href="#">Cookies</a>
+          <span>Versión 1.0</span>
         </div>
       </div>
     </div>
@@ -207,7 +210,7 @@ const scrollToSection = (sectionId) => {
 
 .footer-links {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 2rem;
 }
 
@@ -262,15 +265,9 @@ const scrollToSection = (sectionId) => {
   gap: 1rem;
 }
 
-.footer-bottom-links a {
+.footer-bottom-links span {
   color: #9ca3af;
-  text-decoration: none;
   font-size: 0.875rem;
-  transition: color 0.2s;
-}
-
-.footer-bottom-links a:hover {
-  color: #fff;
 }
 
 .separator {

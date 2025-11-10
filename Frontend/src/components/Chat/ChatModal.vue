@@ -23,11 +23,9 @@ const otroUsuario = ref(null)
 const cargandoUsuario = ref(false)
 let unsubscribe = null
 
-// Cargar información del otro usuario
 async function cargarOtroUsuario() {
   cargandoUsuario.value = true
   try {
-    // Si ya viene completo desde la lista de conversaciones
     if (props.conversacion.vendedor && props.conversacion.cliente) {
       otroUsuario.value =
         props.conversacion.cliente_id === authStore.usuario.id
@@ -36,7 +34,6 @@ async function cargarOtroUsuario() {
       return
     }
 
-    // Si viene desde el botón de producto, cargar el usuario
     const usuarioId =
       props.conversacion.cliente_id === authStore.usuario.id
         ? props.conversacion.vendedor_id
@@ -44,25 +41,43 @@ async function cargarOtroUsuario() {
 
     const { data, error } = await supabase
       .from('usuarios')
-      .select('id, nombre, foto_url')
+      .select('id, nombre, foto_url, email')
       .eq('id', usuarioId)
       .maybeSingle()
 
     if (error) throw error
-    
-    // Si no se encontró el usuario
+
     if (!data) {
-      otroUsuario.value = { id: usuarioId, nombre: 'Usuario desconocido', foto_url: null }
+      otroUsuario.value = {
+        id: usuarioId,
+        nombre: 'Usuario desconocido',
+        foto_url: null,
+        email: null,
+      }
       return
     }
-    
+
     otroUsuario.value = data
   } catch (err) {
     console.error('Error al cargar usuario:', err)
-    otroUsuario.value = { nombre: 'Usuario', foto_url: null }
+    otroUsuario.value = { nombre: 'Usuario', foto_url: null, email: null }
   } finally {
     cargandoUsuario.value = false
   }
+}
+
+function getNombreUsuario(usuario) {
+  if (!usuario) return 'Usuario'
+  if (usuario.nombre && usuario.nombre.trim() !== '') return usuario.nombre
+  if (usuario.email) return usuario.email
+  return 'Usuario'
+}
+
+function getAvatarUrl(usuario) {
+  if (!usuario) return null
+  if (usuario.foto_url && usuario.foto_url.trim() !== '') return usuario.foto_url
+  if (usuario.avatar_url && usuario.avatar_url.trim() !== '') return usuario.avatar_url
+  return null
 }
 
 onMounted(async () => {
@@ -70,9 +85,7 @@ onMounted(async () => {
   await cargarMensajes(props.conversacion.id)
   scrollToBottom()
 
-  // Suscribirse a nuevos mensajes
   unsubscribe = suscribirseAMensajes(props.conversacion.id, (nuevoMensaje) => {
-    // Solo agregar si no es del usuario actual (para evitar duplicados)
     if (nuevoMensaje.remitente_id !== authStore.usuario.id) {
       mensajes.value.push(nuevoMensaje)
       nextTick(() => scrollToBottom())
@@ -119,23 +132,19 @@ function formatearFecha(fecha) {
   const ahora = new Date()
   const diff = ahora - date
 
-  // Menos de 1 minuto
   if (diff < 60000) {
     return 'Ahora'
   }
 
-  // Menos de 1 hora
   if (diff < 3600000) {
     const minutos = Math.floor(diff / 60000)
     return `Hace ${minutos}m`
   }
 
-  // Menos de 24 horas
   if (diff < 86400000) {
     return date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
   }
 
-  // Más de 24 horas
   return date.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })
 }
 </script>
@@ -143,7 +152,6 @@ function formatearFecha(fecha) {
 <template>
   <div class="modal-overlay" @click.self="emit('cerrar')">
     <div class="modal-container">
-      <!-- Header -->
       <div class="modal-header">
         <div v-if="cargandoUsuario" class="header-info">
           <div class="spinner-small"></div>
@@ -152,14 +160,14 @@ function formatearFecha(fecha) {
         <div v-else class="header-info">
           <div class="avatar">
             <img
-              v-if="otroUsuario?.foto_url"
-              :src="otroUsuario.foto_url"
-              :alt="otroUsuario.nombre"
+              v-if="getAvatarUrl(otroUsuario)"
+              :src="getAvatarUrl(otroUsuario)"
+              :alt="getNombreUsuario(otroUsuario)"
             />
-            <span v-else>{{ otroUsuario?.nombre?.charAt(0).toUpperCase() || '?' }}</span>
+            <span v-else>{{ getNombreUsuario(otroUsuario).charAt(0).toUpperCase() }}</span>
           </div>
           <div>
-            <h3>{{ otroUsuario?.nombre || 'Usuario' }}</h3>
+            <h3>{{ getNombreUsuario(otroUsuario) }}</h3>
             <p class="producto-nombre">{{ conversacion.producto?.nombre }}</p>
           </div>
         </div>
@@ -178,7 +186,6 @@ function formatearFecha(fecha) {
         </button>
       </div>
 
-      <!-- Mensajes -->
       <div ref="mensajesContainer" class="mensajes-container">
         <div v-if="loading" class="loading-state">
           <div class="spinner"></div>
@@ -203,7 +210,10 @@ function formatearFecha(fecha) {
           <div
             v-for="mensaje in mensajes"
             :key="mensaje.id"
-            :class="['mensaje', { 'mensaje-propio': mensaje.remitente_id === authStore.usuario.id }]"
+            :class="[
+              'mensaje',
+              { 'mensaje-propio': mensaje.remitente_id === authStore.usuario.id },
+            ]"
           >
             <div class="mensaje-content">
               <p>{{ mensaje.contenido }}</p>
@@ -213,7 +223,6 @@ function formatearFecha(fecha) {
         </div>
       </div>
 
-      <!-- Input -->
       <div class="input-container">
         <input
           v-model="nuevoMensaje"

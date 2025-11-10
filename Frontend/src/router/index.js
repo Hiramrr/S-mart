@@ -185,7 +185,7 @@ const router = createRouter({
       meta: {
         title: 'Mis Chats - S-mart',
         requiresAuth: true,
-        requiresRoles: ['cliente', 'vendedor', 'administrador'],
+        requiresRoles: ['cliente', 'vendedor', 'administrador', 'cajero'],
       },
     },
 
@@ -230,7 +230,6 @@ const router = createRouter({
   },
 })
 
-
 router.beforeEach(async (to, from, next) => {
   document.title = to.meta.title || 'S-mart'
 
@@ -252,7 +251,7 @@ router.beforeEach(async (to, from, next) => {
         resolve()
       }
     })
-    
+
     await Promise.race([loadingDone, timeout])
   }
 

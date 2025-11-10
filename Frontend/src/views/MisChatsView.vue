@@ -64,14 +64,27 @@ function formatearFecha(fecha) {
 }
 
 function getOtroUsuario(conversacion) {
-  if (!authStore.usuario?.id) return { nombre: 'Usuario', foto_url: null }
+  if (!authStore.usuario?.id) return { nombre: 'Usuario', foto_url: null, email: null }
   
   const otroUsuario = conversacion.cliente_id === authStore.usuario.id
     ? conversacion.vendedor
     : conversacion.cliente
   
-  // Protección contra valores nulos
-  return otroUsuario || { nombre: 'Usuario', foto_url: null }
+  return otroUsuario || { nombre: 'Usuario', foto_url: null, email: null }
+}
+
+function getNombreUsuario(usuario) {
+  if (!usuario) return 'Usuario'
+  if (usuario.nombre && usuario.nombre.trim() !== '') return usuario.nombre
+  if (usuario.email) return usuario.email
+  return 'Usuario'
+}
+
+function getAvatarUrl(usuario) {
+  if (!usuario) return null
+  if (usuario.foto_url && usuario.foto_url.trim() !== '') return usuario.foto_url
+  if (usuario.avatar_url && usuario.avatar_url.trim() !== '') return usuario.avatar_url
+  return null
 }
 
 function tieneNoLeidos(conversacion) {
@@ -137,18 +150,18 @@ function tieneNoLeidos(conversacion) {
         >
           <div class="conversacion-avatar">
             <img
-              v-if="getOtroUsuario(conversacion)?.foto_url"
-              :src="getOtroUsuario(conversacion).foto_url"
-              :alt="getOtroUsuario(conversacion)?.nombre || 'Usuario'"
+              v-if="getAvatarUrl(getOtroUsuario(conversacion))"
+              :src="getAvatarUrl(getOtroUsuario(conversacion))"
+              :alt="getNombreUsuario(getOtroUsuario(conversacion))"
             />
             <span v-else>
-              {{ getOtroUsuario(conversacion)?.nombre?.charAt(0)?.toUpperCase() || '?' }}
+              {{ getNombreUsuario(getOtroUsuario(conversacion)).charAt(0).toUpperCase() }}
             </span>
           </div>
 
           <div class="conversacion-info">
             <div class="conversacion-header">
-              <h3>{{ getOtroUsuario(conversacion)?.nombre || 'Usuario' }}</h3>
+              <h3>{{ getNombreUsuario(getOtroUsuario(conversacion)) }}</h3>
               <span class="conversacion-fecha">
                 {{ formatearFecha(conversacion.ultimo_mensaje_fecha) }}
               </span>
