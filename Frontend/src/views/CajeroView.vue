@@ -53,6 +53,19 @@
             </svg>
             <span>Hacer Cierre de Caja</span>
           </button>
+
+          <button 
+            class="btn-reporte-dia" 
+            @click="iniciarReporteDia" 
+            :disabled="authStore.estaSuspendido"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 17H7A5 5 0 0 1 7 7h2"/>
+              <path d="M15 7h2a5 5 0 0 1 0 10h-2"/>
+              <line x1="12" y1="12" x2="12" y2="12"/>
+            </svg>
+            <span>Generar Reporte del Día</span>
+          </button>
           </div>
       </div>
     </div>
@@ -62,7 +75,7 @@
     </div>
 
     <div style="position: absolute; left: -9999px; top: 0;">
-      <CierreCajaReport v-if="cierreCajaData" :report="cierreCajaData" ref="cierreCajaReportRef" />
+      <CierreCajaReport v-if="cierreCajaData" :report="cierreCajaData.report" :detailed="cierreCajaData.detailed" ref="cierreCajaReportRef" />
     </div>
     <SecurityCodeModal
       v-if="showCierreCajaModal"
@@ -72,6 +85,15 @@
       :security-code="authStore.perfil?.cierre_code || 'INVALID'"
       @cancel="showCierreCajaModal = false"
       @confirm="handleCierreCajaConfirm"
+    />
+     <SecurityCodeModal
+      v-if="showReporteDiaModal"
+      title="Generar Reporte del Día"
+      description="Ingresa el código de 5 dígitos para generar el reporte."
+      :code-length="5"
+      security-code="55555"
+      @cancel="showReporteDiaModal = false"
+      @confirm="handleReporteDiaConfirm"
     />
     <SecurityCodeModal
       v-if="showDeleteSecurityModal"
@@ -130,6 +152,7 @@ export default {
     const cierreCajaReportRef = ref(null);
     const showDeleteSecurityModal = ref(false);
     const purchaseToDelete = ref(null); 
+    const showReporteDiaModal = ref(false);
     // --- FIN: Nuevos refs ---
 
     const verificarSuspension = () => {
@@ -422,16 +445,30 @@ export default {
       showCierreCajaModal.value = true;
     };
 
-    const handleCierreCajaConfirm = async () => {
+    const handleCierreCajaConfirm = () => {
       if (!verificarSuspension()) return;
       showCierreCajaModal.value = false;
+      purchaseHistory.value = [];
+      alert('Historial limpiado de la pantalla.');
+    };
 
-      // 1. Fetch data for the report (all sales for today by this cashier)
+    const iniciarReporteDia = () => {
+      if (!verificarSuspension()) return;
+      showReporteDiaModal.value = true;
+    };
+
+    const handleReporteDiaConfirm = async () => {
+      if (!verificarSuspension()) return;
+      showReporteDiaModal.value = false;
+      await fetchAndGenerateReport(true); // Detallado
+    };
+
+    const fetchAndGenerateReport = async (isDetailed) => {
       try {
         const today = new Date();
-        today.setHours(0, 0, 0, 0); // Inicio del día
+        today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1); // Inicio del día siguiente
+        tomorrow.setDate(tomorrow.getDate() + 1);
 
         const { data, error } = await supabase
           .from('purchase_history')
@@ -447,30 +484,28 @@ export default {
           return;
         }
 
-        // 2. Prepare data for the report component
         const reportData = {
           fecha: new Date().toLocaleString('es-MX'),
           cajero: authStore.perfil?.nombre || authStore.usuario?.email,
           purchases: data.map(p => ({ 
             id: p.id,
-            total_amount: p.total_amount, // Asegúrate de usar el nombre correcto de la columna
+            total: p.total_amount,
             paymentMethod: p.payment_method,
-            items: p.products // Asumimos que p.products es el array de items
+            items: p.products 
           }))
         };
 
-        // 3. Generate PDF
-        await generateCierreCajaPdf(reportData);
+        await generateCierreCajaPdf({ report: reportData, detailed: isDetailed });
 
       } catch (err) {
-        console.error('Error al generar el cierre de caja:', err);
+        console.error('Error al generar el reporte:', err);
         alert('Error al generar el reporte: ' + err.message);
       }
     };
 
-    const generateCierreCajaPdf = async (reportData) => {
-      cierreCajaData.value = reportData;
-      await nextTick(); // Esperar que el DOM se actualice
+    const generateCierreCajaPdf = async (data) => {
+      cierreCajaData.value = data;
+      await nextTick();
 
       const reportElement = cierreCajaReportRef.value?.$el;
       if (!reportElement) {
@@ -482,7 +517,6 @@ export default {
         const canvas = await html2canvas(reportElement, { scale: 2 });
         const imgData = canvas.toDataURL('image/png');
         
-        // Usar A4 portrait para el reporte
         const pdf = new jsPDF('p', 'px', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeightInPx = pdf.internal.pageSize.getHeight();
@@ -491,33 +525,26 @@ export default {
         const ratio = canvasHeight / canvasWidth;
         
         let pdfHeight = pdfWidth * ratio;
-        let position = 0;
-
-        // Si el contenido es más alto que una página
+        
         if (pdfHeight > pdfHeightInPx) {
             let heightLeft = canvasHeight;
             const pageHeightInCanvas = (pdfHeightInPx * canvasWidth) / pdfWidth;
+            let position = 0;
 
-            // Dibuja la primera parte
             const pageCanvas = document.createElement('canvas');
             pageCanvas.width = canvasWidth;
             pageCanvas.height = pageHeightInCanvas;
             const pageCtx = pageCanvas.getContext('2d');
-            pageCtx.drawImage(canvas, 0, 0, canvasWidth, pageHeightInCanvas, 0, 0, canvasWidth, pageHeightInCanvas);
-            const pageImgData = pageCanvas.toDataURL('image/png');
-            
-            pdf.addImage(pageImgData, 'PNG', 0, 0, pdfWidth, pdfHeightInPx);
-            heightLeft -= pageHeightInCanvas;
-            let yPosition = -pdfHeightInPx;
 
             while (heightLeft > 0) {
-                pdf.addPage();
-                
+                const srcY = position * pageHeightInCanvas;
                 pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
-                pageCtx.drawImage(canvas, 0, pageHeightInCanvas * (position+1), canvasWidth, pageHeightInCanvas, 0, 0, canvasWidth, pageHeightInCanvas);
-                const nextPageImgData = pageCanvas.toDataURL('image/png');
-
-                pdf.addImage(nextPageImgData, 'PNG', 0, 0, pdfWidth, pdfHeightInPx);
+                pageCtx.drawImage(canvas, 0, srcY, canvasWidth, pageHeightInCanvas, 0, 0, canvasWidth, pageHeightInCanvas);
+                const pageImgData = pageCanvas.toDataURL('image/png');
+                
+                if (position > 0) pdf.addPage();
+                pdf.addImage(pageImgData, 'PNG', 0, 0, pdfWidth, pdfHeightInPx, undefined, 'FAST');
+                
                 heightLeft -= pageHeightInCanvas;
                 position++;
             }
@@ -525,14 +552,15 @@ export default {
              pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
         }
         
-        const fileName = `cierre-caja-${new Date().toISOString().split('T')[0]}.pdf`;
+        const fileName = `reporte-caja-${new Date().toISOString().split('T')[0]}.pdf`;
         pdf.save(fileName);
 
       } catch (error) {
         console.error("Error generando PDF de cierre:", error);
         alert("Hubo un error al generar el reporte en PDF.");
       } finally {
-        cierreCajaData.value = null; // Ocultar el componente
+        cierreCajaData.value = null;
+        purchaseHistory.value = [];
       }
     };
 
@@ -563,7 +591,10 @@ export default {
       handleDeleteRequest,
       handleDeleteConfirm,
       showDeleteSecurityModal,
-      purchaseToDelete
+      purchaseToDelete,
+      showReporteDiaModal,
+      iniciarReporteDia,
+      handleReporteDiaConfirm,
     };
   }
 };
@@ -675,6 +706,37 @@ export default {
 }
 
 .btn-cierre-caja svg {
+  width: 20px;
+  height: 20px;
+}
+
+.btn-reporte-dia {
+  width: 100%;
+  background-color: #4f46e5; /* Indigo */
+  color: white;
+  padding: 0.875rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.btn-reporte-dia:hover:not(:disabled) {
+  background-color: #4338ca;
+}
+
+.btn-reporte-dia:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.btn-reporte-dia svg {
   width: 20px;
   height: 20px;
 }

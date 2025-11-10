@@ -59,11 +59,38 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="purchase in report.purchases" :key="purchase.id">
-            <td class="col-id">#{{ purchase.id }}</td>
-            <td class="col-method">{{ purchase.paymentMethod }}</td>
-            <td class="col-total">${{ formatPrice(purchase.total_amount || purchase.total) }}</td>
-          </tr>
+          <template v-for="purchase in report.purchases" :key="purchase.id">
+            <!-- Fila de resumen de la compra -->
+            <tr class="purchase-summary-row">
+              <td class="col-id">#{{ purchase.id }}</td>
+              <td class="col-method">{{ purchase.paymentMethod }}</td>
+              <td class="col-total">${{ formatPrice(purchase.total_amount || purchase.total) }}</td>
+            </tr>
+            
+            <!-- Fila con detalles de productos (solo si detailed es true) -->
+            <tr v-if="detailed && purchase.items && purchase.items.length > 0" class="detailed-row">
+              <td colspan="3" class="col-details">
+                <table class="details-table">
+                  <thead>
+                    <tr>
+                      <th>Producto</th>
+                      <th>Cant.</th>
+                      <th>P.U.</th>
+                      <th>Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="item in purchase.items" :key="item.product_id || item.id">
+                      <td>{{ item.name }}</td>
+                      <td>{{ item.quantity }}</td>
+                      <td>${{ formatPrice(item.price) }}</td>
+                      <td>${{ formatPrice(item.price * item.quantity) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </template>
         </tbody>
       </table>
     </div>
@@ -84,6 +111,10 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  detailed: {
+    type: Boolean,
+    default: false,
+  }
 });
 
 const formatPrice = (price) => {
@@ -223,8 +254,58 @@ td {
 }
 
 tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.purchase-summary-row td {
+  border-bottom: 2px solid #333;
+  font-weight: bold;
+}
+
+.detailed-row td {
+  padding: 0;
   border-bottom: 2px solid #333;
 }
+
+.col-details {
+  padding: 10px 15px !important;
+  background-color: #f9f9f9;
+}
+
+.details-table {
+  width: 100%;
+  font-size: 12px;
+}
+
+.details-table th {
+  text-align: left;
+  padding: 6px 2px;
+  border-bottom: 1px solid #ccc;
+}
+
+.details-table td {
+  padding: 6px 2px;
+  border-bottom: 1px dotted #ccc;
+  color: #333;
+  font-weight: normal;
+}
+
+.details-table tr:last-child td {
+  border-bottom: none;
+}
+
+.details-table th:nth-child(1),
+.details-table td:nth-child(1) { width: 50%; } /* Producto */
+
+.details-table th:nth-child(2),
+.details-table td:nth-child(2) { width: 10%; text-align: center; } /* Cant. */
+
+.details-table th:nth-child(3),
+.details-table td:nth-child(3) { width: 20%; text-align: right; } /* P.U. */
+
+.details-table th:nth-child(4),
+.details-table td:nth-child(4) { width: 20%; text-align: right; } /* Subtotal */
+
 
 .col-id { width: 30%; }
 .col-method { width: 40%; text-transform: capitalize; }
