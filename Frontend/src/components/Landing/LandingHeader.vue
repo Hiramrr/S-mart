@@ -1,6 +1,6 @@
 <script setup>
 // <<< CORRECCIÓN 1: Importar 'nextTick'
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue' 
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useRole } from '@/composables/useRole'
@@ -13,7 +13,6 @@ const authStore = useAuthStore()
 const cartStore = useCartStore()
 const notificationStore = useNotificationStore()
 
-// <<< CORRECCIÓN 2: Importar 'requireAuth' para que funcione goToCart
 const { isAdmin, canSell, isAuthenticated, requireAuth } = useRole()
 
 const showMobileMenu = ref(false)
@@ -77,7 +76,9 @@ const checkBackgroundColor = () => {
     if (validPoints > 0) {
       isDarkBackground.value = totalBrightness / validPoints > 128
     } else {
-      if (!whiteBackgroundRoutes.some((route) => router.currentRoute.value.path.startsWith(route))) {
+      if (
+        !whiteBackgroundRoutes.some((route) => router.currentRoute.value.path.startsWith(route))
+      ) {
         isDarkBackground.value = false
       }
     }
@@ -154,12 +155,9 @@ const goToLogin = () => {
   showMobileMenu.value = false
 }
 
-// 4. Nueva función para ir al carrito con autenticación
 const goToCart = () => {
-  // requireAuth redirigirá a /login si no está autenticado y devolverá false
   if (requireAuth()) {
-    // Si devuelve true, el usuario está logueado y podemos ir al carrito
-    router.push('/carrito') // Asegúrate de que esta ruta exista en tu router
+    router.push('/carrito')
     showMobileMenu.value = false
   }
 }
@@ -180,7 +178,7 @@ const goToAdmin = () => {
   showMobileMenu.value = false
 }
 const goToCajero = () => {
-  router.push('/cajero') // Asegúrate de que esta ruta exista
+  router.push('/cajero')
 }
 const handleLogout = async () => {
   await authStore.cerrarSesion()
@@ -194,9 +192,7 @@ const goToEditProduct = (id) => {
   router.push({ name: 'EditarProducto', params: { id } })
 }
 const scrollToSection = (sectionId) => {
-  // Primero navegar a home si no estamos ahí
   router.push('/').then(() => {
-    // Esperar al siguiente tick para que el DOM se actualice
     nextTick(() => {
       const element = document.getElementById(sectionId)
       if (element) {
@@ -215,7 +211,8 @@ const getUserName = computed(() => {
 })
 const getUserAvatar = computed(() => {
   if (authStore.perfil?.avatar_url) return authStore.perfil.avatar_url
-  if (authStore.usuario?.user_metadata?.avatar_url) return authStore.usuario.user_metadata.avatar_url
+  if (authStore.usuario?.user_metadata?.avatar_url)
+    return authStore.usuario.user_metadata.avatar_url
   return null
 })
 </script>
@@ -276,8 +273,8 @@ const getUserAvatar = computed(() => {
         <div v-if="canSell" class="notification-container">
           <button
             ref="notificationBtnRef"
-            class="notification-btn btn-icon" 
-            @click.stop=";(showNotificationMenu = !showNotificationMenu), (showUserMenu = false)"
+            class="notification-btn btn-icon"
+            @click.stop=";((showNotificationMenu = !showNotificationMenu), (showUserMenu = false))"
             title="Alertas de Stock"
           >
             <svg
@@ -316,7 +313,9 @@ const getUserAvatar = computed(() => {
 
             <template v-else>
               <div v-if="notificationStore.outOfStockCount > 0">
-                <div class="dropdown-subheader">Agotados ({{ notificationStore.outOfStockCount }})</div>
+                <div class="dropdown-subheader">
+                  Agotados ({{ notificationStore.outOfStockCount }})
+                </div>
                 <button
                   v-for="item in notificationStore.outOfStockItems"
                   :key="`out-${item.id}`"
@@ -328,7 +327,9 @@ const getUserAvatar = computed(() => {
                 </button>
               </div>
               <div v-if="notificationStore.lowStockCount > 0">
-                <div class="dropdown-subheader">Stock Bajo ({{ notificationStore.lowStockCount }})</div>
+                <div class="dropdown-subheader">
+                  Stock Bajo ({{ notificationStore.lowStockCount }})
+                </div>
                 <button
                   v-for="item in notificationStore.lowStockItems"
                   :key="`low-${item.id}`"
@@ -347,7 +348,7 @@ const getUserAvatar = computed(() => {
           <button
             ref="userMenuBtnRef"
             class="btn-user"
-            @click.stop=";(showUserMenu = !showUserMenu), (showNotificationMenu = false)"
+            @click.stop=";((showUserMenu = !showUserMenu), (showNotificationMenu = false))"
           >
             <img v-if="getUserAvatar" :src="getUserAvatar" :alt="getUserName" class="user-avatar" />
             <div v-else class="user-avatar-placeholder">
@@ -372,7 +373,11 @@ const getUserAvatar = computed(() => {
             <button v-if="isAdmin" class="dropdown-item" @click="goToAdmin">
               Panel de administración
             </button>
-            <button v-if="authStore.esCajero || authStore.esAdmin" class="dropdown-item" @click="goToCajero">
+            <button
+              v-if="authStore.esCajero || authStore.esAdmin"
+              class="dropdown-item"
+              @click="goToCajero"
+            >
               Panel Cajero
             </button>
 
@@ -440,14 +445,18 @@ const getUserAvatar = computed(() => {
               {{ cartStore.totalItems }}
             </span>
           </button>
-          
-          <button v-if="canSell" class="mobile-menu-option" @click="showNotificationMenu = !showNotificationMenu">
+
+          <button
+            v-if="canSell"
+            class="mobile-menu-option"
+            @click="showNotificationMenu = !showNotificationMenu"
+          >
             🔔 Alertas de Stock
-             <span v-if="notificationStore.totalAlertCount > 0" class="cart-badge-mobile">
+            <span v-if="notificationStore.totalAlertCount > 0" class="cart-badge-mobile">
               {{ notificationStore.totalAlertCount }}
             </span>
           </button>
-          </template>
+        </template>
 
         <div v-if="authStore.usuario" class="mobile-user-section">
           <div class="mobile-user-info">
@@ -1072,7 +1081,7 @@ const getUserAvatar = computed(() => {
   .nav-center {
     display: none;
   }
-  
+
   /* Ocultar botones de acción de escritorio en móvil */
   .btn-login,
   .user-menu-container,
