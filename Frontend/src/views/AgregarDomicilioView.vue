@@ -25,7 +25,8 @@ async function registrarDomicilio() {
     alert('No se encontró usuario autenticado')
     return
   }
-  const { error } = await supabase.from('direcciones').insert({
+  
+  const datosInsert = {
     id_usuario,
     direccion: domicilio.value.direccion,
     codigo_postal: domicilio.value.codigoPostal,
@@ -36,11 +37,19 @@ async function registrarDomicilio() {
     numero_exterior: domicilio.value.numeroExterior,
     tipo_domicilio: domicilio.value.tipo,
     indicaciones_entrega: domicilio.value.indicaciones
-  })
+  }
+  
+  console.log('Datos a insertar:', datosInsert)
+  
+  const { data, error } = await supabase.from('direcciones').insert(datosInsert).select()
+  
   if (error) {
+    console.error('Error completo:', error)
     alert('Error al registrar domicilio: ' + error.message)
     return
   }
+  
+  console.log('Domicilio registrado:', data)
   alert('Domicilio registrado correctamente')
   router.push('/seleccionar-direccion')
 }

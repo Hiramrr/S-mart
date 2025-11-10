@@ -89,12 +89,12 @@ function cancelarPedido() {
     <div class="direcciones-header">
       <h1 class="direcciones-title">Selecciona una dirección de entrega</h1>
       <div style="display: flex; gap: 1rem; align-items: center;">
+        <button class="btn-nueva-direccion" @click="irAgregarDomicilio">Registrar dirección nueva &rarr;</button>
+        <button v-if="direccionSeleccionada" class="btn-cancelar-pedido" @click="cancelarPedido">Cancelar pedido</button>
         <button v-if="direccionSeleccionada" class="btn-continuar-pago" @click="continuarConPago">
-          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none" viewBox="0 0 24 24" style="vertical-align: middle; margin-right: 12px;"><rect x="2" y="6" width="20" height="12" rx="2" fill="#eaf0ff"/><rect x="2" y="10" width="20" height="2" fill="#b4c6fc"/><circle cx="7" cy="16" r="1.5" fill="#5a6eea"/><circle cx="17" cy="16" r="1.5" fill="#5a6eea"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
           Continuar con pago
         </button>
-          <button v-if="direccionSeleccionada" class="btn-cancelar-pedido" @click="cancelarPedido">Cancelar pedido</button>
-        <button class="btn-nueva-direccion" @click="irAgregarDomicilio">Registrar dirección nueva &rarr;</button>
       </div>
     </div>
     <div v-if="loading" class="direcciones-loading">Cargando direcciones...</div>
@@ -131,9 +131,9 @@ function cancelarPedido() {
 <style scoped>
 /* ...existing styles... */
 .btn-continuar-pago {
-  background: #eaf0ff;
-  color: #2d3a5a;
-  border: 2px solid #93c5fd;
+  background: #2563eb;
+  color: #fff;
+  border: none;
   border-radius: 1rem;
   padding: 0.7rem 2rem;
   font-size: 1.1rem;
@@ -147,7 +147,7 @@ function cancelarPedido() {
   gap: 0.5rem;
 }
 .btn-continuar-pago:hover {
-  background: #dbeafe;
+  background: #1d4ed8;
 }
 .btn-cancelar-pedido {
   background: #fde2e1;
@@ -220,18 +220,19 @@ function cancelarPedido() {
   margin: 0;
 }
 .btn-nueva-direccion {
-  background: #111827;
-  color: #fff;
-  border: none;
+  background: #fff;
+  color: #374151;
+  border: 2px solid #d1d5db;
   border-radius: 1rem;
   padding: 0.7rem 2rem;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
 .btn-nueva-direccion:hover {
-  background: #374151;
+  background: #f9fafb;
+  border-color: #9ca3af;
 }
 .direcciones-loading {
   font-size: 1.1rem;
@@ -284,19 +285,20 @@ function cancelarPedido() {
   margin-bottom: 1.5rem;
 }
 .btn-nueva-direccion {
-  background: #111827;
-  color: #fff;
-  border: none;
+  background: #fff;
+  color: #374151;
+  border: 2px solid #d1d5db;
   border-radius: 1rem;
   padding: 0.7rem 2rem;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
   margin-bottom: 2rem;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
 .btn-nueva-direccion:hover {
-  background: #374151;
+  background: #f9fafb;
+  border-color: #9ca3af;
 }
 .direcciones-loading {
   font-size: 1.1rem;
