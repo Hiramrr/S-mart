@@ -612,17 +612,7 @@ onMounted(() => {
         </div>
 
         <div class="tarjeta-actions">
-          <button
-            type="button"
-            class="btn-cancelar"
-            @click="
-              mostrarFormularioNuevaTarjeta = false
-              error = null
-            "
-            :disabled="loading"
-          >
-            Cancelar
-          </button>
+          <button type="button" class="btn-cancelar" @click="mostrarFormularioNuevaTarjeta = false; error = null" :disabled="loading">Cancelar</button>
           <button type="submit" class="btn-registrar" :disabled="loading">
             {{ loading ? 'Guardando...' : 'Guardar y Seleccionar →' }}
           </button>
