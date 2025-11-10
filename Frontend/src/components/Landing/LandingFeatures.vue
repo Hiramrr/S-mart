@@ -23,34 +23,34 @@ console.log(
 )
 const features = [
   {
-    icon: '🚀',
-    title: 'Rápido y eficiente',
-    description: 'Compra y vende productos en segundos con nuestra plataforma optimizada.',
+    icon: '🛒',
+    title: 'Compra en línea',
+    description: 'Explora nuestro catálogo, agrega productos al carrito y compra desde la comodidad de tu hogar.',
   },
   {
-    icon: '🔒',
-    title: 'Seguro',
-    description: 'Todas tus transacciones están protegidas con encriptación de última generación.',
+    icon: '📦',
+    title: 'Gestión de inventario',
+    description: 'Administradores y vendedores pueden gestionar productos, categorías y stock en tiempo real.',
   },
   {
-    icon: '💰',
-    title: 'Mejores precios',
-    description: 'Encuentra las mejores ofertas y promociones exclusivas para ti.',
+    icon: '💳',
+    title: 'Ventas en tienda',
+    description: 'Los cajeros pueden procesar ventas rápidamente en punto de venta físico.',
   },
   {
-    icon: '📱',
-    title: 'Multiplataforma',
-    description: 'Accede desde cualquier dispositivo, en cualquier momento y lugar.',
+    icon: '💬',
+    title: 'Chat en tiempo real',
+    description: 'Comunícate directamente con vendedores para resolver dudas sobre productos.',
   },
   {
-    icon: '⭐',
-    title: 'Calidad garantizada',
-    description: 'Todos nuestros productos pasan por un riguroso control de calidad.',
+    icon: '👥',
+    title: 'Múltiples roles',
+    description: 'Sistema con roles diferenciados: clientes, vendedores, cajeros y administradores.',
   },
   {
     icon: '🚚',
-    title: 'Envío rápido',
-    description: 'Recibe tus productos en tiempo récord con nuestro servicio de envío express.',
+    title: 'Direcciones de entrega',
+    description: 'Gestiona múltiples direcciones y selecciona dónde quieres recibir tus pedidos.',
   },
 ]
 </script>

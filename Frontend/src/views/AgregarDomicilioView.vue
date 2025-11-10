@@ -39,17 +39,13 @@ async function registrarDomicilio() {
     indicaciones_entrega: domicilio.value.indicaciones
   }
   
-  console.log('Datos a insertar:', datosInsert)
-  
   const { data, error } = await supabase.from('direcciones').insert(datosInsert).select()
   
   if (error) {
-    console.error('Error completo:', error)
     alert('Error al registrar domicilio: ' + error.message)
     return
   }
   
-  console.log('Domicilio registrado:', data)
   alert('Domicilio registrado correctamente')
   router.push('/seleccionar-direccion')
 }
