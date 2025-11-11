@@ -50,6 +50,14 @@
 
     <div class="ticket-total">
       <div class="total-row">
+        <span class="total-label">Subtotal:</span>
+        <span class="total-value">${{ formatPrice(purchase.subtotal) }}</span>
+      </div>
+      <div v-if="purchase.discount > 0" class="total-row">
+        <span class="total-label">Descuento:</span>
+        <span class="total-value">- ${{ formatPrice(purchase.discount) }}</span>
+      </div>
+      <div class="total-row">
         <span class="total-label">Total:</span>
         <span class="total-value">${{ formatPrice(purchase.total) }}</span>
       </div>

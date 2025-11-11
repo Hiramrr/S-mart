@@ -27,7 +27,7 @@ const stockTotal = ref(0)
 const showDeleteModal = ref(false)
 const productToDelete = ref(null)
 const showCouponModal = ref(false)
-const selectedProduct = ref({ id: null, name: '' })
+const selectedProduct = ref({ id: '', name: '' })
 
 async function cargarMisProductos() {
   try {

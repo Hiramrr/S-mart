@@ -33,6 +33,12 @@ const form = ref({
 const loading = ref(false)
 const error = ref(null)
 
+const today = computed(() => {
+  const now = new Date()
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
+  return now.toISOString().slice(0, 16)
+})
+
 const resetForm = () => {
   form.value = {
     codigo: '',
@@ -51,8 +57,8 @@ watch(() => props.show, (newVal) => {
 })
 
 const isFormValid = computed(() => {
-  return form.value.codigo.trim() && 
-         form.value.valor && 
+  return form.value.codigo.trim() &&
+         form.value.valor &&
          parseFloat(form.value.valor) > 0
 })
 
@@ -170,6 +176,7 @@ const handleClose = () => {
                   v-model="form.fecha_expiracion"
                   type="datetime-local"
                   :disabled="loading"
+                  :min="today"
                 />
               </div>
 

@@ -40,9 +40,11 @@
           <PurchaseSummary
             :subtotal="subtotal"
             :total="total"
+            :discount="discount"
             v-model:paymentMethod="paymentMethod"
             @checkout="handleCheckout"
             @cancel-purchase="handleCancelPurchase"
+            @apply-coupon="handleApplyCoupon"
           />
 
           <button
@@ -172,6 +174,8 @@ export default {
     const paymentMethod = ref(null)
     const ticketData = ref(null)
     const ticketRef = ref(null)
+    const discount = ref(0)
+    const appliedCoupon = ref(null)
 
     // --- INICIO: Nuevos refs para Cierre de Caja ---
     const showCierreCajaModal = ref(false)
@@ -345,7 +349,58 @@ export default {
       }, 0)
     })
 
-    const total = computed(() => subtotal.value)
+    const total = computed(() => {
+      const finalTotal = subtotal.value - discount.value
+      return finalTotal > 0 ? finalTotal : 0
+    })
+
+    const handleApplyCoupon = async (couponCode) => {
+      if (!verificarSuspension()) return
+
+      const { data: coupon, error } = await supabase
+        .from('cupones')
+        .select('*')
+        .eq('codigo', couponCode.toUpperCase())
+        .single()
+
+      if (error || !coupon) {
+        alert('Cupón no válido.')
+        return
+      }
+
+      // if (coupon.fecha_expiracion && new Date(coupon.fecha_expiracion) < new Date()) {
+      //   alert('El cupón ha expirado.')
+      //   return
+      // }
+
+      if (coupon.usos_maximos && coupon.usos_actuales >= coupon.usos_maximos) {
+        alert('Este cupón ha alcanzado su límite de usos.')
+        return
+      }
+
+      if (coupon.producto_id) {
+        const productInCart = cartItems.value.find((item) => item.id === coupon.producto_id)
+        if (!productInCart) {
+          alert('Este cupón no es válido para los productos en el carrito.')
+          return
+        }
+        if (coupon.tipo_descuento === 'porcentaje') {
+          discount.value = (productInCart.precio * productInCart.cantidad * coupon.valor) / 100
+        } else {
+          const productSubtotal = productInCart.precio * productInCart.cantidad
+          discount.value = Math.min(coupon.valor, productSubtotal)
+        }
+      } else {
+        if (coupon.tipo_descuento === 'porcentaje') {
+          discount.value = (subtotal.value * coupon.valor) / 100
+        } else {
+          discount.value = coupon.valor
+        }
+      }
+
+      appliedCoupon.value = coupon
+      alert('Cupón aplicado exitosamente.')
+    }
 
     // REESCRITO para usar Supabase con la tabla purchase_history
     const handleCheckout = async (method) => {
@@ -376,6 +431,7 @@ export default {
           products: productsToSave,
           total_amount: total.value,
           payment_method: method,
+          applied_cupon: appliedCoupon.value ? appliedCoupon.value.codigo : undefined,
         })
         .select()
         .single()
@@ -384,6 +440,13 @@ export default {
         console.error('Error al registrar la compra:', purchaseError)
         alert('Hubo un error al registrar la compra. Por favor, inténtalo de nuevo.')
         return
+      }
+
+      if (appliedCoupon.value) {
+        await supabase
+          .from('cupones')
+          .update({ usos_actuales: appliedCoupon.value.usos_actuales + 1 })
+          .eq('id', appliedCoupon.value.id)
       }
 
       // Actualizar el stock en la base de datos
@@ -395,6 +458,8 @@ export default {
         id: purchaseData.id,
         fecha: new Date(purchaseData.created_at).toLocaleString('es-MX'),
         items: cartItems.value.map((item) => ({ ...item })),
+        subtotal: subtotal.value,
+        discount: discount.value,
         total: total.value,
         cajero: cajeroNombre,
         paymentMethod: method,
@@ -404,6 +469,8 @@ export default {
       // Limpiar estado local
       cartItems.value = []
       paymentMethod.value = null
+      discount.value = 0
+      appliedCoupon.value = null
 
       // Refrescar el historial de compras desde la DB
       fetchPurchaseHistory()
@@ -418,6 +485,8 @@ export default {
 
       cartItems.value = []
       paymentMethod.value = null
+      discount.value = 0
+      appliedCoupon.value = null
     }
 
     // Abre el modal de seguridad para eliminar
@@ -613,8 +682,10 @@ export default {
       removeItem,
       subtotal,
       total,
+      discount,
       handleCheckout,
       handleCancelPurchase,
+      handleApplyCoupon,
       // Nuevos retornos
       showCierreCajaModal,
       cierreCajaData,

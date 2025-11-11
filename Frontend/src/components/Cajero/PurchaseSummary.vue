@@ -2,38 +2,47 @@
 <template>
   <div class="purchase-summary">
     <h3 class="summary-title">Resumen de compra</h3>
-    
+
     <div class="summary-details">
       <div class="summary-row">
         <span class="label">Productos</span>
         <span class="value">${{ subtotal.toLocaleString() }}</span>
       </div>
-      
+
+      <div v-if="discount > 0" class="summary-row">
+        <span class="label">Descuento</span>
+        <span class="value">- ${{ discount.toLocaleString() }}</span>
+      </div>
+
       <div class="summary-divider"></div>
-      
+
       <div class="summary-row total">
         <span class="label">Total</span>
         <span class="value">${{ total.toLocaleString() }}</span>
       </div>
     </div>
 
+    <CouponInput @apply="$emit('apply-coupon', $event)" />
+
     <div v-if="!paymentMethod">
-      <button 
+      <button
         @click="skipPaymentModal ? $emit('checkout') : showModal = true"
         :disabled="total === 0"
         class="btn-checkout"
       >
-          {{ buttonLabel || 'Método de pago' }}
+        {{ buttonLabel || 'Método de pago' }}
       </button>
     </div>
     <div v-else class="post-payment-actions">
-        <button @click="$emit('checkout', paymentMethod)" class="btn-checkout">Finalizar compra</button>
-        <button @click="handleCancelPurchase" class="btn-cancel-purchase">Cancelar compra</button>
+      <button @click="$emit('checkout', paymentMethod)" class="btn-checkout">
+        Finalizar compra
+      </button>
+      <button @click="handleCancelPurchase" class="btn-cancel-purchase">Cancelar compra</button>
     </div>
 
-    <PaymentMethodModal 
-      v-if="showModal" 
-      @cancel="showModal = false" 
+    <PaymentMethodModal
+      v-if="showModal"
+      @cancel="showModal = false"
       @continue="handlePaymentContinue"
     />
 
@@ -50,64 +59,69 @@
 </template>
 
 <script>
-import { ref } from 'vue';
-import PaymentMethodModal from './PaymentMethodModal.vue';
-import SecurityCodeModal from './SecurityCodeModal.vue';
+import { ref } from 'vue'
+import PaymentMethodModal from './PaymentMethodModal.vue'
+import SecurityCodeModal from './SecurityCodeModal.vue'
+import CouponInput from './CouponInput.vue'
 
 export default {
   name: 'PurchaseSummary',
-  components: { PaymentMethodModal, SecurityCodeModal },
+  components: { PaymentMethodModal, SecurityCodeModal, CouponInput },
   props: {
     subtotal: {
       type: Number,
-      required: true
+      required: true,
     },
     total: {
       type: Number,
-      required: true
+      required: true,
     },
-  paymentMethod: {
-    type: String,
-    default: null
+    discount: {
+      type: Number,
+      default: 0,
+    },
+    paymentMethod: {
+      type: String,
+      default: null,
+    },
+    buttonLabel: {
+      type: String,
+      default: '',
+    },
+    skipPaymentModal: {
+      type: Boolean,
+      default: false,
+    },
   },
-  buttonLabel: {
-    type: String,
-    default: ''
-  },
-  skipPaymentModal: {
-    type: Boolean,
-    default: false
-  }
-  },
-  emits: ['checkout', 'cancel-purchase', 'update:paymentMethod'],
+  emits: ['checkout', 'cancel-purchase', 'update:paymentMethod', 'apply-coupon'],
   setup(props, { emit }) {
-    const showModal = ref(false);
-    const showSecurityModal = ref(false);
+    const showModal = ref(false)
+    const showSecurityModal = ref(false)
 
     const handlePaymentContinue = (method) => {
-      emit('update:paymentMethod', method);
-      showModal.value = false;
-    };
+      emit('update:paymentMethod', method)
+      showModal.value = false
+    }
 
     const handleCancelPurchase = () => {
-      showSecurityModal.value = true;
+      showSecurityModal.value = true
     }
 
     const handleSecurityConfirm = () => {
-      emit('update:paymentMethod', null);
-      showSecurityModal.value = false;
-      emit('cancel-purchase');
+      emit('update:paymentMethod', null)
+      showSecurityModal.value = false
+      emit('cancel-purchase')
     }
 
-    return { 
-      showModal, 
+    return {
+      showModal,
       showSecurityModal,
       handlePaymentContinue,
       handleCancelPurchase,
-      handleSecurityConfirm
-    };
-  }
-};
+      handleSecurityConfirm,
+    }
+  },
+}
 </script>
 
 <style scoped>
