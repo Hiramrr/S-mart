@@ -1,44 +1,57 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { supabase } from '@/lib/supabase.js'
 import ProductCard from './ProductCard.vue'
 import CouponModal from './CouponModal.vue'
-
+import { supabase } from '@/lib/supabase.js'
 const totalProducts = ref(0)
 const products = ref([])
+const categorias = ref([])
 const loading = ref(true)
 const error = ref(null)
 const search = ref('')
+const selectedCategoria = ref('')
+const precioMin = ref(null)
+const precioMax = ref(null)
 const showCouponModal = ref(false)
 const selectedProduct = ref({ id: null, name: '' })
+
+async function cargarCategorias() {
+  try {
+    const { data, error: supabaseError } = await supabase
+      .from('categoria')
+      .select('nombre, descripcion')
+      .order('nombre', { ascending: true })
+    if (supabaseError) {
+      console.error('Error al cargar categorías:', supabaseError)
+      return
+    }
+    categorias.value = data || []
+  } catch (err) {
+    console.error('Error al cargar categorías:', err)
+  }
+}
 
 async function cargarProductos() {
   try {
     loading.value = true
     error.value = null
-
     if (!supabase) {
       throw new Error('Supabase no está configurado correctamente')
     }
-
     const { data, error: supabaseError } = await supabase
       .from('productos')
       .select('*')
       .order('id', { ascending: false })
-
     if (supabaseError) {
       throw supabaseError
     }
-
     if (!data) {
       products.value = []
       totalProducts.value = 0
       return
     }
-
     products.value = data.map((p) => {
       const tieneDescuento = p.precio_descuento && p.precio_descuento > 0 && p.precio_descuento < p.precio_venta
-
       return {
         id: p.id,
         name: p.nombre,
@@ -50,9 +63,10 @@ async function cargarProductos() {
           : null,
         description: p.descripcion,
         imageUrl: p.imagen_url,
+        categoria: p.categoria,
+        precio: tieneDescuento ? p.precio_descuento : p.precio_venta,
       }
     })
-
     totalProducts.value = data.length
   } catch (err) {
     console.error('Error al cargar productos:', err)
@@ -62,15 +76,57 @@ async function cargarProductos() {
   }
 }
 
-onMounted(() => {
-  cargarProductos()
+onMounted(async () => {
+  await cargarCategorias()
+  await cargarProductos()
 })
 
 const filteredProducts = computed(() => {
-  if (!search.value.trim()) return products.value
-  return products.value.filter(p =>
-    p.name.toLowerCase().includes(search.value.trim().toLowerCase())
-  )
+  let filtered = [...products.value]
+  // Filtro de búsqueda por nombre
+  if (search.value && search.value.trim()) {
+    const searchTerm = search.value.trim().toLowerCase()
+    filtered = filtered.filter(p =>
+      p.name && p.name.toLowerCase().includes(searchTerm)
+    )
+  }
+  // Filtro por categoría
+  if (selectedCategoria.value) {
+    filtered = filtered.filter(p => p.categoria === selectedCategoria.value)
+  }
+  // Filtro por precio mínimo
+  if (precioMin.value !== null && precioMin.value !== '') {
+    const min = Number(precioMin.value)
+    if (!isNaN(min) && min >= 0) {
+      filtered = filtered.filter(p => {
+        const precio = Number(p.precio)
+        return !isNaN(precio) && precio >= min
+      })
+    }
+  }
+  // Filtro por precio máximo
+  if (precioMax.value !== null && precioMax.value !== '') {
+    const max = Number(precioMax.value)
+    if (!isNaN(max) && max >= 0) {
+      filtered = filtered.filter(p => {
+        const precio = Number(p.precio)
+        return !isNaN(precio) && precio <= max
+      })
+    }
+  }
+  return filtered
+})
+
+const limpiarFiltros = () => {
+  selectedCategoria.value = ''
+  precioMin.value = null
+  precioMax.value = null
+}
+
+const hayFiltrosActivos = computed(() => {
+  return selectedCategoria.value || 
+         (precioMin.value !== null && precioMin.value !== '') || 
+         (precioMax.value !== null && precioMax.value !== '')
 })
 
 function handleCreateCoupon(productId, productName) {
@@ -86,12 +142,74 @@ function handleCouponCreated(coupon) {
 <template>
   <div class="product-section">
     <aside class="sidebar">
-      <h2 class="sidebar-title">Filtro</h2>
-      <div class="filter-placeholder">
-        <p>Categorías</p>
-        <p>Precio</p>
-        <p>Marca</p>
+      <h2 class="sidebar-title">Filtros</h2>
+      <!-- Filtro por Categoría -->
+      <div class="filter-section">
+        <h3 class="filter-label">Categoría</h3>
+        <div class="category-list">
+          <label class="category-item">
+            <input 
+              type="radio" 
+              :value="''" 
+              v-model="selectedCategoria"
+              class="category-radio"
+            />
+            <span>Todas</span>
+          </label>
+          <label 
+            v-for="cat in categorias" 
+            :key="cat.nombre" 
+            class="category-item"
+            :title="cat.descripcion"
+          >
+            <input 
+              type="radio" 
+              :value="cat.nombre" 
+              v-model="selectedCategoria"
+              class="category-radio"
+            />
+            <span>{{ cat.nombre }}</span>
+          </label>
+        </div>
       </div>
+
+      <!-- Filtro por Precio -->
+      <div class="filter-section">
+        <h3 class="filter-label">Precio</h3>
+        <div class="price-range">
+          <div class="price-input-group">
+            <label class="price-label">Mínimo</label>
+            <input 
+              v-model.number="precioMin" 
+              type="number" 
+              placeholder="0.00"
+              class="price-input"
+              min="0"
+              step="0.01"
+            />
+          </div>
+          <div class="price-input-group">
+            <label class="price-label">Máximo</label>
+            <input 
+              v-model.number="precioMax" 
+              type="number" 
+              placeholder="999.99"
+              class="price-input"
+              min="0"
+              step="0.01"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Botón Limpiar Filtros -->
+      <button 
+        @click="limpiarFiltros" 
+        class="clear-filters-btn"
+        v-if="hayFiltrosActivos"
+      >
+        Limpiar filtros
+      </button>
     </aside>
 
     <main class="products-area">
@@ -238,6 +356,105 @@ function handleCouponCreated(coupon) {
   font-size: 1.5rem;
   font-weight: 600;
   color: #111827;
+}
+
+/* Sidebar filtros */
+.sidebar {
+  width: 260px;
+  background: #fff;
+  border-radius: 1.2rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 2rem 1.5rem 2rem 1.5rem;
+  margin-right: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.sidebar-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.2rem;
+  color: #111827;
+}
+
+.filter-section {
+  margin-bottom: 1.2rem;
+}
+
+.filter-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.7rem;
+  color: #374151;
+}
+
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.category-item {
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+  color: #222;
+  gap: 0.5rem;
+}
+
+.category-radio {
+  accent-color: #111827;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-right: 0.5rem;
+}
+
+.price-range {
+  display: flex;
+  gap: 1rem;
+}
+
+.price-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.price-label {
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.price-input {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.7rem;
+  padding: 0.4rem 0.8rem;
+  font-size: 1rem;
+  width: 100px;
+  background: #f9fafb;
+  transition: border 0.2s;
+}
+.price-input:focus {
+  border-color: #111827;
+  outline: none;
+}
+
+.clear-filters-btn {
+  background: #f3f4f6;
+  color: #111827;
+  border: none;
+  border-radius: 0.8rem;
+  padding: 0.5rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: background 0.2s;
+}
+.clear-filters-btn:hover {
+  background: #e5e7eb;
 }
 
 .products-grid {
