@@ -215,6 +215,36 @@ const router = createRouter({
         requiresRoles: ['administrador', 'vendedor', 'cajero'],
       },
     },
+    {
+      path: '/vendedor/pedidos',
+      name: 'vendedor-pedidos',
+      component: () => import('../views/VendedorPedidosView.vue'),
+      meta: {
+        title: 'Gestión de Pedidos - S-mart',
+        requiresAuth: true,
+        requiresRoles: ['vendedor', 'administrador'],
+      },
+    },
+    {
+      path: '/seguimiento',
+      name: 'seguimiento-envio',
+      component: () => import('../views/SeguimientoEnvioView.vue'),
+      meta: {
+        title: 'Seguimiento de Envíos - S-mart',
+        requiresAuth: true,
+        requiresRoles: ['cliente', 'vendedor', 'administrador', 'cajero'],
+      },
+    },
+    {
+      path: '/venta/:id',
+      name: 'detalle-venta',
+      component: () => import('../views/DetalleVentaView.vue'),
+      meta: {
+        title: 'Detalle de Pedido - S-mart',
+        requiresAuth: true,
+        requiresRoles: ['cliente', 'vendedor', 'administrador', 'cajero'],
+      },
+    },
     /* {
       path: '/perfil',
       name: 'perfil',

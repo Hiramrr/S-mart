@@ -225,10 +225,19 @@ function handleCouponCreated(coupon) {
             <h1 class="products-title">Mis Productos</h1>
             <p class="products-subtitle">{{ filteredProducts.length }} productos encontrados</p>
           </div>
-          <button class="btn-add" @click="goToVender">
-            <span>Agregar producto</span>
-            <span class="arrow">→</span>
-          </button>
+          <div class="header-actions">
+            <button class="btn-secondary" @click="router.push('/vendedor/pedidos')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                <line x1="1" y1="10" x2="23" y2="10"/>
+              </svg>
+              <span>Gestión de Pedidos</span>
+            </button>
+            <button class="btn-add" @click="goToVender">
+              <span>Agregar producto</span>
+              <span class="arrow">→</span>
+            </button>
+          </div>
         </div>
 
         <div class="search-container">
@@ -782,9 +791,15 @@ function handleCouponCreated(coupon) {
 
   .products-header {
     flex-direction: column;
+    align-items: stretch;
   }
 
-  .btn-add {
+  .header-actions {
+    width: 100%;
+  }
+
+  .btn-add,
+  .btn-secondary {
     width: 100%;
     justify-content: center;
   }

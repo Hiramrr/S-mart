@@ -167,6 +167,16 @@ const goToVender = () => {
   showUserMenu.value = false
   showMobileMenu.value = false
 }
+const goToPedidos = () => {
+  router.push('/vendedor/pedidos')
+  showUserMenu.value = false
+  showMobileMenu.value = false
+}
+const goToSeguimiento = () => {
+  router.push('/seguimiento')
+  showUserMenu.value = false
+  showMobileMenu.value = false
+}
 const goToChats = () => {
   router.push('/mis-chats')
   showUserMenu.value = false
@@ -370,6 +380,12 @@ const getUserAvatar = computed(() => {
             <button v-if="canSell" class="dropdown-item" @click="goToVender">
               Panel de ventas
             </button>
+            <button v-if="canSell" class="dropdown-item" @click="goToPedidos">
+              Gestión de Pedidos
+            </button>
+            <button class="dropdown-item" @click="goToSeguimiento">
+              {{ canSell ? 'Mis Pedidos' : 'Seguimiento' }}
+            </button>
             <button v-if="canSell" class="dropdown-item" @click="router.push('/reportes')">
               Reporte de ventas
             </button>
@@ -478,13 +494,23 @@ const getUserAvatar = computed(() => {
             </div>
           </div>
 
-          <button class="mobile-menu-option" @click="router.push('/perfil')">Mi perfil</button>
-          <button class="mobile-menu-option" @click="goToChats">💬 Mis Chats</button>
+          <button class="mobile-menu-option" @click="router.push('/perfil')">
+            Mi perfil
+          </button>
+          <button class="mobile-menu-option" @click="goToChats">
+            Mis Chats
+          </button>
+          <button class="mobile-menu-option" @click="goToSeguimiento">
+            {{ canSell ? 'Mis Pedidos' : 'Seguimiento' }}
+          </button>
           <button v-if="canSell" class="mobile-menu-option" @click="goToVender">
-            📦 Panel de ventas
+            Panel de ventas
+          </button>
+          <button v-if="canSell" class="mobile-menu-option" @click="goToPedidos">
+            Gestión de Pedidos
           </button>
           <button v-if="isAdmin" class="mobile-menu-option" @click="goToAdmin">
-            ⚙️ Panel de administración
+            Administración
           </button>
           <button class="mobile-logout" @click="handleLogout">Cerrar sesión</button>
         </div>
