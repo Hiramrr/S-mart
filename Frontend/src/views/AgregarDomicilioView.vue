@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 import { supabase } from '@/lib/supabase.js'
@@ -7,6 +8,7 @@ import { useAuthStore } from '@/stores/auth.js'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const toast = useToast()
 const domicilio = ref({
   direccion: '',
   codigoPostal: '',
@@ -22,7 +24,7 @@ const domicilio = ref({
 async function registrarDomicilio() {
   const id_usuario = authStore.usuario?.id
   if (!id_usuario) {
-    alert('No se encontró usuario autenticado')
+  toast.error('No se encontró usuario autenticado')
     return
   }
   
@@ -42,11 +44,11 @@ async function registrarDomicilio() {
   const { data, error } = await supabase.from('direcciones').insert(datosInsert).select()
   
   if (error) {
-    alert('Error al registrar domicilio: ' + error.message)
+  toast.error('Error al registrar domicilio: ' + error.message)
     return
   }
   
-  alert('Domicilio registrado correctamente')
+  toast.success('Domicilio registrado correctamente')
   router.push('/seleccionar-direccion')
 }
 </script>
@@ -113,7 +115,7 @@ async function registrarDomicilio() {
         </div>
         <div class="domicilio-actions">
           <button type="button" class="btn-cancelar" @click="router.push('/carrito')">Cancelar</button>
-          <button type="submit" class="btn-registrar" @click="registrarDomicilio">Registrar domicilio &rarr;</button>
+          <button type="submit" class="btn-registrar">Registrar domicilio &rarr;</button>
         </div>
       </form>
     </div>

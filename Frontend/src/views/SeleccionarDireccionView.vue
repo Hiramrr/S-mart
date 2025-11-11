@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useToast } from 'vue-toastification'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '@/lib/supabase.js'
 import { useAuthStore } from '@/stores/auth.js'
@@ -11,6 +12,9 @@ const authStore = useAuthStore()
 const direcciones = ref([])
 const loading = ref(true)
 const direccionSeleccionada = ref(null)
+const showDeleteDireccionModal = ref(false)
+const direccionAEliminar = ref(null)
+const toast = useToast()
 
 async function cargarDirecciones() {
   loading.value = true
@@ -24,14 +28,27 @@ async function cargarDirecciones() {
   loading.value = false
 }
 
-async function eliminarDireccion(id) {
-  if (!confirm('¿Seguro que deseas eliminar esta dirección?')) return;
-  const { error } = await supabase.from('direcciones').delete().eq('id', id)
-  if (error) {
-    alert('Error al eliminar la dirección: ' + error.message)
-    return
-  }
- direcciones.value = direcciones.value.filter(d => d.id !== id)
+function abrirModalEliminarDireccion(dir) {
+  direccionAEliminar.value = dir
+  showDeleteDireccionModal.value = true
+}
+
+function cancelarEliminarDireccion() {
+  showDeleteDireccionModal.value = false
+  direccionAEliminar.value = null
+}
+
+async function confirmarEliminarDireccion() {
+  if (!direccionAEliminar.value) return
+  const { error } = await supabase.from('direcciones').delete().eq('id', direccionAEliminar.value.id)
+  if (error) {
+    toast.error('Error al eliminar la dirección: ' + error.message)
+    return
+  }
+  direcciones.value = direcciones.value.filter(d => d.id !== direccionAEliminar.value.id)
+  toast.success('Dirección eliminada correctamente')
+  showDeleteDireccionModal.value = false
+  direccionAEliminar.value = null
 }
 
 onMounted(cargarDirecciones)
@@ -125,7 +142,8 @@ function cancelarPedido() {
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#2563eb" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487a2.06 2.06 0 1 1 2.915 2.915l-10.1 10.1a2.06 2.06 0 0 1-.82.51l-3.07.92a.5.5 0 0 1-.62-.62l.92-3.07a2.06 2.06 0 0 1 .51-.82l10.1-10.1z"/></svg>
                 Editar
               </button>
-              <button class="btn-eliminar" title="Eliminar dirección" @click.stop="eliminarDireccion(dir.id)">
+
+              <button class="btn-eliminar" title="Eliminar dirección" @click.stop="abrirModalEliminarDireccion(dir)">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#ef4444" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5a3 3 0 0 1 6 0v2m-9 0v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7"/></svg>
                 Eliminar
               </button>
@@ -134,10 +152,147 @@ function cancelarPedido() {
         </div>
     </div>
   </div>
+
+  <!-- Modal de confirmación para eliminar dirección -->
+  <div v-if="showDeleteDireccionModal" class="modal-overlay modal-center" @click="cancelarEliminarDireccion">
+    <div class="modal-content confirm-modal" @click.stop>
+      <div class="modal-header confirm-modal-header">
+        <div class="modal-icon confirm-modal-icon">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <circle cx="24" cy="24" r="22" fill="#FFFBEA" stroke="#FBBF24" stroke-width="2"/>
+            <polygon points="24,12 36,36 12,36" fill="#FBBF24" />
+            <text x="24" y="32" text-anchor="middle" font-size="24" fill="#B45309" font-family="Arial" dy="-2">!</text>
+          </svg>
+        </div>
+        <h2 class="modal-title confirm-modal-title">Confirmar eliminación</h2>
+      </div>
+      <div class="modal-body confirm-modal-body">
+        <p class="confirm-modal-question">¿Estás seguro de que deseas eliminar la dirección?</p>
+        <p class="confirm-modal-name">{{ direccionAEliminar?.direccion }}</p>
+        <p class="confirm-modal-warning">Esta acción no se puede deshacer.</p>
+      </div>
+      <div class="modal-actions confirm-modal-actions">
+        <button class="btn-cancel confirm-btn-cancel" @click="cancelarEliminarDireccion">Cancelar</button>
+        <button class="btn-confirm-delete confirm-btn-delete" @click="confirmarEliminarDireccion">Eliminar</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
-/* ...existing styles... */
+/* Modal centrado y profesional */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+.modal-center {
+  align-items: center !important;
+  justify-content: center !important;
+}
+.modal-content {
+  background: #fff;
+  border-radius: 1.5rem;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  padding: 2.5rem 2rem 2rem 2rem;
+  position: relative;
+  text-align: center;
+  animation: modalIn 0.2s;
+}
+/* Modal de confirmación estilos tipo imagen */
+.confirm-modal {
+  background: #fff;
+  border-radius: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  padding: 2.5rem 2rem 2rem 2rem;
+  max-width: 420px;
+  width: 100%;
+  position: relative;
+  animation: modalIn 0.2s;
+  text-align: center;
+}
+.confirm-modal-header {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.2rem;
+}
+.confirm-modal-icon {
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: center;
+}
+.confirm-modal-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.2rem;
+}
+.confirm-modal-body {
+  margin-bottom: 1.7rem;
+}
+.confirm-modal-question {
+  color: #374151;
+  font-size: 1.08rem;
+  margin-bottom: 0.5rem;
+}
+.confirm-modal-name {
+  font-weight: bold;
+  color: #6B7280;
+  font-size: 1.15rem;
+  margin: 0.7rem 0 0.7rem 0;
+}
+.confirm-modal-warning {
+  color: #dc2626;
+  font-size: 1.05rem;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+.confirm-modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1.2rem;
+}
+.confirm-btn-cancel {
+  background: #F3F4F6;
+  color: #111827;
+  border: none;
+  border-radius: 1rem;
+  padding: 0.8rem 2.2rem;
+  font-weight: 700;
+  font-size: 1.08rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.confirm-btn-cancel:hover {
+  background: #E5E7EB;
+}
+.confirm-btn-delete {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 1rem;
+  padding: 0.8rem 2.2rem;
+  font-weight: 700;
+  font-size: 1.08rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.confirm-btn-delete:hover {
+  background: #b91c1c;
+}
+
+/* ...existing styles...s */
 .btn-continuar-pago {
   background: #2563eb;
   color: #fff;
@@ -350,4 +505,5 @@ function cancelarPedido() {
   flex-direction: column;
   gap: 0.3rem;
 }
+
 </style>

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useToast } from 'vue-toastification'
 import { useRouter, useRoute } from 'vue-router'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 import { supabase } from '@/lib/supabase.js'
@@ -47,6 +48,7 @@ async function fetchDireccion() {
   }
 }
 
+const toast = useToast()
 async function actualizarDomicilio() {
   const { error } = await supabase
     .from('direcciones')
@@ -64,10 +66,10 @@ async function actualizarDomicilio() {
     .eq('id', direccionId)
 
   if (error) {
-    alert('Error al actualizar domicilio: ' + error.message)
+    toast.error('Error al actualizar domicilio: ' + error.message)
     return
   }
-  alert('Domicilio actualizado correctamente')
+  toast.success('Domicilio actualizado correctamente')
   router.push('/seleccionar-direccion')
 }
 
