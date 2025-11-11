@@ -478,9 +478,11 @@ async function handlePaymentConfirm() {
         precio: item.precio || item.precio_venta,
         cantidad: item.cantidad,
       })),
+      subtotal: checkoutTotal.value,
+      discount: 0,
       total: checkoutTotal.value,
-      paymentMethod: metodoPago, 
-      cajero: authStore.perfil?.nombre || authStore.usuario?.email, 
+      paymentMethod: metodoPago,
+      cajero: authStore.perfil?.nombre || authStore.usuario?.email,
     }
 
     await generatePdf(purchaseData)
