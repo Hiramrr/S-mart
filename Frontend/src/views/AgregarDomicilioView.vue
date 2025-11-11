@@ -113,7 +113,7 @@ async function registrarDomicilio() {
         </div>
         <div class="domicilio-actions">
           <button type="button" class="btn-cancelar" @click="router.push('/carrito')">Cancelar</button>
-          <button type="submit" class="btn-registrar">Registrar domicilio &rarr;</button>
+          <button type="submit" class="btn-registrar" @click="registrarDomicilio">Registrar domicilio &rarr;</button>
         </div>
       </form>
     </div>
