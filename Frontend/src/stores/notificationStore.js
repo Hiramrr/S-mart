@@ -1,4 +1,3 @@
-// src/stores/notificationStore.js
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { supabase } from '@/lib/supabase'
@@ -28,12 +27,16 @@ export const useNotificationStore = defineStore('notifications', () => {
       // 1. Preparar consultas base
       let queryAgotados = supabase
         .from('productos')
-        .select('id, nombre, stock')
+        // --- CORRECCIÓN AQUÍ ---
+        // Pedimos el 'vendedor_id' para que el admin pueda iniciar el chat
+        .select('id, nombre, stock, vendedor_id')
         .eq('stock', 0)
 
       let queryBajos = supabase
         .from('productos')
-        .select('id, nombre, stock')
+        // --- CORRECCIÓN AQUÍ ---
+        // Pedimos el 'vendedor_id' para que el admin pueda iniciar el chat
+        .select('id, nombre, stock, vendedor_id')
         .gt('stock', 0)
         .lte('stock', LOW_STOCK_THRESHOLD)
 
@@ -47,10 +50,14 @@ export const useNotificationStore = defineStore('notifications', () => {
       // 3. Ejecutar consultas
       const { data: agotados, error: errAgotados } = await queryAgotados.order('nombre', { ascending: true })
       if (errAgotados) throw errAgotados
+      
+      // los items 'agotados' ahora tendrán 'vendedor_id'
       outOfStockItems.value = agotados || []
 
       const { data: bajos, error: errBajos } = await queryBajos.order('stock', { ascending: true })
       if (errBajos) throw errBajos
+
+      // los items 'bajos' ahora tendrán 'vendedor_id'
       lowStockItems.value = bajos || []
 
     } catch (err) {

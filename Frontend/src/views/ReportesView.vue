@@ -8,9 +8,21 @@ const ventas = ref([])
 const loading = ref(true)
 const error = ref(null)
 const authStore = useAuthStore()
-
-// Usamos computed para obtener el rol, asegurando reactividad
 const userRole = computed(() => authStore.rolUsuario)
+
+// --- NUEVO ---
+// Guarda el ID de la fila que está expandida
+const expandedRowId = ref(null)
+
+// --- NUEVO ---
+// Función para mostrar/ocultar el detalle de una fila
+function toggleRow(ventaId) {
+  if (expandedRowId.value === ventaId) {
+    expandedRowId.value = null // Ciérrala si ya estaba abierta
+  } else {
+    expandedRowId.value = ventaId // Ábrela
+  }
+}
 
 // Formateador de moneda
 const formatCurrency = (value) => {
@@ -37,21 +49,19 @@ async function cargarReporte() {
   try {
     loading.value = true
     error.value = null
-
-    // 1. ¡AQUÍ ES DONDE VES TUS TUPLAS!
-    //    Llamamos a la función RPC que creaste en Supabase.
+    
+    // 1. La llamada RPC ahora devolverá el nombre y email del responsable
     const { data, error: rpcError } = await supabase.rpc('get_reporte_ventas')
 
     if (rpcError) throw rpcError
 
-    // 2. Procesar y ordenar los datos
+    // 2. El procesamiento de datos sigue igual
     const dataProcesada = data.map(venta => ({
       ...venta,
-      // Contamos los items en el JSON de productos
       total_items: venta.productos_vendidos.reduce((acc, prod) => acc + (prod.cantidad || 1), 0),
       fecha_formateada: formatDate(venta.fecha_venta),
       total_formateado: formatCurrency(venta.total_venta)
-    })).sort((a, b) => new Date(b.fecha_venta) - new Date(a.fecha_venta)) // Ordenar por fecha (más nuevas primero)
+    })).sort((a, b) => new Date(b.fecha_venta) - new Date(a.fecha_venta)) 
 
     ventas.value = dataProcesada
 
@@ -64,19 +74,16 @@ async function cargarReporte() {
 }
 
 onMounted(() => {
-  // Esperar a que el authStore esté listo, como en tu router
   if (authStore.loading) {
     const unwatch = authStore.$subscribe(() => {
       if (!authStore.loading) {
         unwatch()
-        // Solo cargar si el usuario tiene un rol permitido
         if (['administrador', 'vendedor', 'cajero'].includes(authStore.rolUsuario)) {
           cargarReporte()
         }
       }
     })
   } else {
-    // Solo cargar si el usuario tiene un rol permitido
     if (['administrador', 'vendedor', 'cajero'].includes(authStore.rolUsuario)) {
       cargarReporte()
     }
@@ -120,11 +127,12 @@ onMounted(() => {
               <th>Tipo de Venta</th>
               <th>N° Items</th>
               <th>Monto Total</th>
-              <th v-if="userRole === 'administrador'">Responsable (ID)</th>
+              <th v-if="userRole === 'administrador'">Responsable</th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-for="venta in ventas" :key="venta.id_venta">
+          
+          <template v-for="venta in ventas" :key="venta.id_venta">
+            <tr class="clickable-row" @click="toggleRow(venta.id_venta)">
               <td>{{ venta.fecha_formateada }}</td>
               <td>
                 <span :class="['badge', venta.tipo_venta === 'En Línea' ? 'badge-online' : 'badge-pos']">
@@ -133,12 +141,28 @@ onMounted(() => {
               </td>
               <td>{{ venta.total_items }}</td>
               <td class="text-total">{{ venta.total_formateado }}</td>
-              <td v-if="userRole === 'administrador'" class="text-id">
-                {{ venta.id_responsable_venta }}
+              
+              <td v-if="userRole === 'administrador'" class="text-responsable">
+                {{ venta.nombre_responsable || venta.email_responsable || 'Usuario no encontrado' }}
               </td>
             </tr>
-          </tbody>
-        </table>
+            
+            <tr v-if="expandedRowId === venta.id_venta" class="details-row">
+              <td :colspan="userRole === 'administrador' ? 5 : 4">
+                <div class="product-breakdown">
+                  <h4>Detalle de la Venta:</h4>
+                  <ul class="product-list">
+                    <li v-for="prod in venta.productos_vendidos" :key="prod.producto_id">
+                      <span class="qty">{{ prod.cantidad }}x</span>
+                      <span class="name">{{ prod.nombre }}</span>
+                      <span class="price">{{ formatCurrency(prod.precio_unitario) }} c/u</span>
+                    </li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+          </template>
+          </table>
       </div>
     </main>
   </div>
@@ -278,4 +302,63 @@ onMounted(() => {
   transition: all 0.2s;
 }
 .btn-retry:hover { background: #374151; }
+
+.clickable-row {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.clickable-row:hover {
+  background-color: #f3f4f6; /* Un gris muy claro al pasar el mouse */
+}
+
+.details-row td {
+  padding: 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Estilos para la fila expandida */
+.product-breakdown {
+  background-color: #fdfdfd; /* Un fondo ligeramente diferente */
+  padding: 1.5rem;
+  padding-left: 2.5rem; /* Indentación */
+}
+.product-breakdown h4 {
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 1rem 0;
+  font-size: 0.9375rem;
+}
+.product-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.product-list li {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.9375rem;
+}
+.product-list .qty {
+  font-weight: 600;
+  color: #111827;
+  min-width: 30px;
+}
+.product-list .name {
+  color: #374151;
+  flex: 1;
+}
+.product-list .price {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.text-responsable {
+  font-weight: 500;
+  color: #374151;
+  text-transform: capitalize;
+}
 </style>
