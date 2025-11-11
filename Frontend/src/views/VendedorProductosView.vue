@@ -38,7 +38,6 @@ async function cargarMisProductos() {
       throw new Error('No hay sesión de usuario')
     }
 
-    // El select '*' traerá 'precio_venta' y 'precio_descuento'
     const { data, error: supabaseError } = await supabase
       .from('productos')
       .select('*')
@@ -54,10 +53,7 @@ async function cargarMisProductos() {
       return
     }
 
-    // --- INICIO DE MODIFICACIÓN ---
     products.value = data.map((p) => {
-      // Verificamos si hay un descuento válido.
-      // (Que exista, sea mayor a 0 y menor que el precio original)
       const hasDiscount =
         p.precio_descuento && p.precio_descuento > 0 && p.precio_descuento < p.precio_venta
 
@@ -65,10 +61,8 @@ async function cargarMisProductos() {
         id: p.id,
         name: p.nombre,
 
-        // 'price' (prop) será el precio final (con descuento si existe)
         price: hasDiscount ? `$${p.precio_descuento.toFixed(2)}` : `$${p.precio_venta.toFixed(2)}`,
 
-        // 'originalPrice' (prop) será el precio de venta (tachado) si hay descuento
         originalPrice: hasDiscount ? `$${p.precio_venta.toFixed(2)}` : null,
 
         description: p.descripcion,
@@ -79,10 +73,8 @@ async function cargarMisProductos() {
       }
     })
 
-    // Calcular estadísticas
     stockTotal.value = data.reduce((sum, p) => sum + p.stock, 0)
 
-    // Corregimos el cálculo de "Valor Inventario" para que use el precio final
     totalVentas.value = data.reduce((sum, p) => {
       const finalPrice =
         p.precio_descuento && p.precio_descuento > 0 && p.precio_descuento < p.precio_venta
@@ -90,7 +82,6 @@ async function cargarMisProductos() {
           : p.precio_venta
       return sum + finalPrice * p.stock
     }, 0)
-    // --- FIN DE MODIFICACIÓN ---
   } catch (err) {
     console.error('Error al cargar productos:', err)
     error.value = err.message || 'Error al cargar productos'
@@ -119,11 +110,6 @@ const filteredProducts = computed(() => {
 function goToVender() {
   if (!verificarSuspension()) return
   router.push('/AgregarProducto')
-}
-
-const handleLogout = async () => {
-  await authStore.cerrarSesion()
-  router.push('/login')
 }
 
 function handleEditProduct(productId) {
@@ -170,7 +156,6 @@ function handleCreateCoupon(productId, productName) {
 
 function handleCouponCreated(coupon) {
   console.log('Cupón creado:', coupon)
-  // You can add a success notification here if needed
 }
 </script>
 
@@ -312,7 +297,6 @@ function handleCouponCreated(coupon) {
       </div>
     </div>
 
-    <!-- Coupon Modal -->
     <CouponModal
       :show="showCouponModal"
       :product-id="selectedProduct.id"
@@ -324,7 +308,6 @@ function handleCouponCreated(coupon) {
 </template>
 
 <style scoped>
-/* Los estilos CSS no necesitan cambios, ya que están en el componente ProductCard */
 .vendedor-container {
   min-height: 100vh;
   background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
