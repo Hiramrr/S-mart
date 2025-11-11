@@ -13,7 +13,8 @@ const authStore = useAuthStore()
 const cartStore = useCartStore()
 const notificationStore = useNotificationStore()
 
-const { isAdmin, canSell, isAuthenticated, requireAuth } = useRole()
+// 'isAdmin' y 'authStore.usuario.id' serán claves aquí
+const { isAdmin, canSell, isAuthenticated, requireAuth } = useRole() 
 
 const showMobileMenu = ref(false)
 const showUserMenu = ref(false)
@@ -34,6 +35,9 @@ const whiteBackgroundRoutes = [
   '/AgregarProducto',
   '/EditarProducto',
 ]
+
+// --- Toda la lógica de 'checkBackgroundColor', 'handleScroll', 'handleClickOutside', 'watch' y 'onMounted/onUnmounted'
+// --- se mantiene exactamente igual. La pegamos aquí para que el script esté completo. ---
 
 const checkBackgroundColor = () => {
   try {
@@ -146,6 +150,8 @@ watch(
   { immediate: true },
 )
 
+// --- FUNCIONES DE NAVEGACIÓN ---
+
 const goToStore = () => {
   router.push('/tienda')
   showMobileMenu.value = false
@@ -201,6 +207,41 @@ const goToEditProduct = (id) => {
   showNotificationMenu.value = false
   router.push({ name: 'EditarProducto', params: { id } })
 }
+
+// --- ¡NUEVA FUNCIÓN! ---
+/**
+ * Navega a la página de chats y pasa el ID del vendedor
+ * para (idealmente) abrir esa conversación.
+ */
+const goToChatWithSeller = (vendedorId) => {
+  if (!vendedorId) {
+    console.error('No se proporcionó ID de vendedor para iniciar el chat.')
+    return
+  }
+  showNotificationMenu.value = false
+  router.push({ 
+    path: '/mis-chats', // Usamos el path de tu función goToChats
+    query: { userId: vendedorId } // Pasamos el ID del vendedor en la URL
+  })
+}
+
+// --- ¡NUEVA FUNCIÓN MANEJADORA! ---
+/**
+ * Decide a dónde navegar cuando se hace clic en una notificación de stock.
+ * Asume que el objeto 'notificacion' tiene 'producto_id' y 'vendedor_id'.
+ */
+const handleNotificationClick = (notificacion) => {
+  // Caso 1: Eres Admin Y el producto NO es tuyo
+  if (isAdmin.value && authStore.usuario.id !== notificacion.vendedor_id) {
+    goToChatWithSeller(notificacion.vendedor_id)
+  } 
+  // Caso 2: Eres Vendedor (es tu producto) O Eres Admin y es TU producto
+  else {
+    goToEditProduct(notificacion.producto_id)
+  }
+}
+
+
 const scrollToSection = (sectionId) => {
   router.push('/').then(() => {
     nextTick(() => {
@@ -277,7 +318,6 @@ const getUserAvatar = computed(() => {
           </span>
         </button>
 
-        <!-- Chat Indicator -->
         <ChatIndicator />
 
         <div v-if="canSell" class="notification-container">
@@ -330,7 +370,7 @@ const getUserAvatar = computed(() => {
                   v-for="item in notificationStore.outOfStockItems"
                   :key="`out-${item.id}`"
                   class="dropdown-item notification-item out-of-stock"
-                  @click="goToEditProduct(item.id)"
+                  @click="handleNotificationClick(item)"
                 >
                   <span class="item-name">{{ item.nombre }}</span>
                   <span class="item-stock">0 unidades</span>
@@ -344,7 +384,7 @@ const getUserAvatar = computed(() => {
                   v-for="item in notificationStore.lowStockItems"
                   :key="`low-${item.id}`"
                   class="dropdown-item notification-item low-stock"
-                  @click="goToEditProduct(item.id)"
+                  @click="handleNotificationClick(item)"
                 >
                   <span class="item-name">{{ item.nombre }}</span>
                   <span class="item-stock">{{ item.stock }} unidades</span>
@@ -386,7 +426,7 @@ const getUserAvatar = computed(() => {
             <button class="dropdown-item" @click="goToSeguimiento">
               {{ canSell ? 'Mis Pedidos' : 'Seguimiento' }}
             </button>
-            <button v-if="canSell" class="dropdown-item" @click="router.push('/reportes')">
+            <button v-if="canSell || authStore.esCajero" class="dropdown-item" @click="router.push('/reportes')">
               Reporte de ventas
             </button>
             <button v-if="isAdmin" class="dropdown-item" @click="goToAdmin">
@@ -508,6 +548,9 @@ const getUserAvatar = computed(() => {
           </button>
           <button v-if="canSell" class="mobile-menu-option" @click="goToPedidos">
             Gestión de Pedidos
+          </button>
+           <button v-if="canSell || authStore.esCajero" class="mobile-menu-option" @click="router.push('/reportes')">
+            Reporte de ventas
           </button>
           <button v-if="isAdmin" class="mobile-menu-option" @click="goToAdmin">
             Administración
