@@ -324,7 +324,7 @@ export default {
       if (newQuantity > 0) {
         item.cantidad = newQuantity
       } else {
-        removeItem(productId)
+        cartItems.value = cartItems.value.filter((item) => item.id !== productId)
       }
     }
 
