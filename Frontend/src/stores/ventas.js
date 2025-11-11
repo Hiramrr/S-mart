@@ -3,7 +3,6 @@ import { supabase } from '@/lib/supabase.js' //
 import { useAuthStore } from './auth' //
 
 export const useVentasStore = defineStore('ventas', () => {
-
   async function crearVentaPOS(productos, total, metodoPago) {
     const authStore = useAuthStore()
     if (!authStore.usuario) throw new Error('Cajero no autenticado')
@@ -27,11 +26,7 @@ export const useVentasStore = defineStore('ventas', () => {
     console.log('Venta POS registrada:', data)
     return data
   }
-  async function crearVentaEnLinea(
-    itemsDelCarrito,
-    metodoPago,
-    direccionId
-  ) {
+  async function crearVentaEnLinea(itemsDelCarrito, metodoPago, direccionId) {
     const authStore = useAuthStore()
     if (!authStore.usuario) throw new Error('Cliente no autenticado')
 
@@ -52,6 +47,17 @@ export const useVentasStore = defineStore('ventas', () => {
         continue
       }
 
+      // Debug: Verificar datos del item
+      console.log('📦 Procesando item del carrito:', {
+        id: item.id,
+        name: item.name,
+        precio: item.precio,
+        price: item.price,
+        imageUrl: item.imageUrl,
+        imagen_url: item.imagen_url,
+        vendedor_id: item.vendedor_id,
+      })
+
       if (!ventasPorVendedor.has(vendedorId)) {
         ventasPorVendedor.set(vendedorId, {
           productos: [],
@@ -60,26 +66,23 @@ export const useVentasStore = defineStore('ventas', () => {
       }
 
       const venta = ventasPorVendedor.get(vendedorId)
-      
-      // --- CORRECCIÓN 1 ---
-      // 'item.precio' es el campo numérico correcto de tu cartStore
-      const precioNumerico = parseFloat(item.precio || 0)
+
+      // Obtener el precio correcto del item del carrito
+      const precioNumerico = parseFloat(item.precio || item.price || 0)
 
       venta.productos.push({
         producto_id: item.id,
         nombre: item.name,
         cantidad: item.cantidad,
-        // --- CORRECCIÓN 2 ---
-        // Aquí también debe ser 'item.precio'
-        precio_unitario: precioNumerico, 
+        precio: precioNumerico,
+        imagen_url: item.imageUrl || item.imagen_url || null,
       })
 
-      // --- CORRECCIÓN 3 ---
-      // Aseguramos que 'precioNumerico' es un número válido
-      if (isNaN(precioNumerico)) {
-         throw new Error(`El producto ${item.name} tiene un precio inválido.`);
+      // Validar que el precio sea válido
+      if (isNaN(precioNumerico) || precioNumerico <= 0) {
+        console.warn(`Producto ${item.name} tiene precio inválido o 0:`, item)
       }
-      
+
       venta.monto_total += precioNumerico * item.cantidad
     }
 
@@ -102,10 +105,7 @@ export const useVentasStore = defineStore('ventas', () => {
 
     // 4. Insertar todos los registros en la BD
     console.log('Registrando ventas en línea:', registrosDeVenta)
-    const { data, error } = await supabase
-      .from('venta_en_linea')
-      .insert(registrosDeVenta)
-      .select()
+    const { data, error } = await supabase.from('venta_en_linea').insert(registrosDeVenta).select()
 
     if (error) {
       console.error('Error al registrar venta en línea:', error)

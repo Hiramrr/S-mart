@@ -13,10 +13,8 @@ app.use(router)
 
 const authStore = useAuthStore()
 
-// Inyecta el router en el store
 authStore.setRouter(router)
 
-// Inicializa la sesión y luego monta la app
 authStore.inicializarSesion().finally(() => {
   app.mount('#app')
 })

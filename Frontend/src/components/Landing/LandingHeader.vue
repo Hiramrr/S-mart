@@ -167,6 +167,16 @@ const goToVender = () => {
   showUserMenu.value = false
   showMobileMenu.value = false
 }
+const goToPedidos = () => {
+  router.push('/vendedor/pedidos')
+  showUserMenu.value = false
+  showMobileMenu.value = false
+}
+const goToSeguimiento = () => {
+  router.push('/seguimiento')
+  showUserMenu.value = false
+  showMobileMenu.value = false
+}
 const goToChats = () => {
   router.push('/mis-chats')
   showUserMenu.value = false
@@ -241,8 +251,8 @@ const getUserAvatar = computed(() => {
             ].some((route) => $route.path.startsWith(route))
           "
         >
-          <button class="nav-btn" @click="scrollToSection('features')">PRODUCTOS</button>
-          <button class="nav-link" @click="scrollToSection('footer')">CONTACTO</button>
+          <button class="nav-btn" @click="scrollToSection('features')">EXPLORAR</button>
+          <button class="nav-link" @click="scrollToSection('footer')">AYUDA</button>
         </nav>
       </div>
 
@@ -370,6 +380,12 @@ const getUserAvatar = computed(() => {
             <button v-if="canSell" class="dropdown-item" @click="goToVender">
               Panel de ventas
             </button>
+            <button v-if="canSell" class="dropdown-item" @click="goToPedidos">
+              Gestión de Pedidos
+            </button>
+            <button class="dropdown-item" @click="goToSeguimiento">
+              {{ canSell ? 'Mis Pedidos' : 'Seguimiento' }}
+            </button>
             <button v-if="canSell" class="dropdown-item" @click="router.push('/reportes')">
               Reporte de ventas
             </button>
@@ -405,7 +421,7 @@ const getUserAvatar = computed(() => {
           class="btn-get-started"
           @click="goToStore"
         >
-          COMENZAR →
+          VER TIENDA →
         </button>
 
         <button class="mobile-menu-btn" @click="showMobileMenu = !showMobileMenu">
@@ -438,8 +454,8 @@ const getUserAvatar = computed(() => {
 
     <transition name="slide">
       <nav v-if="showMobileMenu" class="mobile-nav">
-        <button @click="scrollToSection('features')">Productos</button>
-        <button @click="scrollToSection('footer')">Contacto</button>
+        <button @click="scrollToSection('features')">Explorar</button>
+        <button @click="scrollToSection('footer')">Ayuda</button>
 
         <template v-if="isAuthenticated">
           <button class="mobile-menu-option" @click="goToCart">
@@ -478,13 +494,23 @@ const getUserAvatar = computed(() => {
             </div>
           </div>
 
-          <button class="mobile-menu-option" @click="router.push('/perfil')">Mi perfil</button>
-          <button class="mobile-menu-option" @click="goToChats">💬 Mis Chats</button>
+          <button class="mobile-menu-option" @click="router.push('/perfil')">
+            Mi perfil
+          </button>
+          <button class="mobile-menu-option" @click="goToChats">
+            Mis Chats
+          </button>
+          <button class="mobile-menu-option" @click="goToSeguimiento">
+            {{ canSell ? 'Mis Pedidos' : 'Seguimiento' }}
+          </button>
           <button v-if="canSell" class="mobile-menu-option" @click="goToVender">
-            📦 Panel de ventas
+            Panel de ventas
+          </button>
+          <button v-if="canSell" class="mobile-menu-option" @click="goToPedidos">
+            Gestión de Pedidos
           </button>
           <button v-if="isAdmin" class="mobile-menu-option" @click="goToAdmin">
-            ⚙️ Panel de administración
+            Administración
           </button>
           <button class="mobile-logout" @click="handleLogout">Cerrar sesión</button>
         </div>
@@ -505,7 +531,7 @@ const getUserAvatar = computed(() => {
           class="mobile-cta"
           @click="goToStore"
         >
-          Comenzar →
+          Ver Tienda →
         </button>
       </nav>
     </transition>

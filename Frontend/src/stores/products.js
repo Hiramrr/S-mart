@@ -4,8 +4,27 @@ import { supabase } from '@/lib/supabase';
 
 export const useProductStore = defineStore('products', () => {
   const products = ref([]);
+  const categorias = ref([]);
   const loading = ref(true);
   const error = ref(null);
+
+  async function fetchCategorias() {
+    try {
+      const { data, error: supabaseError } = await supabase
+        .from('categoria')
+        .select('nombre, descripcion')
+        .order('nombre', { ascending: true });
+
+      if (supabaseError) {
+        console.error('Error al cargar categorías:', supabaseError);
+        return;
+      }
+
+      categorias.value = data || [];
+    } catch (err) {
+      console.error('Error al cargar categorías:', err);
+    }
+  }
 
   async function fetchProducts() {
     try {
@@ -19,7 +38,7 @@ export const useProductStore = defineStore('products', () => {
       const { data, error: supabaseError } = await supabase
         .from('productos')
         .select(
-          'id, nombre, precio_venta, precio_descuento, descripcion, imagen_url, stock, vendedor_id'
+          'id, nombre, precio_venta, precio_descuento, descripcion, imagen_url, stock, vendedor_id, categoria'
         )
         .order('id', { ascending: false });
 
@@ -55,7 +74,8 @@ export const useProductStore = defineStore('products', () => {
           precio: tieneDescuento ? p.precio_descuento : p.precio_venta,
           precioOriginal: p.precio_venta,
           stock: p.stock,          
-          vendedor_id: p.vendedor_id, 
+          vendedor_id: p.vendedor_id,
+          categoria: p.categoria,
         };
       });
     } catch (err) {
@@ -139,9 +159,11 @@ export const useProductStore = defineStore('products', () => {
 
   return {
     products,
+    categorias,
     loading,
     error,
     fetchProducts,
+    fetchCategorias,
     decreaseStock,
     increaseStock,
     updateStockInDB,
