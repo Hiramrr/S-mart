@@ -58,22 +58,19 @@ async function cargarMisProductos() {
     products.value = data.map((p) => {
       // Verificamos si hay un descuento válido.
       // (Que exista, sea mayor a 0 y menor que el precio original)
-      const hasDiscount = p.precio_descuento && p.precio_descuento > 0 && p.precio_descuento < p.precio_venta;
+      const hasDiscount =
+        p.precio_descuento && p.precio_descuento > 0 && p.precio_descuento < p.precio_venta
 
       return {
         id: p.id,
         name: p.nombre,
-        
+
         // 'price' (prop) será el precio final (con descuento si existe)
-        price: hasDiscount
-          ? `$${p.precio_descuento.toFixed(2)}`
-          : `$${p.precio_venta.toFixed(2)}`,
-        
+        price: hasDiscount ? `$${p.precio_descuento.toFixed(2)}` : `$${p.precio_venta.toFixed(2)}`,
+
         // 'originalPrice' (prop) será el precio de venta (tachado) si hay descuento
-        originalPrice: hasDiscount
-          ? `$${p.precio_venta.toFixed(2)}`
-          : null,
-          
+        originalPrice: hasDiscount ? `$${p.precio_venta.toFixed(2)}` : null,
+
         description: p.descripcion,
         imageUrl: p.imagen_url,
         stock: p.stock,
@@ -87,13 +84,13 @@ async function cargarMisProductos() {
 
     // Corregimos el cálculo de "Valor Inventario" para que use el precio final
     totalVentas.value = data.reduce((sum, p) => {
-      const finalPrice = (p.precio_descuento && p.precio_descuento > 0 && p.precio_descuento < p.precio_venta)
-        ? p.precio_descuento
-        : p.precio_venta;
-      return sum + (finalPrice * p.stock);
+      const finalPrice =
+        p.precio_descuento && p.precio_descuento > 0 && p.precio_descuento < p.precio_venta
+          ? p.precio_descuento
+          : p.precio_venta
+      return sum + finalPrice * p.stock
     }, 0)
     // --- FIN DE MODIFICACIÓN ---
-
   } catch (err) {
     console.error('Error al cargar productos:', err)
     error.value = err.message || 'Error al cargar productos'
@@ -138,30 +135,30 @@ function handleEditProduct(productId) {
 function handleDeleteProduct(productId) {
   if (!productId) return
   if (!verificarSuspension()) return
-  productToDelete.value = products.value.find(p => p.id === productId)
+  productToDelete.value = products.value.find((p) => p.id === productId)
   showDeleteModal.value = true
 }
 
 function cancelDelete() {
-  showDeleteModal.value = false;
-  productToDelete.value = null;
+  showDeleteModal.value = false
+  productToDelete.value = null
 }
 
 async function confirmDelete() {
-  if (!productToDelete.value) return;
-  
+  if (!productToDelete.value) return
+
   const { data, error } = await supabase
     .from('productos')
     .delete()
-    .eq('id', productToDelete.value.id);
-  
+    .eq('id', productToDelete.value.id)
+
   if (!error) {
-    products.value = products.value.filter(p => p.id !== productToDelete.value.id);
-    showDeleteModal.value = false;
-    productToDelete.value = null;
+    products.value = products.value.filter((p) => p.id !== productToDelete.value.id)
+    showDeleteModal.value = false
+    productToDelete.value = null
   } else {
-    alert('Error al eliminar el producto');
-    console.error(error);
+    alert('Error al eliminar el producto')
+    console.error(error)
   }
 }
 
@@ -172,7 +169,7 @@ function handleCreateCoupon(productId, productName) {
 }
 
 function handleCouponCreated(coupon) {
-  console.log('Cupón creado:', coupon);
+  console.log('Cupón creado:', coupon)
   // You can add a success notification here if needed
 }
 </script>
@@ -181,7 +178,14 @@ function handleCouponCreated(coupon) {
   <div class="vendedor-container">
     <div v-if="authStore.estaSuspendido" class="suspension-overlay">
       <div class="suspension-message">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg
+          width="64"
+          height="64"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
           <circle cx="12" cy="12" r="10" />
           <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
         </svg>
@@ -225,14 +229,10 @@ function handleCouponCreated(coupon) {
             <h1 class="products-title">Mis Productos</h1>
             <p class="products-subtitle">{{ filteredProducts.length }} productos encontrados</p>
           </div>
+          <button class="btn-add" @click="router.push('/vendedor/pedidos')">
+            Gestión de pedidos <span class="arrow">→</span>
+          </button>
           <div class="header-actions">
-            <button class="btn-secondary" @click="router.push('/vendedor/pedidos')">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                <line x1="1" y1="10" x2="23" y2="10"/>
-              </svg>
-              <span>Gestión de Pedidos</span>
-            </button>
             <button class="btn-add" @click="goToVender">
               <span>Agregar producto</span>
               <span class="arrow">→</span>
@@ -281,7 +281,7 @@ function handleCouponCreated(coupon) {
             :product-id="product.id"
             :product-name="product.name"
             :price="product.price"
-            :original-price="product.originalPrice" 
+            :original-price="product.originalPrice"
             :description="product.description"
             :image-url="product.imageUrl"
             :rating="4.5"
@@ -291,7 +291,7 @@ function handleCouponCreated(coupon) {
             @create-coupon="handleCreateCoupon"
           />
         </div>
-        </div>
+      </div>
     </div>
 
     <div v-if="showDeleteModal" class="modal-overlay" @click="cancelDelete">
@@ -650,7 +650,9 @@ function handleCouponCreated(coupon) {
   padding: 2rem;
   max-width: 450px;
   width: 90%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   animation: slideUp 0.3s ease-out;
 }
 
