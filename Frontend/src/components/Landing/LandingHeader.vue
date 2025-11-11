@@ -251,8 +251,8 @@ const getUserAvatar = computed(() => {
             ].some((route) => $route.path.startsWith(route))
           "
         >
-          <button class="nav-btn" @click="scrollToSection('features')">PRODUCTOS</button>
-          <button class="nav-link" @click="scrollToSection('footer')">CONTACTO</button>
+          <button class="nav-btn" @click="scrollToSection('features')">EXPLORAR</button>
+          <button class="nav-link" @click="scrollToSection('footer')">AYUDA</button>
         </nav>
       </div>
 
@@ -421,7 +421,7 @@ const getUserAvatar = computed(() => {
           class="btn-get-started"
           @click="goToStore"
         >
-          COMENZAR →
+          VER TIENDA →
         </button>
 
         <button class="mobile-menu-btn" @click="showMobileMenu = !showMobileMenu">
@@ -454,8 +454,8 @@ const getUserAvatar = computed(() => {
 
     <transition name="slide">
       <nav v-if="showMobileMenu" class="mobile-nav">
-        <button @click="scrollToSection('features')">Productos</button>
-        <button @click="scrollToSection('footer')">Contacto</button>
+        <button @click="scrollToSection('features')">Explorar</button>
+        <button @click="scrollToSection('footer')">Ayuda</button>
 
         <template v-if="isAuthenticated">
           <button class="mobile-menu-option" @click="goToCart">
@@ -531,7 +531,7 @@ const getUserAvatar = computed(() => {
           class="mobile-cta"
           @click="goToStore"
         >
-          Comenzar →
+          Ver Tienda →
         </button>
       </nav>
     </transition>

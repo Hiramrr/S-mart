@@ -17,7 +17,7 @@ const goToStore = () => {
 
       <p class="hero-subtitle">Sé S★mart</p>
 
-      <button class="btn-hero" @click="goToStore">COMENZAR →</button>
+      <button class="btn-hero" @click="goToStore">EXPLORAR PRODUCTOS →</button>
 
       <!-- Awards -->
       <div class="awards">
