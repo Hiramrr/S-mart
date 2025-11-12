@@ -56,13 +56,15 @@ const goToPedidos = () => {
       </div>
 
       <div class="ticket-section">
+        
         <div class="icon-wrapper-pdf">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75V15m0–2.25A2.25 2.25 0 0 0 11.25 15h.041m-1.291-.081A2.25 2.25 0 0 1 11.25 15H12a2.25 2.25 0 0 1 2.25 2.25v.081m-2.25-2.361a2.25 2.25 0 0 0-2.25-2.25H9m5.25 2.361a2.25 2.25 0 0 1 2.25 2.25v.081m-2.25-2.361a2.25 2.25 0 0 0 2.25 2.25H15m-3-3v-3.375c0-1.02-.75-1.969-1.75-2.143a4.5 4.5 0 0 0-4.47 0c-1 .174-1.75 1.123-1.75 2.143V12M15 12H9m6 3H9m6 3H9m6 3H9m0 0a2.25 2.25 0 0 1-2.25-2.25V15a2.25 2.25 0 0 1 2.25-2.25h.081m-2.361 2.25a2.25 2.25 0 0 1 2.25-2.25h.081m-2.361 2.25A2.25 2.25 0 0 0 11.25 15H12a2.25 2.25 0 0 0 2.25-2.25v.081m-4.5 2.25v.081m0 0a2.25 2.25 0 0 1-2.25-2.25V15a2.25 2.25 0 0 1 2.25-2.25h.081" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
           </svg>
         </div>
-        <h3>¡Tu ticket se ha impreso!</h3>
-        <p>Descargando PDF...</p>
+        <div class="ticket-texto">
+            <h3>¡Tu ticket se ha descargado!</h3>
+        </div>
       </div>
 
       <div class="summary-section">
@@ -178,6 +180,12 @@ const goToPedidos = () => {
   font-size: 1.25rem;
   font-weight: 600;
 }
+
+.ticket-texto {
+  flex: 1; 
+  text-align: center; 
+}
+
 .ticket-section p {
   margin: 0;
   font-size: 1rem;
