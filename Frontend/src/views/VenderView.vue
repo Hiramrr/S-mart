@@ -152,6 +152,8 @@
 </template>
 <script setup>
 import { ref, nextTick, onMounted } from 'vue'
+import { useToast } from 'vue-toastification'
+
 import { useRouter } from 'vue-router'
 import { subirImagenCloudinary } from '@/lib/cloudinary'
 import { createClient } from '@supabase/supabase-js'
@@ -174,6 +176,7 @@ const precioDescuento = ref(null)
 const imagen = ref(null)
 const imagenPreview = ref(null)
 const fileInput = ref(null)
+const toast = useToast()
 
 async function cargarCategorias() {
   try {
@@ -236,7 +239,7 @@ function cancelar() {
 async function registrarProducto() {
   try {
     if (!imagen.value) {
-      alert('Selecciona una imagen para el producto')
+      toast.error('Selecciona una imagen para el producto')
       return
     }
 
@@ -258,12 +261,12 @@ async function registrarProducto() {
 
     if (error) throw error
 
-    alert('Producto registrado correctamente')
+    toast.success('Producto registrado correctamente')
     limpiarCampos()
     router.push('/VendedorProductos')
   } catch (err) {
     console.error('Error al registrar el producto:', err)
-    alert('Error al registrar el producto')
+    toast.error('Error al registrar el producto')
   }
 }
 
