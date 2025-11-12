@@ -36,6 +36,16 @@ const router = createRouter({
     },
 
     {
+      path: '/compra-exitosa',
+      name: 'compra-exitosa',
+      component: () => import('../views/CompraExitosaView.vue'),
+      meta: {
+        title: 'Compra Exitosa - S-mart',
+        requiresAuth: true,
+      },
+    },
+
+    {
       path: '/carrito',
       name: 'carrito',
       component: CarritoView,

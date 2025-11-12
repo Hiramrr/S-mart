@@ -395,7 +395,7 @@ const generatePdf = async (purchase) => {
   }
 }
 
-// --- FUNCIÓN DE PAGO PRINCIPAL (YA ESTABA BIEN, SIN CAMBIOS) ---
+// --- FUNCIÓN DE PAGO PRINCIPAL (MODIFICADA AL FINAL) ---
 async function handlePaymentConfirm() {
   if (!tarjetaSeleccionada.value) {
     error.value = 'Selecciona una tarjeta o agrega una nueva.'
@@ -487,13 +487,29 @@ async function handlePaymentConfirm() {
 
     await generatePdf(purchaseData)
 
-    // --- PASO 5: Limpiar Carrito ---
+    // --- PASO 5: Guardar datos para la página de éxito ---
+    const detallesCompra = {
+      items: itemsParaComprar.value.map(item => ({
+        nombre: item.name || item.nombre,
+        cantidad: item.cantidad,
+        precio: item.precio || item.precio_venta
+      })),
+      total: checkoutTotal.value,
+      direccion: direccionSeleccionada.value, // El objeto completo de la dirección
+      metodoPago: metodoPago,
+      ticketId: purchaseData.id // Pasamos el ID del ticket por si acaso
+    }
+    
+    // Usamos la función del store que creamos
+    ventasStore.setUltimaVenta(detallesCompra)
+
+    // --- PASO 6: Limpiar Carrito ---
     const purchasedIds = itemsParaComprar.value.map((item) => item.id)
     cartStore.removeProductsByIds(purchasedIds)
 
-    // --- PASO 6: Redirigir al Home ---
-    alert('¡Gracias por tu compra! Tu ticket se ha descargado.')
-    router.push('/')
+    // --- PASO 7: Redirigir a la PÁGINA DE ÉXITO ---
+    router.push({ name: 'compra-exitosa' })
+    
   } catch (err) {
     console.error('Error en el proceso de pago:', err)
     error.value = err.message || 'Ocurrió un error inesperado al procesar el pago.'
@@ -514,7 +530,6 @@ async function handlePaymentConfirm() {
       <div v-if="error" class="error-message">
         {{ error }}
       </div>
-
       <div class="tarjetas-guardadas-section">
         <div v-if="loading" class="loading-state">Cargando tarjetas...</div>
 

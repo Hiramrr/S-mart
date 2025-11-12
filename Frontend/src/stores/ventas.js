@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/lib/supabase.js' //
 import { useAuthStore } from './auth' //
+import { ref } from 'vue'
 
 export const useVentasStore = defineStore('ventas', () => {
+  const ultimaVentaDetalles = ref(null)
   async function crearVentaPOS(productos, total, metodoPago) {
     const authStore = useAuthStore()
     if (!authStore.usuario) throw new Error('Cajero no autenticado')
@@ -116,8 +118,16 @@ export const useVentasStore = defineStore('ventas', () => {
     return data
   }
 
+  // --- 3. AÑADIR FUNCIÓN "SETTER" ---
+  function setUltimaVenta(detalles) {
+    ultimaVentaDetalles.value = detalles
+  }
+
   return {
+
     crearVentaPOS,
     crearVentaEnLinea,
+    ultimaVentaDetalles, // <-- Exponer el estado
+    setUltimaVenta,
   }
 })
