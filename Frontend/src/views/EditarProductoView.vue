@@ -163,6 +163,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useToast } from 'vue-toastification'
 import { useRouter, useRoute } from 'vue-router'
 import { subirImagenCloudinary } from '@/lib/cloudinary'
 import { supabase } from '@/lib/supabase.js'
@@ -190,6 +191,8 @@ const imagen = ref(null)
 const imagenPreview = ref(null)
 const imagenUrlOriginal = ref(null)
 const fileInput = ref(null)
+
+const toast = useToast()
 
 async function cargarCategorias() {
   try {
@@ -266,12 +269,12 @@ function onFileChange(event) {
   if (!file) return
 
   if (!file.type.startsWith('image/')) {
-    alert('Por favor selecciona un archivo de imagen válido')
+    toast.error('Por favor selecciona un archivo de imagen válido')
     return
   }
 
   if (file.size > 10 * 1024 * 1024) {
-    alert('La imagen no debe superar los 10MB')
+    toast.error('La imagen no debe superar los 10MB')
     return
   }
 
@@ -322,17 +325,17 @@ async function actualizarProducto() {
       throw supabaseError
     }
 
-    alert('Producto actualizado exitosamente')
+  toast.success('Producto actualizado exitosamente')
     
-    if (authStore.rolUsuario === 'vendedor') {
-        router.push('/VendedorProductos')
-    } else {
-        router.push('/admin/productos')
-    }
+  if (authStore.rolUsuario === 'vendedor') {
+    router.push('/VendedorProductos')
+  } else {
+    router.push('/admin/productos')
+  }
     
   } catch (err) {
     console.error('Error al actualizar producto:', err)
-    alert('Error al actualizar el producto: ' + (err.message || 'Error desconocido'))
+  toast.error('Error al actualizar el producto: ' + (err.message || 'Error desconocido'))
   } finally {
     updating.value = false
   }

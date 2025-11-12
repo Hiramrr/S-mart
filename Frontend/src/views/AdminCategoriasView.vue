@@ -249,7 +249,7 @@ onMounted(() => {
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
             <circle cx="24" cy="24" r="22" fill="#FFFBEA" stroke="#FBBF24" stroke-width="2"/>
             <polygon points="24,12 36,36 12,36" fill="#FBBF24" />
-            <text x="24" y="32" text-anchor="middle" font-size="24" fill="#B45309" font-family="Arial" dy="-2">!</text>
+            <text x="24" y="32" text-anchor="middle" font-size="15" fill="#B45309" font-family="Arial" dy="-2">!</text>
           </svg>
         </div>
         <h2 class="modal-title confirm-modal-title">Confirmar eliminación</h2>
