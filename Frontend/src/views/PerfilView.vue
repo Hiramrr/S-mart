@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useToast } from 'vue-toastification'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/lib/supabase.js'
@@ -11,6 +12,7 @@ const router = useRouter()
 const editMode = ref(false)
 const loading = ref(false)
 const uploadingImage = ref(false)
+const toast = useToast()
 
 const editForm = ref({
   nombre: authStore.perfil?.nombre || '',
@@ -63,7 +65,7 @@ const saveProfile = async () => {
     .eq('id', authStore.usuario.id)
 
   if (error) {
-    alert('Error al actualizar perfil: ' + error.message)
+    toast.error('Error al actualizar perfil: ' + error.message)
     loading.value = false
     return
   }
@@ -71,7 +73,7 @@ const saveProfile = async () => {
   await authStore.cargarPerfil()
   editMode.value = false
   loading.value = false
-  alert('Perfil actualizado correctamente')
+  toast.success('Perfil actualizado correctamente')
 }
 
 const getRoleBadgeClass = (rol) => {
