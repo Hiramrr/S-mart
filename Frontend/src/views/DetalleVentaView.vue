@@ -4,7 +4,9 @@ import { supabase } from '@/lib/supabase.js'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
+import { useToast} from 'vue-toastification'
 
+const toast = useToast()
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
@@ -164,7 +166,7 @@ const estadosDisponibles = [
 
 async function agregarSeguimiento() {
   if (!nuevoEstado.value) {
-    alert('Debes seleccionar un estado')
+    toast.error('Debes seleccionar un estado')
     return
   }
 
@@ -197,10 +199,10 @@ async function agregarSeguimiento() {
     nuevaUbicacion.value = ''
     mostrarFormularioActualizacion.value = false
     
-    alert('Estado actualizado correctamente')
+    toast.success('Estado actualizado correctamente')
   } catch (err) {
     console.error('Error al actualizar seguimiento:', err)
-    alert('Error al actualizar el estado del pedido')
+    toast.error('Error al actualizar el estado del pedido')
   } finally {
     actualizando.value = false
   }
