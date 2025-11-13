@@ -73,6 +73,11 @@ async function actualizarDomicilio() {
   router.push('/seleccionar-direccion')
 }
 
+function onCodigoPostalInput(e) {
+  let value = e.target.value.replace(/[^0-9]/g, '').slice(0, 5);
+  domicilio.value.codigoPostal = value;
+}
+
 onMounted(() => {
   fetchDireccion()
 })
@@ -92,8 +97,16 @@ onMounted(() => {
             <input v-model="domicilio.direccion" placeholder="Ej: Calle 123, Edificio A" required />
           </div>
           <div class="domicilio-field">
-            <label>Código Postal</label>
-            <input v-model="domicilio.codigoPostal" placeholder="Ej: 12345" required />
+              <label>Código Postal</label>
+              <input
+                v-model="domicilio.codigoPostal"
+                placeholder="Ej: 12345"
+                required
+                maxlength="5"
+                inputmode="numeric"
+                pattern="\d{5}"
+                @input="onCodigoPostalInput"
+              />
           </div>
           <div class="domicilio-field">
             <label>Estado</label>

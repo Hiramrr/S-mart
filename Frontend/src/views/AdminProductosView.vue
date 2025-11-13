@@ -8,10 +8,10 @@ import Header from '@/components/Landing/LandingHeader.vue'
     <Header />
     <div class="admin-productos-header-flex admin-productos-header-margin">
       <h1 class="admin-productos-title-centered">Productos Agregados</h1>
-      <button @click="$router.push('/AgregarProducto')" class="admin-add-product-btn-minimal">
+      <!-- <button @click="$router.push('/AgregarProducto')" class="admin-add-product-btn-minimal">
         <span style="font-weight: 600; font-size: 1.2rem">Registrar producto</span>
         <span style="margin-left: 0.5rem; font-size: 1.3rem">&rarr;</span>
-      </button>
+      </button> -->
     </div>
     <AdminProductSection />
   </div>
