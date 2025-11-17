@@ -20,7 +20,8 @@ async function cargarCompras() {
   try {
     const { data, error: supabaseError } = await supabase
       .from('venta_en_linea')
-      .select(`
+      .select(
+        `
         id,
         creado_en,
         cliente_id,
@@ -31,7 +32,8 @@ async function cargarCompras() {
         fecha_estimada_entrega,
         seguimiento,
         direccion_id
-      `)
+      `,
+      )
       .eq('cliente_id', authStore.usuario.id)
       .order('creado_en', { ascending: false })
 
@@ -40,20 +42,22 @@ async function cargarCompras() {
     // Normalizar productos para compatibilidad con formato antiguo
     let comprasNormalizadas = data
     if (data && data.length > 0) {
-      comprasNormalizadas = data.map(venta => ({
+      comprasNormalizadas = data.map((venta) => ({
         ...venta,
-        productos: venta.productos.map(producto => ({
+        productos: venta.productos.map((producto) => ({
           ...producto,
           precio: producto.precio || producto.precio_unitario || 0,
-          imagen_url: producto.imagen_url || null
-        }))
+          imagen_url: producto.imagen_url || null,
+        })),
       }))
     }
 
     // Cargar direcciones por separado
     if (comprasNormalizadas && comprasNormalizadas.length > 0) {
-      const direccionIds = [...new Set(comprasNormalizadas.map(v => v.direccion_id).filter(Boolean))]
-      
+      const direccionIds = [
+        ...new Set(comprasNormalizadas.map((v) => v.direccion_id).filter(Boolean)),
+      ]
+
       if (direccionIds.length > 0) {
         const { data: direcciones, error: dirError } = await supabase
           .from('direcciones')
@@ -62,9 +66,9 @@ async function cargarCompras() {
 
         if (!dirError && direcciones) {
           // Mapear direcciones a las ventas
-          compras.value = comprasNormalizadas.map(venta => ({
+          compras.value = comprasNormalizadas.map((venta) => ({
             ...venta,
-            direccion: direcciones.find(d => d.id === venta.direccion_id)
+            direccion: direcciones.find((d) => d.id === venta.direccion_id),
           }))
         } else {
           compras.value = comprasNormalizadas
@@ -87,7 +91,8 @@ async function cargarVentas() {
   try {
     const { data, error: supabaseError } = await supabase
       .from('venta_en_linea')
-      .select(`
+      .select(
+        `
         id,
         creado_en,
         cliente_id,
@@ -98,7 +103,8 @@ async function cargarVentas() {
         fecha_estimada_entrega,
         seguimiento,
         direccion_id
-      `)
+      `,
+      )
       .eq('vendedor_id', authStore.usuario.id)
       .order('creado_en', { ascending: false })
 
@@ -106,8 +112,8 @@ async function cargarVentas() {
 
     // Cargar direcciones por separado
     if (data && data.length > 0) {
-      const direccionIds = [...new Set(data.map(v => v.direccion_id).filter(Boolean))]
-      
+      const direccionIds = [...new Set(data.map((v) => v.direccion_id).filter(Boolean))]
+
       if (direccionIds.length > 0) {
         const { data: direcciones, error: dirError } = await supabase
           .from('direcciones')
@@ -116,9 +122,9 @@ async function cargarVentas() {
 
         if (!dirError && direcciones) {
           // Mapear direcciones a las ventas
-          ventas.value = data.map(venta => ({
+          ventas.value = data.map((venta) => ({
             ...venta,
-            direccion: direcciones.find(d => d.id === venta.direccion_id)
+            direccion: direcciones.find((d) => d.id === venta.direccion_id),
           }))
         } else {
           ventas.value = data
@@ -169,9 +175,9 @@ function obtenerEstadoActual(seguimiento) {
 
 function obtenerDireccionCompleta(direccion) {
   if (!direccion) return 'No disponible'
-  
+
   const partes = []
-  
+
   // Dirección principal y número
   if (direccion.direccion) {
     let direccionBase = direccion.direccion
@@ -180,32 +186,32 @@ function obtenerDireccionCompleta(direccion) {
     }
     partes.push(direccionBase)
   }
-  
+
   // Colonia
   if (direccion.colonia) {
     partes.push(direccion.colonia)
   }
-  
+
   // Localidad
   if (direccion.localidad) {
     partes.push(direccion.localidad)
   }
-  
+
   // Municipio
   if (direccion.municipio) {
     partes.push(direccion.municipio)
   }
-  
+
   // Estado
   if (direccion.estado) {
     partes.push(direccion.estado)
   }
-  
+
   // Código postal
   if (direccion.codigo_postal) {
     partes.push(`C.P. ${direccion.codigo_postal}`)
   }
-  
+
   return partes.length > 0 ? partes.join(', ') : 'Dirección incompleta'
 }
 
@@ -220,7 +226,7 @@ function formatearFecha(fecha) {
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   })
 }
 
@@ -229,7 +235,7 @@ function formatearFechaCorta(fecha) {
   return new Date(fecha).toLocaleDateString('es-MX', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   })
 }
 
@@ -253,30 +259,52 @@ onMounted(() => {
     <main class="content-container">
       <div class="header-section">
         <h1>Seguimiento de Pedidos</h1>
-        <p class="subtitle">Consulta el estado de tus compras{{ mostrarVentas ? ' y ventas' : '' }}</p>
+        <p class="subtitle">
+          Consulta el estado de tus compras{{ mostrarVentas ? ' y ventas' : '' }}
+        </p>
       </div>
 
       <div v-if="mostrarVentas" class="tabs">
-        <button 
-          @click="vistaActiva = 'compras'" 
+        <button
+          @click="vistaActiva = 'compras'"
           :class="{ active: vistaActiva === 'compras' }"
           class="tab-button"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="9" cy="21" r="1"/>
-            <circle cx="20" cy="21" r="1"/>
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="9" cy="21" r="1" />
+            <circle cx="20" cy="21" r="1" />
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
           </svg>
           Mis Compras ({{ compras.length }})
         </button>
-        <button 
-          @click="vistaActiva = 'ventas'" 
+        <button
+          @click="vistaActiva = 'ventas'"
           :class="{ active: vistaActiva === 'ventas' }"
           class="tab-button"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewBox="0 0 14 14">
+            <g
+              fill="none"
+              stroke="#000"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1"
+            >
+              <path
+                d="M5.414 3.238v-.533m0 5.327V7.5m1.394-3.251c0-.547-.45-1.012-1.394-1.012c-.945 0-1.394.438-1.394 1.012c0 .447.45.877 1.394 1.012c.945.135 1.607.446 1.607 1.12c0 .608-.662 1.117-1.607 1.117s-1.607-.434-1.607-1.012"
+              />
+              <path
+                d="M10.09 6.794q.142-.656.142-1.426c0-3.087-1.736-4.824-4.823-4.824S.585 2.281.585 5.368c0 2.336.995 3.898 2.817 4.52m.625 3.568s2.359-3.117 3.405-3.032c.84.068.915 1.854 1.694 1.532c.52-.215 3.484-2.904 4.213-3.57"
+              />
+              <path d="M10.846 8.163c.776-.194 1.784-.116 2.52.195c.194.775.116 1.783-.194 2.52" />
+            </g>
           </svg>
           Mis Ventas ({{ ventas.length }})
         </button>
@@ -288,7 +316,14 @@ onMounted(() => {
       </div>
 
       <div v-else-if="error" class="status-message error-state">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
           <circle cx="12" cy="12" r="10" />
           <line x1="12" y1="8" x2="12" y2="12" />
           <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -297,53 +332,93 @@ onMounted(() => {
       </div>
 
       <div v-else-if="listaActual.length === 0" class="status-message empty-state">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-          <line x1="1" y1="10" x2="23" y2="10"/>
+        <svg xmlns="http://www.w3.org/2000/svg" width="60px" height="60px" viewBox="0 0 24 24">
+          <path
+            fill="#515151"
+            d="M22.73 22.73L1.27 1.27L0 2.54l4.39 4.39l2.21 4.66l-1.35 2.45c-.16.28-.25.61-.25.96a2 2 0 0 0 2 2h7.46l1.38 1.38c-.5.36-.84.95-.84 1.62a2 2 0 0 0 2 2c.67 0 1.26-.33 1.62-.84L21.46 24zM7.42 15a.25.25 0 0 1-.25-.25l.03-.12l.9-1.63h2.36l2 2zm8.13-2c.75 0 1.41-.41 1.75-1.03l3.58-6.47c.08-.16.12-.33.12-.5a1 1 0 0 0-1-1H6.54zM7 18a2 2 0 0 0-2 2a2 2 0 0 0 2 2a2 2 0 0 0 2-2a2 2 0 0 0-2-2"
+          />
         </svg>
         <h3>{{ vistaActiva === 'compras' ? 'No hay compras' : 'No hay ventas' }}</h3>
-        <p>{{ vistaActiva === 'compras' ? 'Aún no has realizado ninguna compra' : 'Aún no has realizado ninguna venta' }}</p>
-        <button v-if="vistaActiva === 'compras'" @click="router.push({ name: 'tienda' })" class="btn-primary">
+        <p>
+          {{
+            vistaActiva === 'compras'
+              ? 'Aún no has realizado ninguna compra'
+              : 'Aún no has realizado ninguna venta'
+          }}
+        </p>
+        <button
+          v-if="vistaActiva === 'compras'"
+          @click="router.push({ name: 'tienda' })"
+          class="btn-primary"
+        >
           Ir a la Tienda
         </button>
       </div>
 
       <div v-else class="pedidos-grid">
-        <div 
-          v-for="pedido in listaActual" 
-          :key="pedido.id" 
+        <div
+          v-for="pedido in listaActual"
+          :key="pedido.id"
           class="pedido-card"
           @click="verDetalle(pedido.id)"
         >
           <div class="pedido-header">
             <div class="pedido-id">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                <line x1="1" y1="10" x2="23" y2="10"/>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                <line x1="1" y1="10" x2="23" y2="10" />
               </svg>
               Pedido #{{ pedido.id.substring(0, 8) }}
             </div>
-            <span class="estado-badge" :class="obtenerEstadoActual(pedido.seguimiento).toLowerCase().replace(/ /g, '-')">
+            <span
+              class="estado-badge"
+              :class="obtenerEstadoActual(pedido.seguimiento).toLowerCase().replace(/ /g, '-')"
+            >
               {{ obtenerEstadoActual(pedido.seguimiento) }}
             </span>
           </div>
 
           <div class="pedido-fecha">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12 6 12 12 16 14"/>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
             </svg>
             {{ formatearFecha(pedido.creado_en) }}
           </div>
 
           <div class="productos-preview">
-            <div v-for="(producto, index) in pedido.productos.slice(0, 3)" :key="index" class="producto-mini">
+            <div
+              v-for="(producto, index) in pedido.productos.slice(0, 3)"
+              :key="index"
+              class="producto-mini"
+            >
               <img v-if="producto.imagen_url" :src="producto.imagen_url" :alt="producto.nombre" />
               <div v-else class="producto-placeholder-mini">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2"/>
-                  <circle cx="8.5" cy="8.5" r="1.5"/>
-                  <path d="M21 15l-5-5L5 21"/>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <path d="M21 15l-5-5L5 21" />
                 </svg>
               </div>
               <div class="producto-mini-info">
@@ -352,7 +427,10 @@ onMounted(() => {
               </div>
             </div>
             <p v-if="pedido.productos.length > 3" class="mas-productos">
-              +{{ pedido.productos.length - 3 }} producto{{ pedido.productos.length - 3 > 1 ? 's' : '' }} más
+              +{{ pedido.productos.length - 3 }} producto{{
+                pedido.productos.length - 3 > 1 ? 's' : ''
+              }}
+              más
             </p>
           </div>
 
@@ -362,26 +440,47 @@ onMounted(() => {
               <span class="total-amount">${{ pedido.monto_total.toFixed(2) }}</span>
             </div>
             <div class="pedido-entrega">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                <circle cx="12" cy="10" r="3"/>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
               </svg>
               Entrega: {{ formatearFechaCorta(pedido.fecha_estimada_entrega) }}
             </div>
           </div>
 
           <div class="pedido-direccion">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-              <polyline points="9 22 9 12 15 12 15 22"/>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
             {{ obtenerDireccionCompleta(pedido.direccion) }}
           </div>
 
           <button class="btn-ver-detalle">
             Ver Detalle
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
           </button>
         </div>
@@ -514,7 +613,9 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .btn-primary {

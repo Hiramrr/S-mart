@@ -48,19 +48,46 @@ const handleBuyNow = () => {
           class="quantity-input"
           readonly
         />
-        <button @click="incrementQuantity" :disabled="quantity >= stock" class="quantity-btn">+</button>
+        <button @click="incrementQuantity" :disabled="quantity >= stock" class="quantity-btn">
+          +
+        </button>
       </div>
     </div>
-    <div v-else class="out-of-stock-message">
-      Producto actualmente no disponible.
-    </div>
+    <div v-else class="out-of-stock-message">Producto actualmente no disponible.</div>
 
     <div class="action-buttons" v-if="stock > 0">
       <button @click="handleAddToCart" class="btn btn-secondary">
-        🛒 Añadir al carrito
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+          <g
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.5"
+          >
+            <path
+              fill="currentColor"
+              d="M19.5 22a1.5 1.5 0 1 0 0-3a1.5 1.5 0 0 0 0 3m-10 0a1.5 1.5 0 1 0 0-3a1.5 1.5 0 0 0 0 3"
+            />
+            <path
+              d="M5 4h17l-2 11H7zm0 0c-.167-.667-1-2-3-2m18 13H5.23c-1.784 0-2.73.781-2.73 2s.946 2 2.73 2H19.5"
+            />
+          </g>
+        </svg>
+        Añadir al carrito
       </button>
       <button @click="handleBuyNow" class="btn btn-primary">
-        ⚡ Comprar ahora
+        <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewBox="0 0 24 24">
+          <path
+            fill="none"
+            stroke="#fff"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="m12 3l-3 8l6.5-1L12 21m0 0l3.5-2.5M12 21l-1.5-4"
+          />
+        </svg>
+        Comprar ahora
       </button>
     </div>
   </div>

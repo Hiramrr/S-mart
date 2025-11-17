@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase.js'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
-import { useToast} from 'vue-toastification'
+import { useToast } from 'vue-toastification'
 
 const toast = useToast()
 const authStore = useAuthStore()
@@ -23,7 +23,8 @@ async function cargarDetalle() {
   try {
     const { data, error: supabaseError } = await supabase
       .from('venta_en_linea')
-      .select(`
+      .select(
+        `
         id,
         creado_en,
         cliente_id,
@@ -34,7 +35,8 @@ async function cargarDetalle() {
         fecha_estimada_entrega,
         seguimiento,
         direccion_id
-      `)
+      `,
+      )
       .eq('id', ventaId.value)
       .single()
 
@@ -49,16 +51,20 @@ async function cargarDetalle() {
       throw new Error('Venta no encontrada.')
     }
 
-    if (data.cliente_id !== authStore.usuario?.id && data.vendedor_id !== authStore.usuario?.id && !authStore.esAdmin) {
+    if (
+      data.cliente_id !== authStore.usuario?.id &&
+      data.vendedor_id !== authStore.usuario?.id &&
+      !authStore.esAdmin
+    ) {
       throw new Error('No tienes permiso para ver esta información.')
     }
 
     // Normalizar productos para compatibilidad con formato antiguo
     if (data.productos && Array.isArray(data.productos)) {
-      data.productos = data.productos.map(producto => ({
+      data.productos = data.productos.map((producto) => ({
         ...producto,
         precio: producto.precio || producto.precio_unitario || 0,
-        imagen_url: producto.imagen_url || null
+        imagen_url: producto.imagen_url || null,
       }))
     }
 
@@ -89,9 +95,9 @@ async function cargarDetalle() {
 const direccionCompleta = computed(() => {
   if (!venta.value?.direccion) return 'No disponible'
   const dir = venta.value.direccion
-  
+
   const partes = []
-  
+
   // Dirección principal y número
   if (dir.direccion) {
     let direccionBase = dir.direccion
@@ -100,32 +106,32 @@ const direccionCompleta = computed(() => {
     }
     partes.push(direccionBase)
   }
-  
+
   // Colonia
   if (dir.colonia) {
     partes.push(dir.colonia)
   }
-  
+
   // Localidad
   if (dir.localidad) {
     partes.push(dir.localidad)
   }
-  
+
   // Municipio
   if (dir.municipio) {
     partes.push(dir.municipio)
   }
-  
+
   // Estado
   if (dir.estado) {
     partes.push(dir.estado)
   }
-  
+
   // Código postal
   if (dir.codigo_postal) {
     partes.push(`C.P. ${dir.codigo_postal}`)
   }
-  
+
   return partes.length > 0 ? partes.join(', ') : 'Dirección incompleta'
 })
 
@@ -133,9 +139,7 @@ const seguimientoOrdenado = computed(() => {
   if (!venta.value?.seguimiento || !Array.isArray(venta.value.seguimiento)) {
     return []
   }
-  return [...venta.value.seguimiento].sort((a, b) => 
-    new Date(b.fecha) - new Date(a.fecha)
-  )
+  return [...venta.value.seguimiento].sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
 })
 
 const estadoActual = computed(() => {
@@ -161,7 +165,7 @@ const estadosDisponibles = [
   'En camino',
   'En reparto',
   'Entregado',
-  'Cancelado'
+  'Cancelado',
 ]
 
 async function agregarSeguimiento() {
@@ -178,13 +182,13 @@ async function agregarSeguimiento() {
       estado: nuevoEstado.value,
       descripcion: nuevaDescripcion.value || null,
       ubicacion: nuevaUbicacion.value || null,
-      fecha: new Date().toISOString()
+      fecha: new Date().toISOString(),
     }
 
     const { error: updateError } = await supabase
       .from('venta_en_linea')
-      .update({ 
-        seguimiento: [...seguimientoActual, nuevoEvento]
+      .update({
+        seguimiento: [...seguimientoActual, nuevoEvento],
       })
       .eq('id', venta.value.id)
 
@@ -192,13 +196,13 @@ async function agregarSeguimiento() {
 
     // Recargar datos
     await cargarDetalle()
-    
+
     // Limpiar formulario
     nuevoEstado.value = ''
     nuevaDescripcion.value = ''
     nuevaUbicacion.value = ''
     mostrarFormularioActualizacion.value = false
-    
+
     toast.success('Estado actualizado correctamente')
   } catch (err) {
     console.error('Error al actualizar seguimiento:', err)
@@ -222,7 +226,7 @@ function formatearFecha(fecha) {
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   })
 }
 
@@ -231,7 +235,7 @@ function formatearFechaCorta(fecha) {
   return new Date(fecha).toLocaleDateString('es-MX', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   })
 }
 
@@ -259,7 +263,14 @@ onMounted(() => {
       </div>
 
       <div v-else-if="error" class="status-message error-state">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
           <circle cx="12" cy="12" r="10" />
           <line x1="12" y1="8" x2="12" y2="12" />
           <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -271,8 +282,15 @@ onMounted(() => {
       <div v-else-if="venta" class="detalle-layout">
         <div class="header-section">
           <button @click="volverAtras" class="btn-back">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
             Volver
           </button>
@@ -283,9 +301,11 @@ onMounted(() => {
         <div class="info-cards">
           <div class="info-card">
             <h3>Estado Actual</h3>
-            <p class="estado-badge" :class="estadoActual.toLowerCase().replace(/ /g, '-')">{{ estadoActual }}</p>
+            <p class="estado-badge" :class="estadoActual.toLowerCase().replace(/ /g, '-')">
+              {{ estadoActual }}
+            </p>
           </div>
-          
+
           <div class="info-card">
             <h3>Fecha Estimada de Entrega</h3>
             <p class="fecha-entrega">{{ formatearFechaCorta(venta.fecha_estimada_entrega) }}</p>
@@ -300,9 +320,16 @@ onMounted(() => {
         <div class="detail-section">
           <div class="direccion-card">
             <h3>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                <circle cx="12" cy="10" r="3"/>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
               </svg>
               Dirección de Entrega
             </h3>
@@ -311,9 +338,16 @@ onMounted(() => {
 
           <div class="productos-card">
             <h3>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                <line x1="1" y1="10" x2="23" y2="10"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20px"
+                height="20px"
+                viewBox="0 0 48 48"
+              >
+                <g fill="none" stroke="#000" stroke-linejoin="round" stroke-width="4">
+                  <path d="M44 14L24 4L4 14v20l20 10l20-10z" />
+                  <path stroke-linecap="round" d="m4 14l20 10m0 20V24m20-10L24 24M34 9L14 19" />
+                </g>
               </svg>
               Productos
             </h3>
@@ -321,16 +355,39 @@ onMounted(() => {
               <div v-for="(producto, index) in venta.productos" :key="index" class="producto-item">
                 <img v-if="producto.imagen_url" :src="producto.imagen_url" :alt="producto.nombre" />
                 <div v-else class="producto-placeholder">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/>
-                    <circle cx="8.5" cy="8.5" r="1.5"/>
-                    <path d="M21 15l-5-5L5 21"/>
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <path d="M21 15l-5-5L5 21" />
                   </svg>
                 </div>
                 <div class="producto-info">
                   <p class="producto-nombre">{{ producto.nombre }}</p>
-                  <p class="producto-detalles">Cantidad: {{ producto.cantidad }} × ${{ (producto.precio || producto.precio_unitario || producto.precio_venta || 0).toFixed(2) }}</p>
-                  <p class="producto-subtotal">Subtotal: ${{ (producto.cantidad * (producto.precio || producto.precio_unitario || producto.precio_venta || 0)).toFixed(2) }}</p>
+                  <p class="producto-detalles">
+                    Cantidad: {{ producto.cantidad }} × ${{
+                      (
+                        producto.precio ||
+                        producto.precio_unitario ||
+                        producto.precio_venta ||
+                        0
+                      ).toFixed(2)
+                    }}
+                  </p>
+                  <p class="producto-subtotal">
+                    Subtotal: ${{
+                      (
+                        producto.cantidad *
+                        (producto.precio || producto.precio_unitario || producto.precio_venta || 0)
+                      ).toFixed(2)
+                    }}
+                  </p>
                 </div>
               </div>
             </div>
@@ -340,19 +397,33 @@ onMounted(() => {
         <div class="timeline-section">
           <div class="timeline-header">
             <h3>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
               </svg>
               Historial de Seguimiento
             </h3>
-            <button 
-              v-if="esVendedor && estadoActual !== 'Entregado' && estadoActual !== 'Cancelado'" 
+            <button
+              v-if="esVendedor && estadoActual !== 'Entregado' && estadoActual !== 'Cancelado'"
               @click="mostrarFormularioActualizacion = true"
               class="btn-actualizar"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14M5 12h14"/>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M12 5v14M5 12h14" />
               </svg>
               Actualizar Estado
             </button>
@@ -361,7 +432,7 @@ onMounted(() => {
           <!-- Formulario de actualización -->
           <div v-if="mostrarFormularioActualizacion && esVendedor" class="form-actualizacion">
             <h4>Agregar Actualización de Estado</h4>
-            
+
             <div class="form-group">
               <label for="estado">Estado *</label>
               <select id="estado" v-model="nuevoEstado" required>
@@ -374,9 +445,9 @@ onMounted(() => {
 
             <div class="form-group">
               <label for="descripcion">Descripción</label>
-              <textarea 
-                id="descripcion" 
-                v-model="nuevaDescripcion" 
+              <textarea
+                id="descripcion"
+                v-model="nuevaDescripcion"
                 placeholder="Detalles adicionales sobre la actualización..."
                 rows="3"
               ></textarea>
@@ -384,9 +455,9 @@ onMounted(() => {
 
             <div class="form-group">
               <label for="ubicacion">Ubicación</label>
-              <input 
-                id="ubicacion" 
-                v-model="nuevaUbicacion" 
+              <input
+                id="ubicacion"
+                v-model="nuevaUbicacion"
                 type="text"
                 placeholder="Ej: Centro de distribución CDMX"
               />
@@ -402,27 +473,42 @@ onMounted(() => {
               </button>
             </div>
           </div>
-          
+
           <div v-if="seguimientoOrdenado.length === 0" class="no-seguimiento">
-            <p>{{ esVendedor ? 'Aún no hay actualizaciones de seguimiento. Agrega la primera.' : 'Tu pedido está siendo procesado. Pronto tendremos actualizaciones.' }}</p>
+            <p>
+              {{
+                esVendedor
+                  ? 'Aún no hay actualizaciones de seguimiento. Agrega la primera.'
+                  : 'Tu pedido está siendo procesado. Pronto tendremos actualizaciones.'
+              }}
+            </p>
           </div>
 
           <div v-else class="timeline">
-            <div 
-              v-for="(evento, index) in seguimientoOrdenado" 
-              :key="index" 
+            <div
+              v-for="(evento, index) in seguimientoOrdenado"
+              :key="index"
               class="timeline-item"
               :class="{ 'is-latest': index === 0 }"
             >
               <div class="timeline-marker"></div>
               <div class="timeline-content">
                 <p class="timeline-estado">{{ evento.estado }}</p>
-                <p class="timeline-descripcion" v-if="evento.descripcion">{{ evento.descripcion }}</p>
+                <p class="timeline-descripcion" v-if="evento.descripcion">
+                  {{ evento.descripcion }}
+                </p>
                 <p class="timeline-fecha">{{ formatearFecha(evento.fecha) }}</p>
                 <p class="timeline-ubicacion" v-if="evento.ubicacion">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                    <circle cx="12" cy="10" r="3"/>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
                   </svg>
                   {{ evento.ubicacion }}
                 </p>
@@ -482,10 +568,13 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.back-button, .btn-back {
+.back-button,
+.btn-back {
   padding: 0.625rem 1.25rem;
   background: #6b7280;
   color: white;
@@ -499,7 +588,8 @@ onMounted(() => {
   gap: 0.5rem;
 }
 
-.back-button:hover, .btn-back:hover {
+.back-button:hover,
+.btn-back:hover {
   background: #4b5563;
 }
 
@@ -585,7 +675,8 @@ onMounted(() => {
   color: #991b1b;
 }
 
-.fecha-entrega, .monto-total {
+.fecha-entrega,
+.monto-total {
   font-size: 1.25rem;
   font-weight: 700;
   color: #111827;
@@ -597,14 +688,17 @@ onMounted(() => {
   gap: 1.5rem;
 }
 
-.direccion-card, .productos-card {
+.direccion-card,
+.productos-card {
   background: white;
   padding: 1.5rem;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.direccion-card h3, .productos-card h3, .timeline-section h3 {
+.direccion-card h3,
+.productos-card h3,
+.timeline-section h3 {
   display: flex;
   align-items: center;
   gap: 0.5rem;
