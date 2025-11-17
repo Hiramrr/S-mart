@@ -2,7 +2,7 @@
 <template>
   <div class="product-selector">
     <h3 class="section-title">Lista de productos</h3>
-    
+
     <div class="search-container">
       <input
         v-model="searchTerm"
@@ -30,18 +30,11 @@
             <td>${{ product.precio.toLocaleString() }}</td>
             <td>{{ product.stock || 0 }}</td>
             <td>
-              <button 
-                @click="$emit('add-product', product)"
-                class="btn-add"
-              >
-                Agregar
-              </button>
+              <button @click="$emit('add-product', product)" class="btn-add">Agregar</button>
             </td>
           </tr>
           <tr v-if="filteredProducts.length === 0">
-            <td colspan="5" class="no-results">
-              No se encontraron productos
-            </td>
+            <td colspan="5" class="no-results">No se encontraron productos</td>
           </tr>
         </tbody>
       </table>
@@ -50,34 +43,34 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue';
+import { ref, computed } from 'vue'
 
 export default {
   name: 'ProductSelector',
   props: {
     products: {
       type: Array,
-      required: true
-    }
+      required: true,
+    },
   },
   emits: ['add-product'],
   setup(props) {
-    const searchTerm = ref('');
+    const searchTerm = ref('')
 
     const filteredProducts = computed(() => {
-      if (!searchTerm.value) return props.products;
-      
-      return props.products.filter(product =>
-        product.name.toLowerCase().includes(searchTerm.value.toLowerCase())
-      );
-    });
+      if (!searchTerm.value) return props.products
+
+      return props.products.filter((product) =>
+        product.name.toLowerCase().includes(searchTerm.value.toLowerCase()),
+      )
+    })
 
     return {
       searchTerm,
-      filteredProducts
-    };
-  }
-};
+      filteredProducts,
+    }
+  },
+}
 </script>
 
 <style scoped>
@@ -140,7 +133,6 @@ export default {
   font-size: 0.95rem;
 }
 
-
 .products-table td {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid #e5e7eb;
@@ -151,7 +143,7 @@ export default {
 }
 
 .btn-add {
-  background-color: #7c3aed;
+  background-color: black;
   color: white;
   padding: 0.5rem 1rem;
   border: none;
@@ -162,7 +154,7 @@ export default {
 }
 
 .btn-add:hover {
-  background-color: #6d28d9;
+  color: #9ca3af;
 }
 
 .no-results {

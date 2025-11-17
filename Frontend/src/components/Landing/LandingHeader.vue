@@ -14,7 +14,7 @@ const cartStore = useCartStore()
 const notificationStore = useNotificationStore()
 
 // 'isAdmin' y 'authStore.usuario.id' serán claves aquí
-const { isAdmin, canSell, isAuthenticated, requireAuth } = useRole() 
+const { isAdmin, canSell, isAuthenticated, requireAuth } = useRole()
 
 const showMobileMenu = ref(false)
 const showUserMenu = ref(false)
@@ -35,9 +35,6 @@ const whiteBackgroundRoutes = [
   '/AgregarProducto',
   '/EditarProducto',
 ]
-
-// --- Toda la lógica de 'checkBackgroundColor', 'handleScroll', 'handleClickOutside', 'watch' y 'onMounted/onUnmounted'
-// --- se mantiene exactamente igual. La pegamos aquí para que el script esté completo. ---
 
 const checkBackgroundColor = () => {
   try {
@@ -219,28 +216,19 @@ const goToChatWithSeller = (vendedorId) => {
     return
   }
   showNotificationMenu.value = false
-  router.push({ 
-    path: '/mis-chats', // Usamos el path de tu función goToChats
-    query: { userId: vendedorId } // Pasamos el ID del vendedor en la URL
+  router.push({
+    path: '/mis-chats',
+    query: { userId: vendedorId },
   })
 }
 
-// --- ¡NUEVA FUNCIÓN MANEJADORA! ---
-/**
- * Decide a dónde navegar cuando se hace clic en una notificación de stock.
- * Asume que el objeto 'notificacion' tiene 'producto_id' y 'vendedor_id'.
- */
 const handleNotificationClick = (notificacion) => {
-  // Caso 1: Eres Admin Y el producto NO es tuyo
   if (isAdmin.value && authStore.usuario.id !== notificacion.vendedor_id) {
     goToChatWithSeller(notificacion.vendedor_id)
-  } 
-  // Caso 2: Eres Vendedor (es tu producto) O Eres Admin y es TU producto
-  else {
+  } else {
     goToEditProduct(notificacion.producto_id)
   }
 }
-
 
 const scrollToSection = (sectionId) => {
   router.push('/').then(() => {
@@ -299,19 +287,22 @@ const getUserAvatar = computed(() => {
 
       <div class="header-actions">
         <button v-if="isAuthenticated" class="btn-icon btn-cart" @click="goToCart">
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+            <g
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+            >
+              <path
+                fill="currentColor"
+                d="M19.5 22a1.5 1.5 0 1 0 0-3a1.5 1.5 0 0 0 0 3m-10 0a1.5 1.5 0 1 0 0-3a1.5 1.5 0 0 0 0 3"
+              />
+              <path
+                d="M5 4h17l-2 11H7zm0 0c-.167-.667-1-2-3-2m18 13H5.23c-1.784 0-2.73.781-2.73 2s.946 2 2.73 2H19.5"
+              />
+            </g>
           </svg>
           <span v-if="cartStore.totalItems > 0" class="cart-badge">
             {{ cartStore.totalItems > 9 ? '9+' : cartStore.totalItems }}
@@ -426,7 +417,11 @@ const getUserAvatar = computed(() => {
             <button class="dropdown-item" @click="goToSeguimiento">
               {{ canSell ? 'Mis Pedidos' : 'Seguimiento' }}
             </button>
-            <button v-if="canSell || authStore.esCajero" class="dropdown-item" @click="router.push('/reportes')">
+            <button
+              v-if="canSell || authStore.esCajero"
+              class="dropdown-item"
+              @click="router.push('/reportes')"
+            >
               Reporte de ventas
             </button>
             <button v-if="isAdmin" class="dropdown-item" @click="goToAdmin">
@@ -534,12 +529,8 @@ const getUserAvatar = computed(() => {
             </div>
           </div>
 
-          <button class="mobile-menu-option" @click="router.push('/perfil')">
-            Mi perfil
-          </button>
-          <button class="mobile-menu-option" @click="goToChats">
-            Mis Chats
-          </button>
+          <button class="mobile-menu-option" @click="router.push('/perfil')">Mi perfil</button>
+          <button class="mobile-menu-option" @click="goToChats">Mis Chats</button>
           <button class="mobile-menu-option" @click="goToSeguimiento">
             {{ canSell ? 'Mis Pedidos' : 'Seguimiento' }}
           </button>
@@ -549,7 +540,11 @@ const getUserAvatar = computed(() => {
           <button v-if="canSell" class="mobile-menu-option" @click="goToPedidos">
             Gestión de Pedidos
           </button>
-           <button v-if="canSell || authStore.esCajero" class="mobile-menu-option" @click="router.push('/reportes')">
+          <button
+            v-if="canSell || authStore.esCajero"
+            class="mobile-menu-option"
+            @click="router.push('/reportes')"
+          >
             Reporte de ventas
           </button>
           <button v-if="isAdmin" class="mobile-menu-option" @click="goToAdmin">

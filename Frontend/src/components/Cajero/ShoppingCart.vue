@@ -2,48 +2,53 @@
 <template>
   <div class="shopping-cart">
     <div class="cart-header">
-      <svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <path d="M9 2L6.5 6M15 2l2.5 4M6.5 6h11M6.5 6L8 20h8l1.5-14M10 11v4m4-4v4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+        <g fill="none" stroke="#060606" stroke-width="1">
+          <path
+            stroke-linejoin="round"
+            d="M4 9h16l-.835 9.181A2 2 0 0 1 17.174 20H6.826a2 2 0 0 1-1.991-1.819z"
+          />
+          <path stroke-linecap="round" d="M8 11V8a4 4 0 1 1 8 0v3" />
+        </g>
       </svg>
       <h3 class="cart-title">Carrito</h3>
     </div>
 
-    <div v-if="items.length === 0" class="empty-cart">
-      Carrito vacío
-    </div>
+    <div v-if="items.length === 0" class="empty-cart">Carrito vacío</div>
 
     <div v-else class="cart-items">
       <div v-for="item in items" :key="item.id" class="cart-item">
         <div class="item-header">
           <span class="item-name">{{ item.name }}</span>
-          <button 
-            @click="$emit('remove-item', item.id)"
-            class="btn-remove"
-            title="Eliminar"
-          >
+          <button @click="$emit('remove-item', item.id)" class="btn-remove" title="Eliminar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
           </button>
         </div>
-        
+
         <div class="item-controls">
           <div class="quantity-controls">
-            <button 
+            <button
               @click="$emit('update-quantity', item.id, item.cantidad - 1)"
               class="btn-quantity"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M20 12H4" stroke-width="2" stroke-linecap="round"/>
+                <path d="M20 12H4" stroke-width="2" stroke-linecap="round" />
               </svg>
             </button>
             <span class="quantity">{{ item.cantidad }}</span>
-            <button 
+            <button
               @click="$emit('update-quantity', item.id, item.cantidad + 1)"
               class="btn-quantity"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M12 20V4m8 8H4" stroke-width="2" stroke-linecap="round"/>
+                <path d="M12 20V4m8 8H4" stroke-width="2" stroke-linecap="round" />
               </svg>
             </button>
           </div>
@@ -51,9 +56,7 @@
             <span v-if="item.precio < item.precioOriginal" class="original-price">
               ${{ (item.precioOriginal * item.cantidad).toLocaleString() }}
             </span>
-            <span class="item-total">
-              ${{ (item.precio * item.cantidad).toLocaleString() }}
-            </span>
+            <span class="item-total"> ${{ (item.precio * item.cantidad).toLocaleString() }} </span>
           </div>
         </div>
       </div>
@@ -67,11 +70,11 @@ export default {
   props: {
     items: {
       type: Array,
-      required: true
-    }
+      required: true,
+    },
   },
-  emits: ['update-quantity', 'remove-item']
-};
+  emits: ['update-quantity', 'remove-item'],
+}
 </script>
 
 <style scoped>
@@ -213,7 +216,7 @@ export default {
 
 .item-total {
   font-weight: 700;
-  color: #7c3aed;
+  color: black;
   font-size: 1.1rem;
 }
 </style>

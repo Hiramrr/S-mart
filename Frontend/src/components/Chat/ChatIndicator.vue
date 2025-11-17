@@ -11,27 +11,22 @@ const { mensajesNoLeidos, cargarConversaciones, suscribirseAConversaciones } = u
 let unsubscribe = null
 
 onMounted(async () => {
-  // authStore.usuario es la propiedad correcta para verificar si el usuario inició sesión
   if (authStore.usuario) {
     await cargarConversaciones()
 
     unsubscribe = suscribirseAConversaciones(() => {
-      // Callback para recargar conversaciones cuando ocurre un cambio
       cargarConversaciones()
     })
   }
 })
 
-// Observar cambios en authStore.usuario (inicio/cierre de sesión)
 authStore.$subscribe(async (mutation, state) => {
   if (state.usuario && !unsubscribe) {
-    // Usuario inició sesión
     await cargarConversaciones()
     unsubscribe = suscribirseAConversaciones(() => {
       cargarConversaciones()
     })
   } else if (!state.usuario && unsubscribe) {
-    // Usuario cerró sesión
     if (unsubscribe) {
       unsubscribe()
       unsubscribe = null

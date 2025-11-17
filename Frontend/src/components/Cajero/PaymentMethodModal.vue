@@ -10,7 +10,18 @@
           :class="{ selected: selectedMethod === 'efectivo' }"
           @click="selectedMethod = 'efectivo'"
         >
-          <svg class="card-icon" viewBox="0 0 24 24"><path d="M12 12V6M8 10H6a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2v-6a2 2 0 00-2-2h-2m-4 0a2 2 0 100 4 2 2 0 000-4z"/></svg>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            class="card-icon"
+          >
+            <path
+              fill="#000"
+              d="M3 6h18v12H3zm9 3a3 3 0 0 1 3 3a3 3 0 0 1-3 3a3 3 0 0 1-3-3a3 3 0 0 1 3-3M7 8a2 2 0 0 1-2 2v4a2 2 0 0 1 2 2h10a2 2 0 0 1 2-2v-4a2 2 0 0 1-2-2z"
+            />
+          </svg>
           <span>Efectivo</span>
         </div>
         <div
@@ -18,30 +29,47 @@
           :class="{ selected: selectedMethod === 'tarjeta' }"
           @click="selectedMethod = 'tarjeta'"
         >
-          <svg class="card-icon" viewBox="0 0 24 24"><path d="M3 10h18M3 6h18M7 14h.01M11 14h.01M15 14h.01M4 18h16a1 1 0 001-1V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1z"/></svg>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="8"
+            height="8"
+            viewBox="0 0 8 8"
+            class="card-icon"
+          >
+            <path
+              fill="#000"
+              d="M.25 1C.11 1 0 1.11 0 1.25V2h8v-.75C8 1.11 7.89 1 7.75 1zM0 3v3.75c0 .14.11.25.25.25h7.5c.14 0 .25-.11.25-.25V3zm1 2h1v1H1zm2 0h1v1H3z"
+            />
+          </svg>
           <span>Tarjeta</span>
         </div>
       </div>
 
       <div class="modal-actions">
         <button class="btn btn-cancel" @click="$emit('cancel')">Cancelar</button>
-        <button class="btn btn-continue" @click="$emit('continue', selectedMethod)" :disabled="!selectedMethod">Continuar</button>
+        <button
+          class="btn btn-continue"
+          @click="$emit('continue', selectedMethod)"
+          :disabled="!selectedMethod"
+        >
+          Continuar
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref } from 'vue'
 
 export default {
   name: 'PaymentMethodModal',
   emits: ['cancel', 'continue'],
   setup() {
-    const selectedMethod = ref(null);
-    return { selectedMethod };
+    const selectedMethod = ref(null)
+    return { selectedMethod }
   },
-};
+}
 </script>
 
 <style scoped>
@@ -147,7 +175,7 @@ export default {
 }
 
 .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

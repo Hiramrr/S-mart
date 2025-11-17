@@ -26,7 +26,7 @@
 
     <div v-if="!paymentMethod">
       <button
-        @click="skipPaymentModal ? $emit('checkout') : showModal = true"
+        @click="skipPaymentModal ? $emit('checkout') : (showModal = true)"
         :disabled="total === 0"
         class="btn-checkout"
       >
@@ -183,7 +183,7 @@ export default {
 
 .btn-checkout {
   width: 100%;
-  background-color: #7c3aed;
+  background-color: black;
   color: white;
   padding: 0.75rem 1rem;
   border: none;
@@ -195,7 +195,7 @@ export default {
 }
 
 .btn-checkout:hover:not(:disabled) {
-  background-color: #6d28d9;
+  color: #adadad;
 }
 
 .btn-checkout:disabled {
@@ -204,25 +204,25 @@ export default {
 }
 
 .post-payment-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
 }
 
 .btn-cancel-purchase {
-    width: 100%;
-    background-color: #ef4444;
-    color: white;
-    padding: 0.75rem 1rem;
-    border: none;
-    border-radius: 0.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s;
+  width: 100%;
+  background-color: #ef4444;
+  color: white;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .btn-cancel-purchase:hover {
-    background-color: #dc2626;
+  background-color: #dc2626;
 }
 </style>

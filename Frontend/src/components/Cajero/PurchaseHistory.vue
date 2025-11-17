@@ -2,42 +2,30 @@
 <template>
   <div class="purchase-history">
     <h3 class="history-title">Historial de compra</h3>
-    
-    <div v-if="purchases.length === 0" class="empty-history">
-      No hay compras registradas
-    </div>
+
+    <div v-if="purchases.length === 0" class="empty-history">No hay compras registradas</div>
 
     <div v-else class="history-list">
-      <div 
-        v-for="purchase in purchases" 
-        :key="purchase.id"
-        class="history-item"
-      >
+      <div v-for="purchase in purchases" :key="purchase.id" class="history-item">
         <div class="history-header">
           <span class="purchase-id">Compra #{{ purchase.id }}</span>
           <span class="purchase-date">{{ purchase.fecha }}</span>
         </div>
-        
+
         <div class="history-items">
-          <div 
-            v-for="(item, index) in purchase.items" 
-            :key="index"
-            class="history-product"
-          >
+          <div v-for="(item, index) in purchase.items" :key="index" class="history-product">
             {{ item.name }}
           </div>
         </div>
-        
+
         <div class="history-footer">
-          <div class="history-total">
-            Total: ${{ purchase.total.toLocaleString() }}
-          </div>
+          <div class="history-total">Total: ${{ purchase.total.toLocaleString() }}</div>
           <button class="btn-details" @click="showDetails(purchase)">Mostrar más detalles</button>
         </div>
       </div>
     </div>
 
-    <PurchaseDetailModal 
+    <PurchaseDetailModal
       v-if="showDetailModal"
       :purchase="selectedPurchase"
       @close="showDetailModal = false"
@@ -47,8 +35,8 @@
 </template>
 
 <script>
-import { ref } from 'vue';
-import PurchaseDetailModal from './PurchaseDetailModal.vue';
+import { ref } from 'vue'
+import PurchaseDetailModal from './PurchaseDetailModal.vue'
 
 export default {
   name: 'PurchaseHistory',
@@ -56,32 +44,32 @@ export default {
   props: {
     purchases: {
       type: Array,
-      required: true
-    }
+      required: true,
+    },
   },
   emits: ['delete-purchase'],
   setup(props, { emit }) {
-    const selectedPurchase = ref(null);
-    const showDetailModal = ref(false);
+    const selectedPurchase = ref(null)
+    const showDetailModal = ref(false)
 
     const showDetails = (purchase) => {
-      selectedPurchase.value = purchase;
-      showDetailModal.value = true;
-    };
+      selectedPurchase.value = purchase
+      showDetailModal.value = true
+    }
 
     const handleDelete = (purchaseId) => {
-      emit('delete-purchase', purchaseId);
-      showDetailModal.value = false;
-    };
+      emit('delete-purchase', purchaseId)
+      showDetailModal.value = false
+    }
 
-    return { 
-      selectedPurchase, 
-      showDetailModal, 
-      showDetails, 
-      handleDelete 
-    };
-  }
-};
+    return {
+      selectedPurchase,
+      showDetailModal,
+      showDetails,
+      handleDelete,
+    }
+  },
+}
 </script>
 
 <style scoped>
@@ -147,12 +135,12 @@ export default {
 }
 
 .history-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e5e7eb;
 }
 
 .history-total {
@@ -163,11 +151,11 @@ export default {
 }
 
 .btn-details {
-    background: none;
-    border: none;
-    color: #7c3aed;
-    font-weight: 600;
-    cursor: pointer;
+  background: none;
+  border: none;
+  color: #adadad;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 /* Scrollbar personalizada */
