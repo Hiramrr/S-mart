@@ -28,32 +28,34 @@ const cargarUsuarios = async () => {
 
     const { data, error: err } = await supabase
       .from('usuarios')
-      .select(`
+      .select(
+        `
         *,
         codigo_entrada_cajero ( codigo )
-      `)
+      `,
+      )
       .order('email', { ascending: true })
 
     if (err) throw err
-    
+
     // --- INICIO DE CORRECCIÓN ---
     // Corregimos el mapeo para que lea un objeto en lugar de un array
-    usuarios.value = (data || []).map(u => {
-      const { codigo_entrada_cajero, ...userData } = u;
-      
+    usuarios.value = (data || []).map((u) => {
+      const { codigo_entrada_cajero, ...userData } = u
+
       // Si 'codigo_entrada_cajero' existe (no es null) y es un objeto,
       // entonces asignamos su propiedad 'codigo'.
-      const cierre_code = (codigo_entrada_cajero && typeof codigo_entrada_cajero === 'object') 
-                           ? codigo_entrada_cajero.codigo 
-                           : null;
-                           
+      const cierre_code =
+        codigo_entrada_cajero && typeof codigo_entrada_cajero === 'object'
+          ? codigo_entrada_cajero.codigo
+          : null
+
       return {
         ...userData,
-        cierre_code // Asignamos el código (o null si no existe)
-      };
-    });
+        cierre_code, // Asignamos el código (o null si no existe)
+      }
+    })
     // --- FIN DE CORRECCIÓN ---
-
   } catch (err) {
     console.error('Error al cargar usuarios:', err)
     error.value = 'Error al cargar los usuarios'
@@ -135,7 +137,7 @@ const confirmarSuspension = async () => {
 
 const abrirModalCodigo = (usuario) => {
   usuarioParaCodigo.value = usuario
-  nuevoCodigoCierre.value = usuario.cierre_code || '' 
+  nuevoCodigoCierre.value = usuario.cierre_code || ''
   mostrarModalCodigo.value = true
   error.value = null
 }
@@ -156,33 +158,36 @@ const guardarCodigoCierre = async () => {
   try {
     cargando.value = true
     error.value = null
-    
+
     const { data: upsertData, error: err } = await supabase
       .from('codigo_entrada_cajero')
-      .upsert({ 
-        usuario_id: usuarioParaCodigo.value.id, 
-        codigo: nuevoCodigoCierre.value 
-      }, {
-        onConflict: 'usuario_id'
-      })
-      .select('codigo') 
-      .single()         
+      .upsert(
+        {
+          usuario_id: usuarioParaCodigo.value.id,
+          codigo: nuevoCodigoCierre.value,
+        },
+        {
+          onConflict: 'usuario_id',
+        },
+      )
+      .select('codigo')
+      .single()
 
     if (err) {
-      if (err.code === '23505') { 
+      if (err.code === '23505') {
         throw new Error('Ese código ya está en uso por otro usuario. Elige uno diferente.')
       }
       throw err
     }
 
     // Actualizamos el estado local manualmente
-    const userIndex = usuarios.value.findIndex(u => u.id === usuarioParaCodigo.value.id)
+    const userIndex = usuarios.value.findIndex((u) => u.id === usuarioParaCodigo.value.id)
     if (userIndex !== -1 && upsertData) {
       usuarios.value[userIndex].cierre_code = upsertData.codigo
     }
-    
+
     // Ya no es necesario recargar
-    // await cargarUsuarios() 
+    // await cargarUsuarios()
 
     cerrarModalCodigo()
   } catch (err) {
@@ -224,7 +229,12 @@ onMounted(() => {
       </div>
 
       <div v-else class="usuarios-grid">
-        <div v-for="usuario in usuarios" :key="usuario.id" class="usuario-card" :class="{ 'usuario-suspendido': usuario.suspendido }">
+        <div
+          v-for="usuario in usuarios"
+          :key="usuario.id"
+          class="usuario-card"
+          :class="{ 'usuario-suspendido': usuario.suspendido }"
+        >
           <div class="usuario-info">
             <h3>
               {{ usuario.nombre || 'Sin nombre' }}
@@ -232,72 +242,83 @@ onMounted(() => {
             </h3>
             <p class="usuario-email">{{ usuario.email }}</p>
             <span class="usuario-rol" :class="`rol-${usuario.rol}`">{{ usuario.rol }}</span>
-            
+
             <p v-if="usuario.cierre_code" class="usuario-codigo">
               Código: <strong>{{ usuario.cierre_code }}</strong>
             </p>
-            </div>
+          </div>
           <div class="usuario-actions">
-            <button class="icon-btn edit-btn" title="Cambiar rol" @click="abrirFormulario(usuario)" :disabled="usuario.suspendido">
+            <button
+              class="icon-btn edit-btn"
+              title="Cambiar rol"
+              @click="abrirFormulario(usuario)"
+              :disabled="usuario.suspendido"
+            >
               <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                xmlns="http://www.w3.org/2000/svg"
+                width="22px"
+                height="22px"
+                viewBox="0 0 48 48"
               >
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                <g fill="none" stroke="#000" stroke-linejoin="round" stroke-width="4">
+                  <path stroke-linecap="round" d="M7 42h36" />
+                  <path d="M11 26.72V34h7.317L39 13.308L31.695 6z" />
+                </g>
               </svg>
               <span class="btn-label">Rol</span>
             </button>
-            
-            <button 
+
+            <button
               v-if="usuario.rol === 'cajero' || usuario.rol === 'administrador'"
-              class="icon-btn code-btn" 
+              class="icon-btn"
               :title="usuario.cierre_code ? 'Cambiar código' : 'Asignar código'"
               @click="abrirModalCodigo(usuario)"
               :disabled="usuario.suspendido"
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20px"
+                height="20px"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  fill="#000"
+                  d="M7 15q1.25 0 2.125-.875T10 12t-.875-2.125T7 9t-2.125.875T4 12t.875 2.125T7 15m0 3q-2.5 0-4.25-1.75T1 12t1.75-4.25T7 6q2.025 0 3.538 1.15T12.65 10h8.375L23 11.975l-3.5 4L17 14l-2 2l-2-2h-.35q-.625 1.8-2.175 2.9T7 18"
+                />
               </svg>
-              <span class="btn-label">{{ usuario.cierre_code ? 'Cambiar' : 'Asignar' }} Código</span>
+              <span class="btn-label"
+                >{{ usuario.cierre_code ? 'Cambiar' : 'Asignar' }} Código</span
+              >
             </button>
-            <button 
-              class="icon-btn" 
-              :class="usuario.suspendido ? 'activate-btn' : 'suspend-btn'" 
-              :title="usuario.suspendido ? 'Reactivar usuario' : 'Suspender usuario'" 
+            <button
+              class="icon-btn"
+              :class="usuario.suspendido ? 'activate-btn' : 'suspend-btn'"
+              :title="usuario.suspendido ? 'Reactivar usuario' : 'Suspender usuario'"
               @click="abrirModalSuspension(usuario)"
             >
-              <svg v-if="!usuario.suspendido"
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+              <svg
+                v-if="!usuario.suspendido"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20px"
+                height="20px"
+                viewBox="0 0 32 32"
               >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                <path
+                  fill="#000"
+                  d="M16 3.667C9.19 3.667 3.667 9.187 3.667 16S9.19 28.333 16 28.333c6.812 0 12.333-5.52 12.333-12.333S22.813 3.667 16 3.667m0 3c1.85 0 3.572.548 5.024 1.48L8.147 21.024A9.26 9.26 0 0 1 6.667 16c0-5.146 4.187-9.333 9.333-9.333m0 18.666a9.27 9.27 0 0 1-5.024-1.48l12.876-12.877A9.26 9.26 0 0 1 25.332 16c0 5.146-4.186 9.333-9.332 9.333"
+                />
               </svg>
-              <svg v-else
-                width="22"
-                height="22"
+              <svg
+                v-else
+                xmlns="http://www.w3.org/2000/svg"
+                width="20px"
+                height="20px"
                 viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
               >
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
+                <path
+                  fill="#000"
+                  d="M21.5 9h-5l1.86-1.86A7.99 7.99 0 0 0 12 4c-4.42 0-8 3.58-8 8c0 1.83.61 3.5 1.64 4.85c1.22-1.4 3.51-2.35 6.36-2.35s5.15.95 6.36 2.35A7.95 7.95 0 0 0 20 12h2c0 5.5-4.5 10-10 10S2 17.5 2 12S6.5 2 12 2c3.14 0 5.95 1.45 7.78 3.72L21.5 4zM12 7c1.66 0 3 1.34 3 3s-1.34 3-3 3s-3-1.34-3-3s1.34-3 3-3"
+                />
               </svg>
               <span class="btn-label">{{ usuario.suspendido ? 'Reactivar' : 'Suspender' }}</span>
             </button>
@@ -320,57 +341,107 @@ onMounted(() => {
         <div class="modal-body">
           <div class="usuario-info-modal">
             <div class="usuario-avatar">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
             </div>
             <h3>{{ usuarioASuspender?.nombre || 'Sin nombre' }}</h3>
             <p class="email-modal">{{ usuarioASuspender?.email }}</p>
-            <span class="rol-badge" :class="`rol-${usuarioASuspender?.rol}`">{{ usuarioASuspender?.rol }}</span>
+            <span class="rol-badge" :class="`rol-${usuarioASuspender?.rol}`">{{
+              usuarioASuspender?.rol
+            }}</span>
           </div>
 
           <div v-if="!usuarioASuspender?.suspendido" class="advertencia-suspension">
             <div class="advertencia-header">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                <line x1="12" y1="9" x2="12" y2="13" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20px"
+                height="20px"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  fill="#f00"
+                  d="M2.725 21q-.275 0-.5-.137t-.35-.363t-.137-.488t.137-.512l9.25-16q.15-.25.388-.375T12 3t.488.125t.387.375l9.25 16q.15.25.138.513t-.138.487t-.35.363t-.5.137zm1.725-2h15.1L12 6zM12 18q.425 0 .713-.288T13 17t-.288-.712T12 16t-.712.288T11 17t.288.713T12 18m0-3q.425 0 .713-.288T13 14v-3q0-.425-.288-.712T12 10t-.712.288T11 11v3q0 .425.288.713T12 15m0-2.5"
+                />
               </svg>
               <h4>Consecuencias de la suspensión</h4>
             </div>
-            
+
             <ul class="consecuencias-lista">
               <li>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
                   <circle cx="12" cy="12" r="10" />
                   <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
                 </svg>
                 <span>No podrá iniciar sesión en el sistema</span>
               </li>
               <li>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
                   <circle cx="12" cy="12" r="10" />
                   <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
                 </svg>
                 <span>Se cerrará su sesión activa inmediatamente</span>
               </li>
               <li>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
                   <circle cx="12" cy="12" r="10" />
                   <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
                 </svg>
                 <span>No podrá realizar ninguna operación</span>
               </li>
               <li>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
                   <circle cx="12" cy="12" r="10" />
                   <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
                 </svg>
                 <span>Su historial y datos se mantendrán intactos</span>
               </li>
               <li>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                   <polyline points="22 4 12 14.01 9 11.01" />
                 </svg>
@@ -381,31 +452,63 @@ onMounted(() => {
 
           <div v-else class="info-reactivacion">
             <div class="info-header">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 16v-4" />
-                <path d="M12 8h.01" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20px"
+                height="20px"
+                viewBox="0 0 24 24"
+              >
+                <g fill="none">
+                  <path
+                    d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"
+                  />
+                  <path
+                    fill="#489870"
+                    d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12S6.477 2 12 2m0 2a8 8 0 1 0 0 16a8 8 0 0 0 0-16m-.01 6c.558 0 1.01.452 1.01 1.01v5.124A1 1 0 0 1 12.5 18h-.49A1.01 1.01 0 0 1 11 16.99V12a1 1 0 1 1 0-2zM12 7a1 1 0 1 1 0 2a1 1 0 0 1 0-2"
+                  />
+                </g>
               </svg>
               <h4>Al reactivar este usuario</h4>
             </div>
-            
+
             <ul class="consecuencias-lista reactivacion-lista">
               <li>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                   <polyline points="22 4 12 14.01 9 11.01" />
                 </svg>
                 <span>Podrá iniciar sesión normalmente</span>
               </li>
               <li>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                   <polyline points="22 4 12 14.01 9 11.01" />
                 </svg>
                 <span>Recuperará todos sus permisos según su rol</span>
               </li>
               <li>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                   <polyline points="22 4 12 14.01 9 11.01" />
                 </svg>
@@ -416,17 +519,31 @@ onMounted(() => {
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn-cancelar" @click="cerrarModalSuspension" :disabled="cargando">
-            Cancelar
-          </button>
-          <button 
-            type="button" 
-            class="btn-confirmar" 
-            :class="{ 'btn-reactivar': usuarioASuspender?.suspendido, 'btn-suspender': !usuarioASuspender?.suspendido }"
-            @click="confirmarSuspension" 
+          <button
+            type="button"
+            class="btn-cancelar"
+            @click="cerrarModalSuspension"
             :disabled="cargando"
           >
-            {{ cargando ? 'Procesando...' : (usuarioASuspender?.suspendido ? 'Reactivar Usuario' : 'Suspender Usuario') }}
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn-confirmar"
+            :class="{
+              'btn-reactivar': usuarioASuspender?.suspendido,
+              'btn-suspender': !usuarioASuspender?.suspendido,
+            }"
+            @click="confirmarSuspension"
+            :disabled="cargando"
+          >
+            {{
+              cargando
+                ? 'Procesando...'
+                : usuarioASuspender?.suspendido
+                  ? 'Reactivar Usuario'
+                  : 'Suspender Usuario'
+            }}
           </button>
         </div>
       </div>
@@ -438,7 +555,7 @@ onMounted(() => {
           <h2>Asignar Código de Cierre</h2>
           <button class="btn-cerrar" @click="cerrarModalCodigo">&times;</button>
         </div>
-        
+
         <div v-if="error" class="error-message-modal">
           {{ error }}
         </div>
@@ -449,13 +566,13 @@ onMounted(() => {
             <p class="usuario-detail">{{ usuarioParaCodigo?.nombre || 'Sin nombre' }}</p>
             <p class="usuario-detail-email">{{ usuarioParaCodigo?.email }}</p>
           </div>
-          
+
           <div class="form-group">
             <label for="codigo-cierre">Código de 4 dígitos</label>
             <input
               id="codigo-cierre"
               v-model="nuevoCodigoCierre"
-              type="text" 
+              type="text"
               placeholder="••••"
               maxlength="4"
               pattern="\d{4}"
@@ -466,12 +583,21 @@ onMounted(() => {
               class="codigo-input-style"
             />
           </div>
-          
+
           <div class="form-actions">
-            <button type="button" class="btn-cancelar" @click="cerrarModalCodigo" :disabled="cargando">
+            <button
+              type="button"
+              class="btn-cancelar"
+              @click="cerrarModalCodigo"
+              :disabled="cargando"
+            >
               Cancelar
             </button>
-            <button type="submit" class="btn-guardar" :disabled="cargando || nuevoCodigoCierre.length !== 4">
+            <button
+              type="submit"
+              class="btn-guardar"
+              :disabled="cargando || nuevoCodigoCierre.length !== 4"
+            >
               {{ cargando ? 'Guardando...' : 'Guardar Código' }}
             </button>
           </div>
@@ -507,7 +633,12 @@ onMounted(() => {
           </div>
 
           <div class="form-actions">
-            <button type="button" class="btn-cancelar" @click="cerrarFormulario" :disabled="cargando">
+            <button
+              type="button"
+              class="btn-cancelar"
+              @click="cerrarFormulario"
+              :disabled="cargando"
+            >
               Cancelar
             </button>
             <button type="submit" class="btn-guardar" :disabled="cargando">
@@ -560,7 +691,9 @@ onMounted(() => {
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .usuario-card:hover {
@@ -668,42 +801,16 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-.edit-btn svg {
-  stroke: #3b82f6;
-}
-
 /* Estilo para el nuevo botón de código */
-.code-btn svg {
-  stroke: #f59e0b; /* Color ámbar/naranja */
-}
-.code-btn:hover:not(:disabled) {
-  background: #fef9c3;
-}
 
 .suspend-btn {
   background: #fee2e2;
   color: #dc2626;
 }
 
-.suspend-btn svg {
-  stroke: #dc2626;
-}
-
-.suspend-btn:hover:not(:disabled) {
-  background: #fecaca;
-}
-
 .activate-btn {
   background: #d1fae5;
   color: #059669;
-}
-
-.activate-btn svg {
-  stroke: #059669;
-}
-
-.activate-btn:hover:not(:disabled) {
-  background: #a7f3d0;
 }
 
 .btn-label {
@@ -733,7 +840,9 @@ onMounted(() => {
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .modal-header {
@@ -762,7 +871,9 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   border-radius: 0.5rem;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 
 .btn-cerrar:hover {
@@ -1157,17 +1268,9 @@ onMounted(() => {
   color: #fff;
 }
 
-.btn-suspender:hover:not(:disabled) {
-  background: #b91c1c;
-}
-
 .btn-reactivar {
   background: #059669;
   color: #fff;
-}
-
-.btn-reactivar:hover:not(:disabled) {
-  background: #047857;
 }
 
 .btn-confirmar:disabled {

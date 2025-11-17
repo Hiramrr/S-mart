@@ -49,7 +49,7 @@ const router = useRouter()
   <div
     class="product-card"
     @click="!isSeller && router.push({ name: 'producto-detalle', params: { id: productId } })"
-    :class="{ 'clickable': !isSeller }"
+    :class="{ clickable: !isSeller }"
   >
     <div class="product-image">
       <img v-if="imageUrl" :src="imageUrl" alt="Producto" />
@@ -70,10 +70,10 @@ const router = useRouter()
       </div>
 
       <div class="price-container">
-        <div class="product-price" :class="{ 'discounted': originalPrice }">
+        <div class="product-price" :class="{ discounted: originalPrice }">
           {{ price }}
         </div>
-        
+
         <div v-if="originalPrice" class="product-price original-striked">
           {{ originalPrice }}
         </div>
@@ -82,16 +82,43 @@ const router = useRouter()
 
       <div v-if="isSeller" class="product-actions">
         <template v-if="!hideActions">
-          <button class="icon-btn edit-btn" title="Editar" @click.stop="emit('edit-product', productId)">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+          <button
+            class="icon-btn edit-btn"
+            title="Editar"
+            @click.stop="emit('edit-product', productId)"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="22px" height="22px" viewBox="0 0 48 48">
+              <g fill="none" stroke="#000" stroke-linejoin="round" stroke-width="4">
+                <path stroke-linecap="round" d="M7 42h36" />
+                <path d="M11 26.72V34h7.317L39 13.308L31.695 6z" />
+              </g>
+            </svg>
             <span class="btn-label">Editar</span>
           </button>
-          <button class="icon-btn coupon-btn" title="Crear cupón" @click.stop="emit('create-coupon', productId, productName)">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><path d="M1 10h22"/></svg>
+          <button
+            class="icon-btn coupon-btn"
+            title="Crear cupón"
+            @click.stop="emit('create-coupon', productId, productName)"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewBox="0 0 24 24">
+              <path
+                fill="#000"
+                d="M4 4a2 2 0 0 0-2 2v4a2 2 0 0 1 2 2a2 2 0 0 1-2 2v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 1-2-2a2 2 0 0 1 2-2V6a2 2 0 0 0-2-2zm11.5 3L17 8.5L8.5 17L7 15.5zm-6.69.04c.98 0 1.77.79 1.77 1.77a1.77 1.77 0 0 1-1.77 1.77c-.98 0-1.77-.79-1.77-1.77a1.77 1.77 0 0 1 1.77-1.77m6.38 6.38c.98 0 1.77.79 1.77 1.77a1.77 1.77 0 0 1-1.77 1.77c-.98 0-1.77-.79-1.77-1.77a1.77 1.77 0 0 1 1.77-1.77"
+              />
+            </svg>
             <span class="btn-label">Cupón</span>
           </button>
-          <button class="icon-btn delete-btn" title="Eliminar" @click.stop="emit('delete-product', productId)">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m5 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+          <button
+            class="icon-btn delete-btn"
+            title="Eliminar"
+            @click.stop="emit('delete-product', productId)"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewBox="0 0 24 24">
+              <path
+                fill="#000"
+                d="M7 21q-.825 0-1.412-.587T5 19V6q-.425 0-.712-.288T4 5t.288-.712T5 4h4q0-.425.288-.712T10 3h4q.425 0 .713.288T15 4h4q.425 0 .713.288T20 5t-.288.713T19 6v13q0 .825-.587 1.413T17 21zM17 6H7v13h10zm-7 11q.425 0 .713-.288T11 16V9q0-.425-.288-.712T10 8t-.712.288T9 9v7q0 .425.288.713T10 17m4 0q.425 0 .713-.288T15 16V9q0-.425-.288-.712T14 8t-.712.288T13 9v7q0 .425.288.713T14 17M7 6v13z"
+              />
+            </svg>
             <span class="btn-label">Eliminar</span>
           </button>
         </template>
@@ -107,7 +134,7 @@ const router = useRouter()
   overflow: hidden;
   transition: box-shadow 0.3s;
   cursor: pointer;
-  border: 1px solid #eee; 
+  border: 1px solid #eee;
 }
 
 /* MODIFICADO: Cambiado a 'clickable' para no interferir con :hover */
@@ -115,7 +142,7 @@ const router = useRouter()
   box-shadow:
     0 10px 15px -3px rgba(0, 0, 0, 0.1),
     0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    border-color: #ddd;
+  border-color: #ddd;
 }
 
 /* Imagen */
@@ -145,7 +172,6 @@ const router = useRouter()
   align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 0.5rem;
-  
 }
 
 .product-name {
@@ -216,7 +242,6 @@ const router = useRouter()
 }
 /* --- FIN: NUEVOS ESTILOS DE PRECIO --- */
 
-
 .product-description {
   font-size: 0.875rem;
   color: #6b7280;
@@ -226,9 +251,8 @@ const router = useRouter()
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-height: 2.6em; 
+  min-height: 2.6em;
 }
-
 
 .product-image img {
   width: 100%;
@@ -240,36 +264,30 @@ const router = useRouter()
 .product-actions {
   display: flex;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 0.3rem;
   margin-top: 0.75rem;
   margin-bottom: 0.25rem;
+  margin-right: 0.5rem;
+  margin-left: 0.5rem;
 }
 
 .icon-btn {
   background: #f3f4f6;
   border: none;
   border-radius: 0.5rem;
-  padding: 0.5rem 0.75rem; 
+  padding: 0.5rem 0.75rem;
   padding: 0.25rem 0.75rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
   transition: background 0.2s;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 .icon-btn:hover {
   background: #e5e7eb;
 }
-.edit-btn svg {
-  stroke: #3b82f6;
-}
-.coupon-btn svg {
-  stroke: #10b981;
-}
-.delete-btn svg {
-  stroke: #ef4444;
-}
+
 .btn-label {
   font-size: 0.875rem;
   font-weight: 500;

@@ -19,7 +19,8 @@ async function cargarVentas() {
   try {
     const { data, error: supabaseError } = await supabase
       .from('venta_en_linea')
-      .select(`
+      .select(
+        `
         id,
         creado_en,
         cliente_id,
@@ -30,7 +31,8 @@ async function cargarVentas() {
         fecha_estimada_entrega,
         seguimiento,
         direccion_id
-      `)
+      `,
+      )
       .eq('vendedor_id', authStore.usuario.id)
       .order('creado_en', { ascending: false })
 
@@ -39,20 +41,22 @@ async function cargarVentas() {
     // Normalizar productos para compatibilidad con formato antiguo
     let ventasNormalizadas = data
     if (data && data.length > 0) {
-      ventasNormalizadas = data.map(venta => ({
+      ventasNormalizadas = data.map((venta) => ({
         ...venta,
-        productos: venta.productos.map(producto => ({
+        productos: venta.productos.map((producto) => ({
           ...producto,
           precio: producto.precio || producto.precio_unitario || 0,
-          imagen_url: producto.imagen_url || null
-        }))
+          imagen_url: producto.imagen_url || null,
+        })),
       }))
     }
 
     // Cargar direcciones por separado
     if (ventasNormalizadas && ventasNormalizadas.length > 0) {
-      const direccionIds = [...new Set(ventasNormalizadas.map(v => v.direccion_id).filter(Boolean))]
-      
+      const direccionIds = [
+        ...new Set(ventasNormalizadas.map((v) => v.direccion_id).filter(Boolean)),
+      ]
+
       if (direccionIds.length > 0) {
         const { data: direcciones, error: dirError } = await supabase
           .from('direcciones')
@@ -60,9 +64,9 @@ async function cargarVentas() {
           .in('id', direccionIds)
 
         if (!dirError && direcciones) {
-          ventas.value = ventasNormalizadas.map(venta => ({
+          ventas.value = ventasNormalizadas.map((venta) => ({
             ...venta,
-            direccion: direcciones.find(d => d.id === venta.direccion_id)
+            direccion: direcciones.find((d) => d.id === venta.direccion_id),
           }))
         } else {
           ventas.value = ventasNormalizadas
@@ -85,8 +89,8 @@ const ventasFiltradas = computed(() => {
   if (filtroEstado.value === 'todos') {
     return ventas.value
   }
-  
-  return ventas.value.filter(venta => {
+
+  return ventas.value.filter((venta) => {
     const estado = obtenerEstadoActual(venta.seguimiento)
     return estado.toLowerCase() === filtroEstado.value.toLowerCase()
   })
@@ -94,19 +98,29 @@ const ventasFiltradas = computed(() => {
 
 const estadisticas = computed(() => {
   const total = ventas.value.length
-  const procesando = ventas.value.filter(v => obtenerEstadoActual(v.seguimiento) === 'Procesando pedido').length
-  const enPreparacion = ventas.value.filter(v => obtenerEstadoActual(v.seguimiento) === 'En preparación').length
-  const enCamino = ventas.value.filter(v => ['En camino', 'En reparto'].includes(obtenerEstadoActual(v.seguimiento))).length
-  const entregados = ventas.value.filter(v => obtenerEstadoActual(v.seguimiento) === 'Entregado').length
-  const cancelados = ventas.value.filter(v => obtenerEstadoActual(v.seguimiento) === 'Cancelado').length
-  
+  const procesando = ventas.value.filter(
+    (v) => obtenerEstadoActual(v.seguimiento) === 'Procesando pedido',
+  ).length
+  const enPreparacion = ventas.value.filter(
+    (v) => obtenerEstadoActual(v.seguimiento) === 'En preparación',
+  ).length
+  const enCamino = ventas.value.filter((v) =>
+    ['En camino', 'En reparto'].includes(obtenerEstadoActual(v.seguimiento)),
+  ).length
+  const entregados = ventas.value.filter(
+    (v) => obtenerEstadoActual(v.seguimiento) === 'Entregado',
+  ).length
+  const cancelados = ventas.value.filter(
+    (v) => obtenerEstadoActual(v.seguimiento) === 'Cancelado',
+  ).length
+
   return {
     total,
     procesando,
     enPreparacion,
     enCamino,
     entregados,
-    cancelados
+    cancelados,
   }
 })
 
@@ -120,9 +134,9 @@ function obtenerEstadoActual(seguimiento) {
 
 function obtenerDireccionCompleta(direccion) {
   if (!direccion) return 'No disponible'
-  
+
   const partes = []
-  
+
   // Dirección principal y número
   if (direccion.direccion) {
     let direccionBase = direccion.direccion
@@ -131,32 +145,32 @@ function obtenerDireccionCompleta(direccion) {
     }
     partes.push(direccionBase)
   }
-  
+
   // Colonia
   if (direccion.colonia) {
     partes.push(direccion.colonia)
   }
-  
+
   // Localidad
   if (direccion.localidad) {
     partes.push(direccion.localidad)
   }
-  
+
   // Municipio
   if (direccion.municipio) {
     partes.push(direccion.municipio)
   }
-  
+
   // Estado
   if (direccion.estado) {
     partes.push(direccion.estado)
   }
-  
+
   // Código postal
   if (direccion.codigo_postal) {
     partes.push(`C.P. ${direccion.codigo_postal}`)
   }
-  
+
   return partes.length > 0 ? partes.join(', ') : 'Dirección incompleta'
 }
 
@@ -171,7 +185,7 @@ function formatearFecha(fecha) {
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   })
 }
 
@@ -180,7 +194,7 @@ function formatearFechaCorta(fecha) {
   return new Date(fecha).toLocaleDateString('es-MX', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   })
 }
 
@@ -211,9 +225,11 @@ onMounted(() => {
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon total">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-              <line x1="1" y1="10" x2="23" y2="10"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 0 24 24">
+              <path
+                fill="#336cff"
+                d="m5.825 21l1.625-7.025L2 9.25l7.2-.625L12 2l2.8 6.625l7.2.625l-5.45 4.725L18.175 21L12 17.275z"
+              />
             </svg>
           </div>
           <div class="stat-info">
@@ -224,9 +240,16 @@ onMounted(() => {
 
         <div class="stat-card">
           <div class="stat-icon procesando">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12 6 12 12 16 14"/>
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
             </svg>
           </div>
           <div class="stat-info">
@@ -237,9 +260,11 @@ onMounted(() => {
 
         <div class="stat-card">
           <div class="stat-icon preparacion">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewBox="0 0 32 32">
+              <path
+                fill="#5c1f97"
+                d="M17.615 2.55a4.5 4.5 0 0 0-3.23 0L4.083 6.512A3.25 3.25 0 0 0 2 9.545v12.91a3.25 3.25 0 0 0 2.083 3.033l10.302 3.962a4.5 4.5 0 0 0 3.23 0l10.302-3.962A3.25 3.25 0 0 0 30 22.455V9.545a3.25 3.25 0 0 0-2.083-3.033zm-2.512 1.867a2.5 2.5 0 0 1 1.794 0L26.214 8L22.5 9.43L12.286 5.5zM9.5 6.57l10.214 3.93L16 11.929L5.786 8zM4.003 9.457L15 13.687v13.857L4.801 23.621A1.25 1.25 0 0 1 4 22.455V9.545q0-.045.003-.088M17 27.544V13.687l10.997-4.23l.003.088v12.91c0 .517-.319.98-.801 1.166z"
+              />
             </svg>
           </div>
           <div class="stat-info">
@@ -250,11 +275,11 @@ onMounted(() => {
 
         <div class="stat-card">
           <div class="stat-icon envio">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="1" y="3" width="15" height="13"/>
-              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
-              <circle cx="5.5" cy="18.5" r="2.5"/>
-              <circle cx="18.5" cy="18.5" r="2.5"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 0 24 24">
+              <path
+                fill="#2c74b0"
+                d="M18 18.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5s.67 1.5 1.5 1.5m1.5-9H17V12h4.46zM6 18.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5s.67 1.5 1.5 1.5M20 8l3 4v5h-2c0 1.66-1.34 3-3 3s-3-1.34-3-3H9c0 1.66-1.34 3-3 3s-3-1.34-3-3H1V6c0-1.11.89-2 2-2h14v4zM3 6v9h.76c.55-.61 1.35-1 2.24-1s1.69.39 2.24 1H15V6z"
+              />
             </svg>
           </div>
           <div class="stat-info">
@@ -265,9 +290,16 @@ onMounted(() => {
 
         <div class="stat-card">
           <div class="stat-icon entregado">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <polyline points="22 4 12 14.01 9 11.01"/>
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
           </div>
           <div class="stat-info">
@@ -278,10 +310,17 @@ onMounted(() => {
 
         <div class="stat-card">
           <div class="stat-icon cancelado">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="15" y1="9" x2="9" y2="15"/>
-              <line x1="9" y1="9" x2="15" y2="15"/>
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
             </svg>
           </div>
           <div class="stat-info">
@@ -310,7 +349,14 @@ onMounted(() => {
       </div>
 
       <div v-else-if="error" class="status-message error-state">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
           <circle cx="12" cy="12" r="10" />
           <line x1="12" y1="8" x2="12" y2="12" />
           <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -319,50 +365,91 @@ onMounted(() => {
       </div>
 
       <div v-else-if="ventasFiltradas.length === 0" class="status-message empty-state">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-          <line x1="1" y1="10" x2="23" y2="10"/>
+        <svg
+          width="64"
+          height="64"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+          <line x1="1" y1="10" x2="23" y2="10" />
         </svg>
         <h3>No hay pedidos</h3>
-        <p>{{ filtroEstado === 'todos' ? 'Aún no tienes pedidos de venta' : 'No hay pedidos con este estado' }}</p>
+        <p>
+          {{
+            filtroEstado === 'todos'
+              ? 'Aún no tienes pedidos de venta'
+              : 'No hay pedidos con este estado'
+          }}
+        </p>
       </div>
 
       <div v-else class="pedidos-grid">
-        <div 
-          v-for="pedido in ventasFiltradas" 
-          :key="pedido.id" 
+        <div
+          v-for="pedido in ventasFiltradas"
+          :key="pedido.id"
           class="pedido-card"
           @click="verDetalle(pedido.id)"
         >
           <div class="pedido-header">
             <div class="pedido-id">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                <line x1="1" y1="10" x2="23" y2="10"/>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                <line x1="1" y1="10" x2="23" y2="10" />
               </svg>
               Pedido #{{ pedido.id.substring(0, 8) }}
             </div>
-            <span class="estado-badge" :class="obtenerEstadoActual(pedido.seguimiento).toLowerCase().replace(/ /g, '-')">
+            <span
+              class="estado-badge"
+              :class="obtenerEstadoActual(pedido.seguimiento).toLowerCase().replace(/ /g, '-')"
+            >
               {{ obtenerEstadoActual(pedido.seguimiento) }}
             </span>
           </div>
 
           <div class="pedido-fecha">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12 6 12 12 16 14"/>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
             </svg>
             {{ formatearFecha(pedido.creado_en) }}
           </div>
 
           <div class="productos-preview">
-            <div v-for="(producto, index) in pedido.productos.slice(0, 2)" :key="index" class="producto-mini">
+            <div
+              v-for="(producto, index) in pedido.productos.slice(0, 2)"
+              :key="index"
+              class="producto-mini"
+            >
               <img v-if="producto.imagen_url" :src="producto.imagen_url" :alt="producto.nombre" />
               <div v-else class="producto-placeholder-mini">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2"/>
-                  <circle cx="8.5" cy="8.5" r="1.5"/>
-                  <path d="M21 15l-5-5L5 21"/>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <path d="M21 15l-5-5L5 21" />
                 </svg>
               </div>
               <div class="producto-mini-info">
@@ -381,26 +468,47 @@ onMounted(() => {
               <span class="total-amount">${{ pedido.monto_total.toFixed(2) }}</span>
             </div>
             <div class="pedido-entrega">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                <circle cx="12" cy="10" r="3"/>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
               </svg>
               {{ formatearFechaCorta(pedido.fecha_estimada_entrega) }}
             </div>
           </div>
 
           <div class="pedido-direccion">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-              <polyline points="9 22 9 12 15 12 15 22"/>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
             {{ obtenerDireccionCompleta(pedido.direccion) }}
           </div>
 
           <button class="btn-gestionar">
             Gestionar Pedido
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
           </button>
         </div>
@@ -592,7 +700,9 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .pedidos-grid {

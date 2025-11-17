@@ -186,21 +186,50 @@ function handleCouponCreated(coupon) {
     <div class="content">
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-icon">📦</div>
+          <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30px" height="30px" viewBox="0 0 20 20">
+              <path
+                fill="#000"
+                d="M11.3 2.48a3.5 3.5 0 0 0-2.6 0L2.943 4.785A1.5 1.5 0 0 0 2 6.176v7.646a1.5 1.5 0 0 0 .943 1.393L8.7 17.518a3.5 3.5 0 0 0 2.6 0l5.757-2.303A1.5 1.5 0 0 0 18 13.822V6.176a1.5 1.5 0 0 0-.943-1.392zm-2.228.93a2.5 2.5 0 0 1 1.857 0l5.225 2.09l-2.279.91l-6.154-2.46zM6.375 4.487l6.154 2.461L10 7.961L3.846 5.499zm4.125 4.35l6.5-2.6v7.584a.5.5 0 0 1-.314.465l-5.757 2.303q-.21.083-.429.128zm-1 0v7.88a2.5 2.5 0 0 1-.428-.128l-5.758-2.303A.5.5 0 0 1 3 13.822V6.238z"
+              />
+            </svg>
+          </div>
           <div class="stat-info">
             <div class="stat-value">{{ filteredProducts.length }}</div>
             <div class="stat-label">Productos</div>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">📊</div>
+          <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30px" height="30px" viewBox="0 0 24 24">
+              <g fill="none" stroke="#000" stroke-linejoin="round" stroke-width="1.5">
+                <path
+                  d="M2.5 12c0-4.478 0-6.718 1.391-8.109S7.521 2.5 12 2.5c4.478 0 6.718 0 8.109 1.391S21.5 7.521 21.5 12c0 4.478 0 6.718-1.391 8.109S16.479 21.5 12 21.5c-4.478 0-6.718 0-8.109-1.391S2.5 16.479 2.5 12Z"
+                />
+                <path
+                  d="M2.5 14.5h.539c.472 0 .708 0 .914-.099c.205-.098.352-.283.647-.652L6 12l1.5 2.5L9 11l2.5 5L15 9l2 3.5l1.5-1.5l1.445 2.168c.252.378.378.567.562.681q.055.034.114.061c.198.09.425.09.879.09"
+                />
+                <path stroke-linecap="round" d="M15 2.5v3m0 16v-7" />
+                <circle cx="15" cy="9" r="1" />
+              </g>
+            </svg>
+          </div>
           <div class="stat-info">
             <div class="stat-value">{{ stockTotal }}</div>
             <div class="stat-label">Stock Total</div>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">💰</div>
+          <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30px" height="30px" viewBox="0 0 48 48">
+              <path
+                fill="#000"
+                fill-rule="evenodd"
+                d="M24.039 6c-4.517 0-8.632 1.492-11.067 2.711q-.33.165-.616.322c-.378.206-.7.398-.956.567l2.77 4.078l1.304.519c5.096 2.571 11.93 2.571 17.027 0l1.48-.768L36.6 9.6a16 16 0 0 0-1.689-.957C32.488 7.437 28.471 6 24.04 6m-6.442 4.616a25 25 0 0 1-2.901-.728C16.978 8.875 20.377 7.8 24.04 7.8c2.537 0 4.936.516 6.92 1.17c-2.325.327-4.806.882-7.17 1.565c-1.86.538-4.034.48-6.192.081m15.96 5.064l-.246.124c-5.606 2.828-13.042 2.828-18.648 0l-.233-.118C6.008 24.927-.422 41.997 24.039 41.997S41.913 24.61 33.557 15.68M23 24a2 2 0 1 0 0 4zm2-2v-1h-2v1a4 4 0 0 0 0 8v4c-.87 0-1.611-.555-1.887-1.333a1 1 0 1 0-1.885.666A4 4 0 0 0 23 36v1h2v-1a4 4 0 0 0 0-8v-4c.87 0 1.611.555 1.887 1.333a1 1 0 1 0 1.885-.666A4 4 0 0 0 25 22m0 8v4a2 2 0 1 0 0-4"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </div>
           <div class="stat-info">
             <div class="stat-value">${{ totalVentas.toFixed(2) }}</div>
             <div class="stat-label">Valor Inventario</div>
