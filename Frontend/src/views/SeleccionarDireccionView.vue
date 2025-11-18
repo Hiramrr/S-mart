@@ -17,15 +17,15 @@ const direccionAEliminar = ref(null)
 const toast = useToast()
 
 async function cargarDirecciones() {
-  loading.value = true
-  const id_usuario = authStore.usuario?.id
-  if (!id_usuario) return
-  const { data, error } = await supabase
-    .from('direcciones')
-    .select('*')
-    .eq('id_usuario', id_usuario)
-  if (!error) direcciones.value = data || []
-  loading.value = false
+  loading.value = true
+  const id_usuario = authStore.usuario?.id
+  if (!id_usuario) return
+  const { data, error } = await supabase
+    .from('direcciones')
+    .select('*')
+    .eq('id_usuario', id_usuario)
+  if (!error) direcciones.value = data || []
+  loading.value = false
 }
 
 function abrirModalEliminarDireccion(dir) {
@@ -40,12 +40,15 @@ function cancelarEliminarDireccion() {
 
 async function confirmarEliminarDireccion() {
   if (!direccionAEliminar.value) return
-  const { error } = await supabase.from('direcciones').delete().eq('id', direccionAEliminar.value.id)
+  const { error } = await supabase
+    .from('direcciones')
+    .delete()
+    .eq('id', direccionAEliminar.value.id)
   if (error) {
     toast.error('Error al eliminar la dirección: ' + error.message)
     return
   }
-  direcciones.value = direcciones.value.filter(d => d.id !== direccionAEliminar.value.id)
+  direcciones.value = direcciones.value.filter((d) => d.id !== direccionAEliminar.value.id)
   toast.success('Dirección eliminada correctamente')
   showDeleteDireccionModal.value = false
   direccionAEliminar.value = null
@@ -54,57 +57,42 @@ async function confirmarEliminarDireccion() {
 onMounted(cargarDirecciones)
 
 function irEditarDomicilio(id) {
- router.push(`/editar-domicilio/${id}`)
+  router.push(`/editar-domicilio/${id}`)
 }
 
-
 function irAgregarDomicilio() {
- router.push('/agregar-domicilio')
+  router.push('/agregar-domicilio')
 }
 
 function seleccionarDireccion(id) {
- direccionSeleccionada.value = id
+  direccionSeleccionada.value = id
 }
 
-// --- ¡FUNCIÓN CORREGIDA! ---
-// En Frontend/src/views/SeleccionarDireccion.vue
-
-// ... (todas tus importaciones y lógica existente) ...
-
-// --- ¡FUNCIÓN CORREGIDA! ---
 function continuarConPago() {
-  // 1. Valida que se haya seleccionado una dirección
   if (!direccionSeleccionada.value) {
-    alert('Por favor, selecciona una dirección para continuar.');
-    return;
+    alert('Por favor, selecciona una dirección para continuar.')
+    return
   }
 
-  // 2. Lee los parámetros 'buyNowId' y 'qty' de la URL actual
-  const { buyNowId, qty } = route.query;
+  const { buyNowId, qty } = route.query
 
-  // 3. Prepara el objeto query para la nueva ruta
-  const newQuery = {};
+  const newQuery = {}
 
   if (buyNowId && qty) {
-    // 4. Si existen los parámetros "Comprar Ahora", los añade
-    newQuery.buyNowId = buyNowId;
-    newQuery.qty = qty;
+    newQuery.buyNowId = buyNowId
+    newQuery.qty = qty
   }
 
-  // 5. --- ¡AQUÍ ESTÁ EL CAMBIO CLAVE! ---
-  //    Añadimos el ID de la dirección al query
-  newQuery.direccionId = direccionSeleccionada.value;
+  newQuery.direccionId = direccionSeleccionada.value
 
-  // 6. Navega a la vista de pago con TODOS los query params
   router.push({
     path: '/pago-tarjeta',
-    query: newQuery 
-  });
+    query: newQuery,
+  })
 }
 
 function cancelarPedido() {
- // Navega de regreso al carrito de compras
- router.push('/carrito')
+  router.push('/carrito')
 }
 </script>
 
@@ -113,11 +101,23 @@ function cancelarPedido() {
   <div class="direcciones-page">
     <div class="direcciones-header">
       <h1 class="direcciones-title">Selecciona una dirección de entrega</h1>
-      <div style="display: flex; gap: 1rem; align-items: center;">
-        <button class="btn-nueva-direccion" @click="irAgregarDomicilio">Registrar dirección nueva &rarr;</button>
-        <button v-if="direccionSeleccionada" class="btn-cancelar-pedido" @click="cancelarPedido">Cancelar pedido</button>
+      <div style="display: flex; gap: 1rem; align-items: center">
+        <button class="btn-nueva-direccion" @click="irAgregarDomicilio">
+          Registrar dirección nueva &rarr;
+        </button>
+        <button v-if="direccionSeleccionada" class="btn-cancelar-pedido" @click="cancelarPedido">
+          Cancelar pedido
+        </button>
         <button v-if="direccionSeleccionada" class="btn-continuar-pago" @click="continuarConPago">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+          </svg>
           Continuar con pago
         </button>
       </div>
@@ -127,41 +127,93 @@ function cancelarPedido() {
       <div v-if="direcciones.length === 0" class="direcciones-empty">
         No tienes direcciones registradas.
       </div>
-        <div class="direcciones-grid">
-          <div v-for="dir in direcciones" :key="dir.id" class="direccion-tarjeta" :class="{ seleccionada: direccionSeleccionada === dir.id }" @click="seleccionarDireccion(dir.id)" style="cursor:pointer; border-width: 2px; border-style: solid;" :style="direccionSeleccionada === dir.id ? 'border-color: #2563eb;' : 'border-color: #f3f4f6;'">
-            <div class="direccion-titulo">{{ dir.direccion }}</div>
-            <div class="direccion-descripcion">
-              <span><strong>N° Exterior:</strong> {{ dir.numero_exterior }}</span>
-              <span><strong>Municipio:</strong> {{ dir.municipio }}</span>
-              <span><strong>Localidad:</strong> {{ dir.localidad }}</span>
-              <span><strong>Estado:</strong> {{ dir.estado }}</span>
-              <span><strong>Código Postal:</strong> {{ dir.codigo_postal }}</span>
-            </div>
-            <div class="direccion-actions">
-              <button class="btn-editar" title="Editar dirección" @click.stop="irEditarDomicilio(dir.id)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#2563eb" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487a2.06 2.06 0 1 1 2.915 2.915l-10.1 10.1a2.06 2.06 0 0 1-.82.51l-3.07.92a.5.5 0 0 1-.62-.62l.92-3.07a2.06 2.06 0 0 1 .51-.82l10.1-10.1z"/></svg>
-                Editar
-              </button>
+      <div class="direcciones-grid">
+        <div
+          v-for="dir in direcciones"
+          :key="dir.id"
+          class="direccion-tarjeta"
+          :class="{ seleccionada: direccionSeleccionada === dir.id }"
+          @click="seleccionarDireccion(dir.id)"
+          style="cursor: pointer; border-width: 2px; border-style: solid"
+          :style="
+            direccionSeleccionada === dir.id ? 'border-color: #2563eb;' : 'border-color: #f3f4f6;'
+          "
+        >
+          <div class="direccion-titulo">{{ dir.direccion }}</div>
+          <div class="direccion-descripcion">
+            <span><strong>N° Exterior:</strong> {{ dir.numero_exterior }}</span>
+            <span><strong>Municipio:</strong> {{ dir.municipio }}</span>
+            <span><strong>Localidad:</strong> {{ dir.localidad }}</span>
+            <span><strong>Estado:</strong> {{ dir.estado }}</span>
+            <span><strong>Código Postal:</strong> {{ dir.codigo_postal }}</span>
+          </div>
+          <div class="direccion-actions">
+            <button
+              class="btn-editar"
+              title="Editar dirección"
+              @click.stop="irEditarDomicilio(dir.id)"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="22px"
+                height="22px"
+                viewBox="0 0 48 48"
+              >
+                <g fill="none" stroke="#000" stroke-linejoin="round" stroke-width="4">
+                  <path stroke-linecap="round" d="M7 42h36" />
+                  <path d="M11 26.72V34h7.317L39 13.308L31.695 6z" />
+                </g>
+              </svg>
+              Editar
+            </button>
 
-              <button class="btn-eliminar" title="Eliminar dirección" @click.stop="abrirModalEliminarDireccion(dir)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#ef4444" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5a3 3 0 0 1 6 0v2m-9 0v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7"/></svg>
-                Eliminar
-              </button>
-            </div>
+            <button
+              class="btn-eliminar"
+              title="Eliminar dirección"
+              @click.stop="abrirModalEliminarDireccion(dir)"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20px"
+                height="20px"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  fill="#000"
+                  d="M7 21q-.825 0-1.412-.587T5 19V6q-.425 0-.712-.288T4 5t.288-.712T5 4h4q0-.425.288-.712T10 3h4q.425 0 .713.288T15 4h4q.425 0 .713.288T20 5t-.288.713T19 6v13q0 .825-.587 1.413T17 21zM17 6H7v13h10zm-7 11q.425 0 .713-.288T11 16V9q0-.425-.288-.712T10 8t-.712.288T9 9v7q0 .425.288.713T10 17m4 0q.425 0 .713-.288T15 16V9q0-.425-.288-.712T14 8t-.712.288T13 9v7q0 .425.288.713T14 17M7 6v13z"
+                />
+              </svg>
+              Eliminar
+            </button>
           </div>
         </div>
+      </div>
     </div>
   </div>
 
   <!-- Modal de confirmación para eliminar dirección -->
-  <div v-if="showDeleteDireccionModal" class="modal-overlay modal-center" @click="cancelarEliminarDireccion">
+  <div
+    v-if="showDeleteDireccionModal"
+    class="modal-overlay modal-center"
+    @click="cancelarEliminarDireccion"
+  >
     <div class="modal-content confirm-modal" @click.stop>
       <div class="modal-header confirm-modal-header">
         <div class="modal-icon confirm-modal-icon">
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <circle cx="24" cy="24" r="22" fill="#FFFBEA" stroke="#FBBF24" stroke-width="2"/>
+            <circle cx="24" cy="24" r="22" fill="#FFFBEA" stroke="#FBBF24" stroke-width="2" />
             <polygon points="24,12 36,36 12,36" fill="#FBBF24" />
-            <text x="24" y="32" text-anchor="middle" font-size="24" fill="#B45309" font-family="Arial" dy="-2">!</text>
+            <text
+              x="24"
+              y="32"
+              text-anchor="middle"
+              font-size="24"
+              fill="#B45309"
+              font-family="Arial"
+              dy="-2"
+            >
+              !
+            </text>
           </svg>
         </div>
         <h2 class="modal-title confirm-modal-title">Confirmar eliminación</h2>
@@ -172,8 +224,12 @@ function cancelarPedido() {
         <p class="confirm-modal-warning">Esta acción no se puede deshacer.</p>
       </div>
       <div class="modal-actions confirm-modal-actions">
-        <button class="btn-cancel confirm-btn-cancel" @click="cancelarEliminarDireccion">Cancelar</button>
-        <button class="btn-confirm-delete confirm-btn-delete" @click="confirmarEliminarDireccion">Eliminar</button>
+        <button class="btn-cancel confirm-btn-cancel" @click="cancelarEliminarDireccion">
+          Cancelar
+        </button>
+        <button class="btn-confirm-delete confirm-btn-delete" @click="confirmarEliminarDireccion">
+          Eliminar
+        </button>
       </div>
     </div>
   </div>
@@ -203,7 +259,7 @@ function cancelarPedido() {
   border-radius: 1.5rem;
   max-width: 420px;
   width: 100%;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
   padding: 2.5rem 2rem 2rem 2rem;
   position: relative;
   text-align: center;
@@ -213,7 +269,7 @@ function cancelarPedido() {
 .confirm-modal {
   background: #fff;
   border-radius: 1.5rem;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
   padding: 2.5rem 2rem 2rem 2rem;
   max-width: 420px;
   width: 100%;
@@ -248,7 +304,7 @@ function cancelarPedido() {
 }
 .confirm-modal-name {
   font-weight: bold;
-  color: #6B7280;
+  color: #6b7280;
   font-size: 1.15rem;
   margin: 0.7rem 0 0.7rem 0;
 }
@@ -264,7 +320,7 @@ function cancelarPedido() {
   gap: 1.2rem;
 }
 .confirm-btn-cancel {
-  background: #F3F4F6;
+  background: #f3f4f6;
   color: #111827;
   border: none;
   border-radius: 1rem;
@@ -275,7 +331,7 @@ function cancelarPedido() {
   transition: background 0.2s;
 }
 .confirm-btn-cancel:hover {
-  background: #E5E7EB;
+  background: #e5e7eb;
 }
 .confirm-btn-delete {
   background: #dc2626;
@@ -340,27 +396,28 @@ function cancelarPedido() {
   gap: 0.7rem;
   margin-top: 1rem;
 }
-.btn-editar, .btn-eliminar {
+.btn-editar,
+.btn-eliminar {
   display: flex;
   align-items: center;
   gap: 0.4rem;
   background: #f3f4f6;
-  color: #2563eb;
+
   border: none;
   border-radius: 0.7rem;
   padding: 0.45rem 1.1rem;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 .btn-editar:hover {
   background: #e0e7ff;
   color: #1d4ed8;
 }
-.btn-eliminar {
-  color: #ef4444;
-}
+
 .btn-eliminar:hover {
   background: #fee2e2;
   color: #b91c1c;
@@ -420,7 +477,7 @@ function cancelarPedido() {
 .direccion-tarjeta {
   background: #fff;
   border-radius: 1rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
   padding: 1.5rem 1.2rem;
   display: flex;
   flex-direction: column;
@@ -484,7 +541,7 @@ function cancelarPedido() {
 .direccion-tarjeta {
   background: #fff;
   border-radius: 1rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
   padding: 1.5rem 1.2rem;
   display: flex;
   flex-direction: column;
@@ -505,5 +562,4 @@ function cancelarPedido() {
   flex-direction: column;
   gap: 0.3rem;
 }
-
 </style>
