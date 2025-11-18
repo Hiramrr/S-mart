@@ -1,0 +1,295 @@
+import { ref, computed } from 'vue'
+import { supabase } from '@/lib/supabase'
+import { useCreditCardFormatters } from '@/composables/Payment/useCreditCardFormatters.js'
+
+export function usePaymentCheckout(route, authStore, cartStore, ventasStore) {
+  const { validateCardNumber, validateExpirationDate, getCardType } = useCreditCardFormatters()
+
+  // --- Estado ---
+  const itemsParaComprar = ref([])
+  const direccionSeleccionada = ref(null)
+  const tarjetasGuardadas = ref([])
+  const loading = ref(true)
+  const error = ref(null)
+
+  // --- Computadas ---
+  const checkoutTotal = computed(() => {
+    return itemsParaComprar.value.reduce((total, item) => {
+      const price = parseFloat(item.precio || item.precio_venta || 0)
+      const qty = parseInt(item.cantidad || 1, 10)
+      return total + price * qty
+    }, 0)
+  })
+
+  // --- Métodos Internos ---
+  async function _cargarTarjetas() {
+    const idCliente = authStore.usuario?.id
+    if (!idCliente) return
+
+    try {
+      const { data, error: supabaseError } = await supabase
+        .from('tarjetas')
+        .select('id, titular, numero_tarjeta, fecha_vencimiento')
+        .eq('idcliente', idCliente)
+
+      if (supabaseError) throw supabaseError
+      tarjetasGuardadas.value = data || []
+    } catch (err) {
+      console.error('Error al cargar tarjetas:', err)
+      throw new Error('Error al cargar las tarjetas guardadas.')
+    }
+  }
+
+  async function _cargarItemsParaCheckout() {
+    try {
+      const { buyNowId, qty } = route.query
+      if (buyNowId) {
+        const { data, error: dbError } = await supabase
+          .from('productos')
+          .select('*')
+          .eq('id', buyNowId)
+          .single()
+        if (dbError) throw dbError
+        if (!data) throw new Error('Producto no encontrado')
+        if (!data.vendedor_id) {
+          throw new Error(`El producto "${data.nombre}" no tiene un vendedor asignado.`)
+        }
+        const precioFinal =
+          data.precio_descuento && data.precio_descuento > 0
+            ? data.precio_descuento
+            : data.precio_venta
+        itemsParaComprar.value = [
+          { ...data, cantidad: parseInt(qty, 10) || 1, precio: precioFinal, name: data.nombre },
+        ]
+      } else {
+        if (!cartStore.items || cartStore.items.length === 0) {
+          throw new Error('Tu carrito está vacío')
+        }
+        for (const item of cartStore.items) {
+          if (!item.vendedor_id) {
+            throw new Error(`El producto "${item.name}" no tiene un vendedor asignado.`)
+          }
+        }
+        itemsParaComprar.value = [...cartStore.items]
+      }
+    } catch (err) {
+      console.error('Error al cargar items:', err)
+      itemsParaComprar.value = []
+      throw err
+    }
+  }
+
+  async function _cargarDireccion() {
+    try {
+      const idDireccion = route.query.direccionId
+      if (!idDireccion) {
+        throw new Error('No se proporcionó una dirección. Por favor, vuelve a seleccionarla.')
+      }
+      const { data, error: dirError } = await supabase
+        .from('direcciones')
+        .select('*')
+        .eq('id', idDireccion)
+        .single()
+      if (dirError) throw new Error(`Error al cargar la dirección: ${dirError.message}`)
+      if (!data) throw new Error('No se pudo encontrar la dirección seleccionada.')
+      direccionSeleccionada.value = data
+    } catch (err) {
+      throw err
+    }
+  }
+
+  // --- Métodos Expuestos ---
+  async function initializeCheckout() {
+    loading.value = true
+    error.value = null
+    try {
+      await _cargarDireccion()
+      await Promise.all([_cargarTarjetas(), _cargarItemsParaCheckout()])
+      if (itemsParaComprar.value.length === 0 && !error.value) {
+        throw new Error('No hay productos para comprar.')
+      }
+    } catch (err) {
+      console.error('Error al inicializar la página de pago:', err)
+      error.value = err.message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function guardarNuevaTarjeta(nuevaTarjeta) {
+    loading.value = true
+    error.value = null
+    const idCliente = authStore.usuario?.id
+    if (!idCliente) {
+      error.value = 'Usuario no autenticado.'
+      loading.value = false
+      return null
+    }
+
+    // Validaciones
+    const numero_tarjeta_limpio = validateCardNumber(nuevaTarjeta.numero)
+    if (!numero_tarjeta_limpio) {
+      error.value = 'El número de tarjeta debe ser de 16 dígitos.'
+      loading.value = false
+      return null
+    }
+    if (!validateExpirationDate(nuevaTarjeta.vencimiento)) {
+      error.value = 'La fecha de vencimiento no es válida (formato MM/YY).'
+      loading.value = false
+      return null
+    }
+    const cvv_limpio = nuevaTarjeta.cvv.replace(/\D/g, '')
+    if (cvv_limpio.length < 3 || cvv_limpio.length > 4) {
+      error.value = 'El CVV debe ser de 3 o 4 dígitos.'
+      loading.value = false
+      return null
+    }
+
+    try {
+      const [month, year] = nuevaTarjeta.vencimiento.split('/')
+      const fullYear = year.length === 2 ? `20${year}` : year
+      const lastDayOfMonth = new Date(fullYear, month, 0).getDate()
+      const vencimientoISO = `${fullYear}-${month}-${lastDayOfMonth}T23:59:59Z`
+
+      const { data, error: supabaseError } = await supabase
+        .from('tarjetas')
+        .insert({
+          idcliente: idCliente,
+          numero_tarjeta: numero_tarjeta_limpio,
+          titular: nuevaTarjeta.titular.trim(),
+          fecha_vencimiento: vencimientoISO,
+        })
+        .select()
+        .single()
+
+      if (supabaseError) throw supabaseError
+
+      await _cargarTarjetas() // Recargar la lista
+      return data // Devuelve la tarjeta recién creada
+    } catch (err) {
+      console.error('Error al registrar tarjeta:', err)
+      error.value = err.message.includes('duplicate key')
+        ? 'Esta tarjeta ya se encuentra registrada.'
+        : 'Error al registrar la tarjeta.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function eliminarTarjeta(cardId) {
+    loading.value = true
+    error.value = null
+    try {
+      const { error: deleteError } = await supabase.from('tarjetas').delete().eq('id', cardId)
+      if (deleteError) throw deleteError
+      tarjetasGuardadas.value = tarjetasGuardadas.value.filter((t) => t.id !== cardId)
+      return true
+    } catch (err) {
+      console.error('Error al eliminar tarjeta:', err)
+      error.value = 'Error al eliminar la tarjeta.'
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function procesarPago(tarjeta, cvv) {
+    if (!tarjeta) {
+      error.value = 'Tarjeta no seleccionada.'
+      return null
+    }
+    if (!cvv || cvv.length < 3) {
+      error.value = 'CVV inválido.'
+      return null
+    }
+
+    loading.value = true
+    error.value = null
+
+    try {
+      // 1. Simulación de pago
+      console.log(`Pago simulado con tarjeta ${tarjeta.numero_tarjeta_display} y CVV ${cvv}.`)
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      // 2. Actualizar Stock
+      const itemsPayload = itemsParaComprar.value.map((item) => ({
+        p_id: item.id,
+        p_qty: item.cantidad,
+      }))
+      const { error: rpcError } = await supabase.rpc('actualizar_stock_multi', { items: itemsPayload })
+      if (rpcError) throw new Error(`Error al actualizar el stock: ${rpcError.message}`)
+
+      // 3. Registrar Venta
+      const metodoPago = `Tarjeta ${getCardType(tarjeta.numero_tarjeta)} (•••• ${tarjeta.numero_tarjeta_display})`
+      const direccionId = direccionSeleccionada.value.id
+      
+      const ventasData = await ventasStore.crearVentaEnLinea(
+        itemsParaComprar.value,
+        metodoPago,
+        direccionId
+      )
+      if (!ventasData) throw new Error("No se pudo registrar la venta.")
+      
+      // 4. Limpiar Carrito (si no es "Comprar Ahora")
+      if (!route.query.buyNowId) {
+        const purchasedIds = itemsParaComprar.value.map((item) => item.id)
+        cartStore.removeProductsByIds(purchasedIds)
+      }
+
+      // 5. Preparar datos para Ticket y Página de Éxito
+      const purchaseId = ventasData.map(v => v.id).join('-') // Combina IDs si hay múltiples ventas
+      
+      const purchaseDataForTicket = {
+        id: purchaseId,
+        fecha: new Date(), // El generador de PDF lo formateará
+        items: itemsParaComprar.value.map((item) => ({
+          ...item,
+          nombre: item.name || item.nombre,
+          precio: item.precio || item.precio_venta,
+        })),
+        subtotal: checkoutTotal.value,
+        discount: 0,
+        total: checkoutTotal.value,
+        paymentMethod: metodoPago,
+      }
+      
+      const detallesCompraParaExito = {
+        items: purchaseDataForTicket.items,
+        total: checkoutTotal.value,
+        direccion: direccionSeleccionada.value,
+        metodoPago: metodoPago,
+        ticketId: purchaseId
+      }
+
+      // Devolvemos los datos para que la vista los use
+      return {
+        purchaseDataForTicket,
+        detallesCompraParaExito
+      }
+
+    } catch (err) {
+      console.error('Error en el proceso de pago:', err)
+      error.value = err.message || 'Ocurrió un error inesperado.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return {
+    // Estado
+    itemsParaComprar,
+    direccionSeleccionada,
+    tarjetasGuardadas,
+    loading,
+    error,
+    // Computadas
+    checkoutTotal,
+    // Métodos
+    initializeCheckout,
+    guardarNuevaTarjeta,
+    eliminarTarjeta,
+    procesarPago,
+  }
+}
