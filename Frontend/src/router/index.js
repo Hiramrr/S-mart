@@ -2,19 +2,19 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 import HomeView from '../views/HomeView.vue'
-import LoginView from '../views/LoginView.vue'
-import TiendaView from '../views/TiendaView.vue'
-import AgregarProductoView from '../views/VenderView.vue'
-import VenderView from '../views/VendedorProductosView.vue'
-import EditarProductoView from '../views/EditarProductoView.vue'
-import ProductoDetalleView from '../views/ProductoDetalleView.vue'
-import CarritoView from '../views/CarritoView.vue'
-import AgregarDomicilioView from '../views/AgregarDomicilioView.vue'
-import SeleccionarDireccionView from '../views/SeleccionarDireccionView.vue'
-import PerfilView from '../views/PerfilView.vue'
-import PagoTarjetaView from '../views/PagoTarjetaView.vue'
-import MisChatsView from '../views/MisChatsView.vue'
-import ReportesView from '../views/ReportesView.vue'
+import LoginView from '../views/auth/LoginView.vue'
+import TiendaView from '../views/store/TiendaView.vue'
+import AgregarProductoView from '../views/vendedor/VenderView.vue'
+import VenderView from '../views/vendedor/VendedorProductosView.vue'
+import EditarProductoView from '../views/vendedor/EditarProductoView.vue'
+import ProductoDetalleView from '../views/store/ProductoDetalleView.vue'
+import CarritoView from '../views/checkout/CarritoView.vue'
+import AgregarDomicilioView from '../views/checkout/AgregarDomicilioView.vue'
+import SeleccionarDireccionView from '../views/checkout/SeleccionarDireccionView.vue'
+import PerfilView from '../views/perfil/PerfilView.vue'
+import PagoTarjetaView from '../views/checkout/PagoTarjetaView.vue'
+import MisChatsView from '../views/perfil/MisChatsView.vue'
+import ReportesView from '../views/reportes/ReportesView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -38,7 +38,7 @@ const router = createRouter({
     {
       path: '/compra-exitosa',
       name: 'compra-exitosa',
-      component: () => import('../views/CompraExitosaView.vue'),
+      component: () => import('../views/checkout/CompraExitosaView.vue'),
       meta: {
         title: 'Compra Exitosa - S-mart',
         requiresAuth: true,
@@ -76,7 +76,7 @@ const router = createRouter({
     {
       path: '/editar-domicilio/:id',
       name: 'editar-domicilio',
-      component: () => import('../views/EditarDomicilioView.vue'),
+      component: () => import('../views/checkout/EditarDomicilioView.vue'),
       meta: {
         title: 'Editar Domicilio - S-mart',
         requiresAuth: true,
@@ -109,7 +109,7 @@ const router = createRouter({
     {
       path: '/admin',
       name: 'admin',
-      component: () => import('../views/AdminView.vue'),
+      component: () => import('../views/admin/AdminView.vue'),
       meta: {
         title: 'Panel de Administración - S-mart',
         requiresAuth: true,
@@ -129,7 +129,7 @@ const router = createRouter({
     {
       path: '/admin/productos',
       name: 'admin-productos',
-      component: () => import('../views/AdminProductosView.vue'),
+      component: () => import('../views/admin/AdminProductosView.vue'),
       meta: {
         title: 'Productos - Admin',
         requiresAuth: true,
@@ -139,7 +139,7 @@ const router = createRouter({
     {
       path: '/admin/categorias',
       name: 'admin-categorias',
-      component: () => import('../views/AdminCategoriasView.vue'),
+      component: () => import('../views/admin/AdminCategoriasView.vue'),
       meta: {
         title: 'Categorías - Admin',
         requiresAuth: true,
@@ -149,7 +149,7 @@ const router = createRouter({
     {
       path: '/admin/usuarios',
       name: 'admin-usuarios',
-      component: () => import('../views/AdminUsuariosView.vue'),
+      component: () => import('../views/admin/AdminUsuariosView.vue'),
       meta: {
         title: 'Usuarios - Admin',
         requiresAuth: true,
@@ -203,7 +203,7 @@ const router = createRouter({
     {
       path: '/cajero',
       name: 'cajero',
-      component: () => import('../views/CajeroView.vue'),
+      component: () => import('../views/cajero/CajeroView.vue'),
       meta: {
         title: 'Panel de Cajero - S-mart',
         requiresAuth: true,
@@ -213,7 +213,7 @@ const router = createRouter({
     {
       path: '/reset-password',
       name: 'reset-password',
-      component: () => import('@/views/ResetPasswordView.vue'),
+      component: () => import('@/views/auth/ResetPasswordView.vue'),
     },
     {
       path: '/reportes',
@@ -228,7 +228,7 @@ const router = createRouter({
     {
       path: '/vendedor/pedidos',
       name: 'vendedor-pedidos',
-      component: () => import('../views/VendedorPedidosView.vue'),
+      component: () => import('../views/vendedor/VendedorPedidosView.vue'),
       meta: {
         title: 'Gestión de Pedidos - S-mart',
         requiresAuth: true,
@@ -238,7 +238,7 @@ const router = createRouter({
     {
       path: '/seguimiento',
       name: 'seguimiento-envio',
-      component: () => import('../views/SeguimientoEnvioView.vue'),
+      component: () => import('../views/perfil/SeguimientoEnvioView.vue'),
       meta: {
         title: 'Seguimiento de Envíos - S-mart',
         requiresAuth: true,
@@ -248,7 +248,7 @@ const router = createRouter({
     {
       path: '/venta/:id',
       name: 'detalle-venta',
-      component: () => import('../views/DetalleVentaView.vue'),
+      component: () => import('../views/perfil/DetalleVentaView.vue'),
       meta: {
         title: 'Detalle de Pedido - S-mart',
         requiresAuth: true,
@@ -348,13 +348,10 @@ router.beforeEach(async (to, from, next) => {
       return next({ name: 'login' })
     }
 
-    // Si está logueado pero no tiene el rol
     if (!to.meta.requiresRoles.includes(userRole)) {
       if (authStore.esAdmin) {
         return next({ name: 'admin' })
       } else if (authStore.esVendedor) {
-        // Asegúrate de que 'vender' es el nombre de la ruta correcta
-        // Viendo tus rutas, 'vendedor' parece ser la correcta
         return next({ name: 'vendedor' })
       } else {
         return next({ name: 'home' })
@@ -362,7 +359,6 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // Si pasa todas las validaciones, permite el acceso
   next()
 })
 
