@@ -35,6 +35,7 @@ const categorias = ref([
   },
 ])
 
+
 const currentIndex = ref(0)
 const itemsPerView = ref(3)
 
@@ -201,7 +202,6 @@ const hayFiltrosActivos = computed(() => {
     </aside>
 
     <main class="products-area">
-      <!-- Carrusel de Categorías -->
       <div class="carousel-container">
         <h2 class="carousel-title">Categorías</h2>
 
@@ -280,7 +280,6 @@ const hayFiltrosActivos = computed(() => {
         </div>
       </div>
 
-      <!-- Header de productos -->
       <div
         class="products-header"
         style="display: flex; flex-direction: column; align-items: center; gap: 1rem"
@@ -333,6 +332,7 @@ const hayFiltrosActivos = computed(() => {
           :description="product.description"
           :image-url="product.imageUrl"
           :is-seller="false"
+          :stock="product.stock" 
         />
       </div>
     </main>

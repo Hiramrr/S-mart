@@ -15,12 +15,10 @@ defineProps({
     default: 4.5,
   },
   price: {
-    // Este será el precio final (con descuento si aplica)
     type: String,
     default: 'PRECIO',
   },
   originalPrice: {
-    // NUEVO: El precio original antes del descuento
     type: String,
     default: null,
   },
@@ -40,6 +38,12 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  // --- ¡AÑADIDO! ---
+  stock: {
+    type: Number,
+    default: 1, // Asumimos que hay stock si no se provee
+  }
+  // --- FIN DE LA ADICIÓN ---
 })
 
 const router = useRouter()
@@ -48,10 +52,14 @@ const router = useRouter()
 <template>
   <div
     class="product-card"
-    @click="!isSeller && router.push({ name: 'producto-detalle', params: { id: productId } })"
-    :class="{ clickable: !isSeller }"
+    @click="!isSeller && stock > 0 && router.push({ name: 'producto-detalle', params: { id: productId } })"
+    :class="{ 'clickable': !isSeller && stock > 0, 'out-of-stock': stock <= 0 }"
   >
     <div class="product-image">
+      
+      <div v-if="stock <= 0" class="out-of-stock-overlay">
+        <span>Agotado</span>
+      </div>
       <img v-if="imageUrl" :src="imageUrl" alt="Producto" />
       <span v-else class="image-placeholder">Sin imagen</span>
     </div>
@@ -73,7 +81,7 @@ const router = useRouter()
         <div class="product-price" :class="{ discounted: originalPrice }">
           {{ price }}
         </div>
-
+        
         <div v-if="originalPrice" class="product-price original-striked">
           {{ originalPrice }}
         </div>
@@ -292,5 +300,34 @@ const router = useRouter()
   font-size: 0.875rem;
   font-weight: 500;
   color: #111827;
+}
+
+.product-card.out-of-stock {
+  opacity: 0.7; /* Hacemos la tarjeta semi-transparente */
+  cursor: not-allowed; /* Cambiamos el cursor */
+}
+
+.out-of-stock-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.7); /* Fondo blanco semi-transparente */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2; /* Asegura que esté sobre la imagen */
+}
+
+.out-of-stock-overlay span {
+  background: #dc2626; /* Rojo */
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1rem;
+  transform: rotate(-10deg);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 </style>
