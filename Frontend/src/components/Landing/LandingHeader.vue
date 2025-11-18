@@ -1,5 +1,4 @@
 <script setup>
-// <<< CORRECCIÓN 1: Importar 'nextTick'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -13,7 +12,6 @@ const authStore = useAuthStore()
 const cartStore = useCartStore()
 const notificationStore = useNotificationStore()
 
-// 'isAdmin' y 'authStore.usuario.id' serán claves aquí
 const { isAdmin, canSell, isAuthenticated, requireAuth } = useRole()
 
 const showMobileMenu = ref(false)
@@ -26,74 +24,62 @@ const userMenuDropdownRef = ref(null)
 const notificationBtnRef = ref(null)
 const notificationDropdownRef = ref(null)
 
+// Lista de rutas que SIEMPRE deben tener el header oscuro (fondo blanco)
 const whiteBackgroundRoutes = [
-  '/admin',
-  '/admin/productos',
-  '/admin/categorias',
-  '/vendedor',
+  '/login',
+  '/tienda',
+  '/producto', // La página de detalle de producto también es blanca
+  '/carrito',
+  '/seleccionar-direccion',
+  '/agregar-domicilio',
+  '/editar-domicilio',
+  '/pago-tarjeta',
+  '/compra-exitosa',
+  '/perfil',
+  '/mis-chats',
+  '/seguimiento',
+  '/venta', // Detalle de venta
+  '/admin', // Incluye /admin, /admin/productos, /admin/usuarios, etc.
+  '/vendedor', // Incluye /vendedor, /vendedor/pedidos
   '/VendedorProductos',
   '/AgregarProducto',
   '/EditarProducto',
+  '/cajero',
+  '/reportes',
+  '/reset-password',
 ]
 
 const checkBackgroundColor = () => {
   try {
-    if (whiteBackgroundRoutes.some((route) => router.currentRoute.value.path.startsWith(route))) {
+    const currentPath = router.currentRoute.value.path
+    // Comprueba si la ruta actual COMIENZA con alguna de las rutas de la lista
+    if (whiteBackgroundRoutes.some((route) => currentPath.startsWith(route))) {
       isDarkBackground.value = true
-      return
-    }
-    const header = document.querySelector('.header')
-    const headerHeight = header ? header.offsetHeight : 100
-    const points = [
-      { x: window.innerWidth / 2, y: headerHeight + 20 },
-      { x: window.innerWidth / 4, y: headerHeight + 20 },
-      { x: (window.innerWidth * 3) / 4, y: headerHeight + 20 },
-    ]
-    let totalBrightness = 0
-    let validPoints = 0
-    points.forEach((point) => {
-      const element = document.elementFromPoint(point.x, point.y)
-      if (!element) return
-      let currentElement = element
-      let bgColor = 'rgba(0, 0, 0, 0)'
-      let attempts = 0
-      while (currentElement && attempts < 15) {
-        const style = window.getComputedStyle(currentElement)
-        bgColor = style.backgroundColor
-        if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
-          break
-        }
-        currentElement = currentElement.parentElement
-        attempts++
-      }
-      const rgb = bgColor.match(/\d+/g)
-      if (rgb && rgb.length >= 3) {
-        const brightness =
-          (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000
-        totalBrightness += brightness
-        validPoints++
-      }
-    })
-    if (validPoints > 0) {
-      isDarkBackground.value = totalBrightness / validPoints > 128
     } else {
-      if (
-        !whiteBackgroundRoutes.some((route) => router.currentRoute.value.path.startsWith(route))
-      ) {
-        isDarkBackground.value = false
-      }
+      // Si no es ninguna de esas rutas (ej. la homepage '/'), es transparente
+      isDarkBackground.value = false
     }
   } catch (error) {
     console.error('Error detectando color de fondo:', error)
+    isDarkBackground.value = false // Fallback a transparente
   }
 }
+
+// --- CORRECCIÓN: 'handleScroll' ahora está vacío y no hace nada ---
 const handleScroll = () => {
-  checkBackgroundColor()
+  // No hacer nada al hacer scroll para evitar el parpadeo
 }
+
+// Observa los cambios de ruta
 watch(
   () => router.currentRoute.value.path,
   () => {
-    checkBackgroundColor()
+    // Espera a que la nueva página se pinte y luego comprueba el color
+    nextTick(() => {
+      checkBackgroundColor()
+    })
+    // Cierra el menú móvil al cambiar de ruta
+    showMobileMenu.value = false
   },
 )
 
@@ -118,24 +104,24 @@ const handleClickOutside = (event) => {
   }
 }
 
-let checkBgInterval = null
+// --- CORRECCIÓN: Se elimina el 'setInterval' y los 'setTimeout' ---
 onMounted(() => {
-  window.addEventListener('scroll', handleScroll)
+  // Ya no escuchamos el 'scroll' para cambiar el color
+  // window.addEventListener('scroll', handleScroll)
   document.addEventListener('click', handleClickOutside)
-  checkBackgroundColor()
-  if (!whiteBackgroundRoutes.some((route) => router.currentRoute.value.path.startsWith(route))) {
-    setTimeout(checkBackgroundColor, 100)
-    setTimeout(checkBackgroundColor, 300)
-    checkBgInterval = setInterval(checkBackgroundColor, 500)
-  }
+
+  // Comprobamos el color una sola vez al cargar, después de que se pinte la vista
+  nextTick(() => {
+    checkBackgroundColor()
+  })
 })
+
 onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll)
+  // Ya no es necesario limpiar el listener de scroll
+  // window.removeEventListener('scroll', handleScroll)
   document.removeEventListener('click', handleClickOutside)
-  if (checkBgInterval) {
-    clearInterval(checkBgInterval)
-  }
 })
+// --- FIN DE LA CORRECCIÓN ---
 
 watch(
   () => canSell.value,
@@ -147,7 +133,7 @@ watch(
   { immediate: true },
 )
 
-// --- FUNCIONES DE NAVEGACIÓN ---
+// --- FUNCIONES DE NAVEGACIÓN (Sin cambios) ---
 
 const goToStore = () => {
   router.push('/tienda')
@@ -205,11 +191,6 @@ const goToEditProduct = (id) => {
   router.push({ name: 'EditarProducto', params: { id } })
 }
 
-// --- ¡NUEVA FUNCIÓN! ---
-/**
- * Navega a la página de chats y pasa el ID del vendedor
- * para (idealmente) abrir esa conversación.
- */
 const goToChatWithSeller = (vendedorId) => {
   if (!vendedorId) {
     console.error('No se proporcionó ID de vendedor para iniciar el chat.')
@@ -223,10 +204,11 @@ const goToChatWithSeller = (vendedorId) => {
 }
 
 const handleNotificationClick = (notificacion) => {
+  // CORRECCIÓN: Usar 'vendedor_id' y 'id' (del producto) como están en el store
   if (isAdmin.value && authStore.usuario.id !== notificacion.vendedor_id) {
     goToChatWithSeller(notificacion.vendedor_id)
   } else {
-    goToEditProduct(notificacion.producto_id)
+    goToEditProduct(notificacion.id) // Usar 'id' (del producto)
   }
 }
 
@@ -249,7 +231,7 @@ const getUserName = computed(() => {
   return 'Usuario'
 })
 const getUserAvatar = computed(() => {
-  if (authStore.perfil?.avatar_url) return authStore.perfil.avatar_url
+  if (authStore.perfil?.foto_url) return authStore.perfil.foto_url
   if (authStore.usuario?.user_metadata?.avatar_url)
     return authStore.usuario.user_metadata.avatar_url
   return null
@@ -273,10 +255,14 @@ const getUserAvatar = computed(() => {
               '/admin',
               '/admin/productos',
               '/admin/categorias',
+              '/admin/usuarios',
               '/vendedor',
               '/VendedorProductos',
               '/AgregarProducto',
               '/EditarProducto',
+              '/cajero',
+              '/reportes',
+              '/vendedor/pedidos',
             ].some((route) => $route.path.startsWith(route))
           "
         >
@@ -448,9 +434,14 @@ const getUserAvatar = computed(() => {
               '/admin',
               '/admin/productos',
               '/admin/categorias',
+              '/admin/usuarios',
               '/vendedor',
               '/VendedorProductos',
               '/AgregarProducto',
+              '/EditarProducto',
+              '/cajero',
+              '/reportes',
+              '/vendedor/pedidos',
             ].some((route) => $route.path.startsWith(route))
           "
           class="btn-get-started"
@@ -561,9 +552,14 @@ const getUserAvatar = computed(() => {
               '/admin',
               '/admin/productos',
               '/admin/categorias',
+              '/admin/usuarios',
               '/vendedor',
               '/VendedorProductos',
               '/AgregarProducto',
+              '/EditarProducto',
+              '/cajero',
+              '/reportes',
+              '/vendedor/pedidos',
             ].some((route) => $route.path.startsWith(route))
           "
           class="mobile-cta"
