@@ -223,16 +223,15 @@ onMounted(async () => {
 
     // 4. Cargar tarjetas e items en paralelo
     await Promise.all([cargarTarjetas(), cargarItemsParaCheckout()])
-    
+
     // Si no hay items (carrito vacío o producto no encontrado), mostrar error
     if (itemsParaComprar.value.length === 0 && !error.value) {
-       throw new Error('No hay productos para comprar.')
+      throw new Error('No hay productos para comprar.')
     }
-
   } catch (err) {
     console.error('Error al inicializar la página de pago:', err)
     error.value = err.message
-    
+
     // Redirigir si falla algo fundamental
     if (err.message.includes('dirección')) {
       setTimeout(() => router.push('/seleccionar-direccion'), 2500)
@@ -365,7 +364,7 @@ function handleCancelOrder() {
 
 const generatePdf = async (purchase) => {
   ticketData.value = purchase
-  await nextTick() 
+  await nextTick()
 
   const ticketElement = ticketRef.value?.$el
   if (!ticketElement) {
@@ -489,17 +488,17 @@ async function handlePaymentConfirm() {
 
     // --- PASO 5: Guardar datos para la página de éxito ---
     const detallesCompra = {
-      items: itemsParaComprar.value.map(item => ({
+      items: itemsParaComprar.value.map((item) => ({
         nombre: item.name || item.nombre,
         cantidad: item.cantidad,
-        precio: item.precio || item.precio_venta
+        precio: item.precio || item.precio_venta,
       })),
       total: checkoutTotal.value,
       direccion: direccionSeleccionada.value, // El objeto completo de la dirección
       metodoPago: metodoPago,
-      ticketId: purchaseData.id // Pasamos el ID del ticket por si acaso
+      ticketId: purchaseData.id, // Pasamos el ID del ticket por si acaso
     }
-    
+
     // Usamos la función del store que creamos
     ventasStore.setUltimaVenta(detallesCompra)
 
@@ -509,7 +508,6 @@ async function handlePaymentConfirm() {
 
     // --- PASO 7: Redirigir a la PÁGINA DE ÉXITO ---
     router.push({ name: 'compra-exitosa' })
-    
   } catch (err) {
     console.error('Error en el proceso de pago:', err)
     error.value = err.message || 'Ocurrió un error inesperado al procesar el pago.'
@@ -518,7 +516,6 @@ async function handlePaymentConfirm() {
   }
 }
 </script>
-
 
 <template>
   <div class="tarjeta-minimal-container">
@@ -546,16 +543,16 @@ async function handlePaymentConfirm() {
           >
             <div class="card-icon-wrapper">
               <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="8"
+                height="8"
+                viewBox="0 0 8 8"
                 class="card-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
               >
-                <rect x="3" y="5" width="18" height="14" rx="2" ry="2"></rect>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
+                <path
+                  fill="#000"
+                  d="M.25 1C.11 1 0 1.11 0 1.25V2h8v-.75C8 1.11 7.89 1 7.75 1zM0 3v3.75c0 .14.11.25.25.25h7.5c.14 0 .25-.11.25-.25V3zm1 2h1v1H1zm2 0h1v1H3z"
+                />
               </svg>
             </div>
             <div class="card-info">
@@ -691,7 +688,14 @@ async function handlePaymentConfirm() {
         </div>
 
         <div class="tarjeta-actions">
-          <button type="button" class="btn-cancelar" @click="mostrarFormularioNuevaTarjeta = false; error = null" :disabled="loading">Cancelar</button>
+          <button
+            type="button"
+            class="btn-cancelar"
+            @click="((mostrarFormularioNuevaTarjeta = false), (error = null))"
+            :disabled="loading"
+          >
+            Cancelar
+          </button>
           <button type="submit" class="btn-registrar" :disabled="loading">
             {{ loading ? 'Guardando...' : 'Guardar y Seleccionar →' }}
           </button>
