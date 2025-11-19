@@ -144,7 +144,7 @@
               Limpiar campos
             </button>
             <button type="button" class="btn btn-outline" @click="cancelar">Cancelar</button>
-            <button type="submit" class="btn btn-primary" @click="registrarProducto">
+            <button type="submit" class="btn btn-primary">
               Registrar producto →
             </button>
           </div>
@@ -187,6 +187,7 @@ async function cargarCategorias() {
 
     if (error) {
       console.error('Error al cargar categorías:', error)
+      toast.error('Error al cargar categorías')
       return
     }
 
@@ -195,6 +196,7 @@ async function cargarCategorias() {
     }
   } catch (err) {
     console.error('Error al cargar categorías:', err)
+    toast.error('Error al cargar categorías')
   }
 }
 
@@ -241,8 +243,18 @@ function cancelar() {
 
 async function registrarProducto() {
   try {
+    if (!nombre.value || !sku.value || !descripcion.value || !categoria.value) {
+      toast.error('Completa todos los campos requeridos')
+      return
+    }
+
     if (!imagen.value) {
       toast.error('Selecciona una imagen para el producto')
+      return
+    }
+
+    if (precio.value <= 0) {
+      toast.error('El precio debe ser mayor a 0')
       return
     }
 
@@ -269,7 +281,7 @@ async function registrarProducto() {
     router.push('/VendedorProductos')
   } catch (err) {
     console.error('Error al registrar el producto:', err)
-    toast.error('Error al registrar el producto')
+    toast.error('Error al registrar el producto: ' + (err.message || 'Intenta nuevamente'))
   }
 }
 
