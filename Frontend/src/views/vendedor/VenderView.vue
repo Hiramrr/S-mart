@@ -67,7 +67,8 @@
 
               <div class="input-row">
                 <div class="input-group">
-                  <label class="label">Precio de venta (Original)</label> <div class="price-input">
+                  <label class="label">Precio de venta (Original)</label>
+                  <div class="price-input">
                     <span class="currency">$</span>
                     <input
                       v-model.number="precio"
@@ -80,8 +81,9 @@
                     />
                   </div>
                 </div>
-                
-                <div class="input-group"> <label class="label">Precio de descuento (Opcional)</label>
+
+                <div class="input-group">
+                  <label class="label">Precio de descuento (Opcional)</label>
                   <div class="price-input">
                     <span class="currency">$</span>
                     <input
@@ -95,7 +97,7 @@
                   </div>
                 </div>
               </div>
-              </div>
+            </div>
 
             <div class="form-section image-section">
               <div class="input-group">
@@ -136,14 +138,15 @@
               </div>
             </div>
           </div>
-          
 
           <div class="actions">
             <button type="button" class="btn btn-secondary" @click="limpiarCampos">
               Limpiar campos
             </button>
             <button type="button" class="btn btn-outline" @click="cancelar">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Registrar producto →</button>
+            <button type="submit" class="btn btn-primary" @click="registrarProducto">
+              Registrar producto →
+            </button>
           </div>
         </form>
       </div>
