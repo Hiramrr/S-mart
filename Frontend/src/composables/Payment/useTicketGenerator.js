@@ -1,7 +1,7 @@
 import { ref, nextTick } from 'vue'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore } from '@/stores/auth.js'
 
 export function useTicketGenerator() {
   const ticketData = ref(null)

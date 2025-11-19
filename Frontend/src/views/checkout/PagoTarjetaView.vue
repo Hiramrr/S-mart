@@ -11,10 +11,10 @@ import { useTicketGenerator } from '@/composables/Payment/useTicketGenerator.js'
 
 // Importar los componentes de UI
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
-import PaymentOrderSummary from '@/components/checkout/PaymentOrderSummary.vue'
-import PaymentCardList from '@/components/checkout/PaymentCardList.vue'
-import PaymentCardForm from '@/components/checkout/PaymentCardForm.vue'
-import PaymentCvvInput from '@/components/checkout/PaymentCvvInput.vue'
+import PaymentOrderSummary from '@/components/Checkout/PaymentOrderSummary.vue'
+import PaymentCardList from '@/components/Checkout/PaymentCardList.vue'
+import PaymentCardForm from '@/components/Checkout/PaymentCardForm.vue'
+import PaymentCvvInput from '@/components/Checkout/PaymentCvvInput.vue'
 import Ticket from '@/components/Cajero/Ticket.vue' 
 
 // --- Inicialización ---
