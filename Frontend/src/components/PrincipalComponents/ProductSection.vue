@@ -16,11 +16,10 @@ const selectedCategoria = ref('')
 const precioMin = ref(null)
 const precioMax = ref(null)
 
-// Carrusel
 const categorias = ref([
   {
-    nombre: 'Electronicos',
-    descripcion: 'No se que poner',
+    nombre: 'Electrónica',
+    descripcion: 'Cosas muy buenas',
     imagen: 'images/Electronicos.png',
   },
   {
@@ -30,11 +29,10 @@ const categorias = ref([
   },
   {
     nombre: 'Ropa',
-    descripcion: 'Moda para toda la familia',
+    descripcion: 'Moda para todos',
     imagen: 'images/Ropa.png',
   },
 ])
-
 
 const currentIndex = ref(0)
 const itemsPerView = ref(3)
@@ -332,7 +330,7 @@ const hayFiltrosActivos = computed(() => {
           :description="product.description"
           :image-url="product.imageUrl"
           :is-seller="false"
-          :stock="product.stock" 
+          :stock="product.stock"
         />
       </div>
     </main>

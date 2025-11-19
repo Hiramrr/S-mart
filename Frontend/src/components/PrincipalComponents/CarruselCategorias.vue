@@ -5,8 +5,8 @@ const emit = defineEmits(['category-selected'])
 
 const categorias = ref([
   {
-    nombre: 'Electronicos',
-    descripcion: 'No se que poner',
+    nombre: 'Electronica',
+    descripcion: 'Productos muy buenos',
     imagen: 'images/Electronicos.png',
   },
   {
@@ -16,7 +16,7 @@ const categorias = ref([
   },
   {
     nombre: 'Ropa',
-    descripcion: 'Moda para toda la familia',
+    descripcion: 'Moda para todos',
     imagen: 'images/Ropa.png',
   },
 ])
