@@ -1,4 +1,22 @@
 <script setup>
+/**
+ * Vista para editar un domicilio de entrega existente.
+ * Permite al usuario actualizar la información de una dirección previamente registrada.
+ * Utiliza Supabase para obtener y actualizar los datos, y Vue Toastification para notificaciones.
+ *
+ * Estructura:
+ * - Obtiene el domicilio por ID al montar el componente.
+ * - Muestra formulario editable con los datos actuales.
+ * - Al enviar, actualiza la dirección en la tabla 'direcciones' de Supabase.
+ * - Notifica éxito o error y redirige según el resultado.
+ *
+ * Dependencias:
+ * - vue
+ * - vue-toastification
+ * - vue-router
+ * - @/lib/supabase.js
+ * - @/stores/auth.js
+ */
 import { ref, onMounted } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useRouter, useRoute } from 'vue-router'
@@ -6,9 +24,18 @@ import LandingHeader from '@/components/Landing/LandingHeader.vue'
 import { supabase } from '@/lib/supabase.js'
 import { useAuthStore } from '@/stores/auth.js'
 
+
+// Router para navegación programática
 const router = useRouter()
+// Route para acceder a los parámetros de la ruta
 const route = useRoute()
+// Store de autenticación (no se usa directamente aquí, pero se importa por consistencia)
 const authStore = useAuthStore()
+
+/**
+ * Estado reactivo para los datos del domicilio a editar.
+ * @type {import('vue').Ref<{direccion: string, codigoPostal: string, estado: string, municipio: string, localidad: string, colonia: string, numeroExterior: string, tipo: string, indicaciones: string}>}
+ */
 const domicilio = ref({
   direccion: '',
   codigoPostal: '',
@@ -21,8 +48,18 @@ const domicilio = ref({
   indicaciones: ''
 })
 
+
+/**
+ * ID de la dirección a editar, obtenido de los parámetros de la ruta.
+ * @type {string|number}
+ */
 const direccionId = route.params.id
 
+/**
+ * Obtiene los datos de la dirección desde Supabase y los asigna al estado reactivo.
+ * Muestra error en consola si falla la consulta.
+ * @returns {Promise<void>}
+ */
 async function fetchDireccion() {
   const { data, error } = await supabase
     .from('direcciones')
@@ -48,7 +85,15 @@ async function fetchDireccion() {
   }
 }
 
+
+// Toast para mostrar notificaciones
 const toast = useToast()
+
+/**
+ * Actualiza el domicilio en la base de datos.
+ * Muestra notificaciones según el resultado y redirige tras éxito.
+ * @returns {Promise<void>}
+ */
 async function actualizarDomicilio() {
   const { error } = await supabase
     .from('direcciones')
@@ -73,11 +118,17 @@ async function actualizarDomicilio() {
   router.push('/seleccionar-direccion')
 }
 
+/**
+ * Valida y formatea la entrada del código postal para permitir solo números y máximo 5 dígitos.
+ * @param {Event} e - Evento de input del campo.
+ */
 function onCodigoPostalInput(e) {
   let value = e.target.value.replace(/[^0-9]/g, '').slice(0, 5);
   domicilio.value.codigoPostal = value;
 }
 
+
+// Al montar el componente, obtiene los datos de la dirección a editar
 onMounted(() => {
   fetchDireccion()
 })
