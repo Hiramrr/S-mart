@@ -1,4 +1,21 @@
 <script setup>
+/**
+ * Vista para seleccionar, agregar, editar o eliminar direcciones de entrega.
+ * Permite al usuario gestionar sus domicilios y seleccionar uno para continuar con el pago.
+ * Utiliza Supabase para obtener y modificar datos, y Vue Toastification para notificaciones.
+ *
+ * Estructura:
+ * - Muestra todas las direcciones del usuario autenticado.
+ * - Permite seleccionar, editar, eliminar o agregar direcciones.
+ * - Permite continuar con el pago usando la dirección seleccionada.
+ *
+ * Dependencias:
+ * - vue
+ * - vue-toastification
+ * - vue-router
+ * - @/lib/supabase.js
+ * - @/stores/auth.js
+ */
 import { ref, onMounted } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useRouter, useRoute } from 'vue-router'
@@ -6,16 +23,51 @@ import { supabase } from '@/lib/supabase.js'
 import { useAuthStore } from '@/stores/auth.js'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 
+
+// Router para navegación programática
 const router = useRouter()
-const route = useRoute() // 2. Instancia 'route'
+// Route para acceder a los parámetros y query de la ruta
+const route = useRoute()
+// Store de autenticación para obtener el usuario actual
 const authStore = useAuthStore()
+
+/**
+ * Lista reactiva de direcciones del usuario.
+ * @type {import('vue').Ref<Array<Object>>}
+ */
 const direcciones = ref([])
+
+/**
+ * Estado de carga de la vista.
+ * @type {import('vue').Ref<boolean>}
+ */
 const loading = ref(true)
+
+/**
+ * ID de la dirección seleccionada para el pedido.
+ * @type {import('vue').Ref<string|number|null>}
+ */
 const direccionSeleccionada = ref(null)
+
+/**
+ * Controla la visibilidad del modal de eliminación.
+ * @type {import('vue').Ref<boolean>}
+ */
 const showDeleteDireccionModal = ref(false)
+
+/**
+ * Dirección seleccionada para eliminar.
+ * @type {import('vue').Ref<Object|null>}
+ */
 const direccionAEliminar = ref(null)
+
+// Toast para mostrar notificaciones
 const toast = useToast()
 
+/**
+ * Carga las direcciones del usuario autenticado desde Supabase.
+ * @returns {Promise<void>}
+ */
 async function cargarDirecciones() {
   loading.value = true
   const id_usuario = authStore.usuario?.id
@@ -28,16 +80,28 @@ async function cargarDirecciones() {
   loading.value = false
 }
 
+/**
+ * Abre el modal de confirmación para eliminar una dirección.
+ * @param {Object} dir - Dirección a eliminar.
+ */
 function abrirModalEliminarDireccion(dir) {
   direccionAEliminar.value = dir
   showDeleteDireccionModal.value = true
 }
 
+/**
+ * Cancela la eliminación de la dirección y cierra el modal.
+ */
 function cancelarEliminarDireccion() {
   showDeleteDireccionModal.value = false
   direccionAEliminar.value = null
 }
 
+/**
+ * Confirma y elimina la dirección seleccionada de la base de datos.
+ * Muestra notificación según el resultado.
+ * @returns {Promise<void>}
+ */
 async function confirmarEliminarDireccion() {
   if (!direccionAEliminar.value) return
   const { error } = await supabase
@@ -54,20 +118,37 @@ async function confirmarEliminarDireccion() {
   direccionAEliminar.value = null
 }
 
+
+// Al montar el componente, carga las direcciones del usuario
 onMounted(cargarDirecciones)
 
+/**
+ * Redirige a la vista de edición de domicilio.
+ * @param {string|number} id - ID de la dirección a editar.
+ */
 function irEditarDomicilio(id) {
   router.push(`/editar-domicilio/${id}`)
 }
 
+/**
+ * Redirige a la vista para agregar un nuevo domicilio.
+ */
 function irAgregarDomicilio() {
   router.push('/agregar-domicilio')
 }
 
+/**
+ * Selecciona una dirección para el pedido.
+ * @param {string|number} id - ID de la dirección seleccionada.
+ */
 function seleccionarDireccion(id) {
   direccionSeleccionada.value = id
 }
 
+/**
+ * Continúa con el proceso de pago usando la dirección seleccionada.
+ * Redirige a la vista de pago con los parámetros necesarios.
+ */
 function continuarConPago() {
   if (!direccionSeleccionada.value) {
     alert('Por favor, selecciona una dirección para continuar.')
@@ -91,6 +172,9 @@ function continuarConPago() {
   })
 }
 
+/**
+ * Cancela el pedido y redirige al carrito.
+ */
 function cancelarPedido() {
   router.push('/carrito')
 }
