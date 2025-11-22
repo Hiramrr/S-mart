@@ -1,4 +1,21 @@
 <script setup>
+/**
+ * Vista para agregar un nuevo domicilio de entrega.
+ * Permite al usuario registrar una dirección asociada a su cuenta.
+ * Utiliza Supabase para almacenar la información y Vue Toastification para notificaciones.
+ *
+ * Estructura:
+ * - Formulario con campos para dirección, código postal, estado, municipio, localidad, colonia, número exterior, tipo e indicaciones.
+ * - Al enviar, guarda la dirección en la tabla 'direcciones' de Supabase.
+ * - Notifica éxito o error y redirige según el resultado.
+ *
+ * Dependencias:
+ * - vue
+ * - vue-toastification
+ * - vue-router
+ * - @/lib/supabase.js
+ * - @/stores/auth.js
+ */
 import { ref } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
@@ -6,9 +23,17 @@ import LandingHeader from '@/components/Landing/LandingHeader.vue'
 import { supabase } from '@/lib/supabase.js'
 import { useAuthStore } from '@/stores/auth.js'
 
+// Router para navegación programática
 const router = useRouter()
+// Store de autenticación para obtener el usuario actual
 const authStore = useAuthStore()
+// Toast para mostrar notificaciones
 const toast = useToast()
+
+/**
+ * Estado reactivo para los datos del domicilio a registrar.
+ * @type {import('vue').Ref<{direccion: string, codigoPostal: string, estado: string, municipio: string, localidad: string, colonia: string, numeroExterior: string, tipo: string, indicaciones: string}>}
+ */
 const domicilio = ref({
   direccion: '',
   codigoPostal: '',
@@ -21,13 +46,19 @@ const domicilio = ref({
   indicaciones: ''
 })
 
+/**
+ * Registra el domicilio en la base de datos.
+ * Valida que el usuario esté autenticado y muestra notificaciones según el resultado.
+ * Redirige a la selección de dirección tras éxito.
+ * @returns {Promise<void>}
+ */
 async function registrarDomicilio() {
   const id_usuario = authStore.usuario?.id
   if (!id_usuario) {
-  toast.error('No se encontró usuario autenticado')
+    toast.error('No se encontró usuario autenticado')
     return
   }
-  
+  // Construye el objeto para insertar en la tabla 'direcciones'
   const datosInsert = {
     id_usuario,
     direccion: domicilio.value.direccion,
@@ -40,14 +71,12 @@ async function registrarDomicilio() {
     tipo_domicilio: domicilio.value.tipo,
     indicaciones_entrega: domicilio.value.indicaciones
   }
-  
+  // Inserta en Supabase
   const { data, error } = await supabase.from('direcciones').insert(datosInsert).select()
-  
   if (error) {
-  toast.error('Error al registrar domicilio: ' + error.message)
+    toast.error('Error al registrar domicilio: ' + error.message)
     return
   }
-  
   toast.success('Domicilio registrado correctamente')
   router.push('/seleccionar-direccion')
 }
