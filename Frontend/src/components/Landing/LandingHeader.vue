@@ -1,4 +1,14 @@
 <script setup>
+/**
+ * @file LandingHeader.vue
+ * @description Componente de navegación principal (Header).
+ * * Características:
+ * - Adaptable (Responsive): Menú hamburguesa en móviles.
+ * - Dinámico: Cambia de estilo (transparente/blanco) según la ruta actual.
+ * - Integrado: Conecta con Auth, Carrito y Notificaciones.
+ * - Roles: Muestra enlaces diferentes para Clientes, Vendedores y Administradores.
+ * @author Equipo 1
+ */
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -12,11 +22,21 @@ const authStore = useAuthStore()
 const cartStore = useCartStore()
 const notificationStore = useNotificationStore()
 
+/**
+ * Composable para verificar permisos y roles del usuario actual.
+ */
 const { isAdmin, canSell, isAuthenticated, requireAuth } = useRole()
 
+/** Controla la visibilidad del menú lateral en móviles. */
 const showMobileMenu = ref(false)
+/** Controla el desplegable del perfil de usuario. */
 const showUserMenu = ref(false)
+/** Controla el desplegable de notificaciones de stock. */
 const showNotificationMenu = ref(false)
+/** * Determina si el header debe tener fondo oscuro (blanco sólido) o transparente.
+ * true = Fondo blanco (páginas internas).
+ * false = Transparente (Landing page).
+ */
 const isDarkBackground = ref(false)
 
 const userMenuBtnRef = ref(null)
@@ -25,6 +45,12 @@ const notificationBtnRef = ref(null)
 const notificationDropdownRef = ref(null)
 
 // Lista de rutas que SIEMPRE deben tener el header oscuro (fondo blanco)
+/**
+ * Lista de configuración de rutas.
+ * Las rutas que comiencen con estos strings forzarán al header a tener fondo sólido
+ * para asegurar la legibilidad del texto.
+ * @constant {Array<string>}
+ */
 const whiteBackgroundRoutes = [
   '/login',
   '/tienda',
@@ -49,6 +75,10 @@ const whiteBackgroundRoutes = [
   '/reset-password',
 ]
 
+/**
+ * Verifica la ruta actual y ajusta la variable `isDarkBackground`.
+ * Se ejecuta al montar el componente y cada vez que cambia la ruta.
+ */
 const checkBackgroundColor = () => {
   try {
     const currentPath = router.currentRoute.value.path
@@ -65,12 +95,20 @@ const checkBackgroundColor = () => {
   }
 }
 
-// --- CORRECCIÓN: 'handleScroll' ahora está vacío y no hace nada ---
+/**
+ * Función placeholder para manejo de scroll.
+ * Actualmente vacía para evitar recálculos innecesarios o parpadeos.
+ */
 const handleScroll = () => {
   // No hacer nada al hacer scroll para evitar el parpadeo
 }
 
 // Observa los cambios de ruta
+/**
+ * Observador de cambios de ruta.
+ * 1. Recalcula el color de fondo.
+ * 2. Cierra el menú móvil automáticamente al navegar.
+ */
 watch(
   () => router.currentRoute.value.path,
   () => {
@@ -83,6 +121,11 @@ watch(
   },
 )
 
+/**
+ * Observador de cambios de ruta.
+ * 1. Recalcula el color de fondo.
+ * 2. Cierra el menú móvil automáticamente al navegar.
+ */
 const handleClickOutside = (event) => {
   if (
     showUserMenu.value &&
@@ -123,6 +166,10 @@ onUnmounted(() => {
 })
 // --- FIN DE LA CORRECCIÓN ---
 
+/**
+ * Observa si el usuario tiene permisos de vendedor.
+ * Si es así, inicia la carga de alertas de stock bajo.
+ */
 watch(
   () => canSell.value,
   (puedeVender) => {
@@ -144,6 +191,9 @@ const goToLogin = () => {
   showMobileMenu.value = false
 }
 
+/**
+ * Navega al carrito, pero primero verifica autenticación.
+ */
 const goToCart = () => {
   if (requireAuth()) {
     router.push('/carrito')
@@ -179,6 +229,10 @@ const goToAdmin = () => {
 const goToCajero = () => {
   router.push('/cajero')
 }
+
+/**
+ * Cierra la sesión del usuario, limpia alertas y redirige al login.
+ */
 const handleLogout = async () => {
   await authStore.cerrarSesion()
   notificationStore.clearAlerts()
@@ -191,6 +245,11 @@ const goToEditProduct = (id) => {
   router.push({ name: 'EditarProducto', params: { id } })
 }
 
+/**
+ * Redirige al chat con un vendedor específico.
+ * Utilizado por administradores al hacer click en una notificación de stock de otro vendedor.
+ * @param {string} vendedorId - ID del vendedor.
+ */
 const goToChatWithSeller = (vendedorId) => {
   if (!vendedorId) {
     console.error('No se proporcionó ID de vendedor para iniciar el chat.')
@@ -203,6 +262,12 @@ const goToChatWithSeller = (vendedorId) => {
   })
 }
 
+/**
+ * Maneja el clic en una notificación de stock.
+ * - Si es Admin y la alerta no es suya: Va al chat con el vendedor.
+ * - Si es el Vendedor dueño del producto: Va a editar el producto.
+ * @param {Object} notificacion - Objeto de la notificación.
+ */
 const handleNotificationClick = (notificacion) => {
   // CORRECCIÓN: Usar 'vendedor_id' y 'id' (del producto) como están en el store
   if (isAdmin.value && authStore.usuario.id !== notificacion.vendedor_id) {
@@ -212,6 +277,11 @@ const handleNotificationClick = (notificacion) => {
   }
 }
 
+/**
+ * Realiza scroll suave hacia una sección de la Landing Page.
+ * Si no está en la home, primero navega a ella.
+ * @param {string} sectionId - ID del elemento HTML.
+ */
 const scrollToSection = (sectionId) => {
   router.push('/').then(() => {
     nextTick(() => {
