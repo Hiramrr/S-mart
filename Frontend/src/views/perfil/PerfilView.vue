@@ -1,4 +1,11 @@
 <script setup>
+/**
+ * @file ProfilePage.vue
+ * @description Página de gestión del perfil de usuario.
+ * Permite visualizar la información del usuario actual (rol, email, fecha de registro)
+ * y editar datos básicos (nombre, foto) sincronizándose con Supabase.
+ * @author Equipo A
+ */
 import { ref, computed } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useAuthStore } from '@/stores/auth'
@@ -9,49 +16,100 @@ import LandingHeader from '@/components/Landing/LandingHeader.vue'
 const authStore = useAuthStore()
 const router = useRouter()
 
+/**
+ * Controla si el formulario de edición está visible.
+ * @type {import('vue').Ref<boolean>}
+ */
 const editMode = ref(false)
+/**
+ * Estado de carga durante la petición de actualización.
+ * @type {import('vue').Ref<boolean>}
+ */
 const loading = ref(false)
+
+/**
+ * Estado específico para la subida de imágenes (reservado para futura implementación).
+ * @type {import('vue').Ref<boolean>}
+ */
 const uploadingImage = ref(false)
 const toast = useToast()
 
+/**
+ * Modelo reactivo para el formulario de edición.
+ * Se inicializa con los datos actuales del store o cadenas vacías.
+ * @type {import('vue').Ref<Object>}
+ */
 const editForm = ref({
   nombre: authStore.perfil?.nombre || '',
   foto_url: authStore.perfil?.foto_url || '',
 })
 
+/**
+ * Cierra la sesión del usuario y redirige al login.
+ */
 const handleLogout = async () => {
   await authStore.cerrarSesion()
   router.push('/login')
 }
 
+/**
+ * Determina el nombre a mostrar en la tarjeta de perfil.
+ * Lógica de prioridad:
+ * 1. Nombre establecido en el perfil.
+ * 2. Parte local del email (antes del @).
+ * 3. String genérico "Usuario".
+ * @type {import('vue').ComputedRef<string>}
+ */
 const getUserName = computed(() => {
   if (authStore.perfil?.nombre) return authStore.perfil.nombre
   if (authStore.usuario?.email) return authStore.usuario.email.split('@')[0]
   return 'Usuario'
 })
 
+/**
+ * Obtiene la inicial del usuario para mostrar en el avatar por defecto (placeholder).
+ * @type {import('vue').ComputedRef<string>}
+ */
 const getUserAvatarLetter = computed(() => {
   if (getUserName.value) return getUserName.value[0].toUpperCase()
   return '?'
 })
 
+/**
+ * Valida y retorna la URL de la foto de perfil.
+ * Retorna null si la URL está vacía o es solo espacios en blanco.
+ * @type {import('vue').ComputedRef<string|null>}
+ */
 const getUserAvatar = computed(() => {
   const url = authStore.perfil?.foto_url
   return url && url.trim() !== '' ? url : null
 })
 
+/**
+ * Activa el modo edición y rellena el formulario con los datos actuales del store.
+ * Esto asegura que si el usuario canceló antes, los datos se refresquen.
+ */
 const enableEditMode = () => {
   editForm.value.nombre = authStore.perfil?.nombre || ''
   editForm.value.foto_url = authStore.perfil?.foto_url || ''
   editMode.value = true
 }
 
+/**
+ * Cancela la edición, descarta los cambios locales y vuelve al modo visualización.
+ */
 const cancelEdit = () => {
   editMode.value = false
   editForm.value.nombre = authStore.perfil?.nombre || ''
   editForm.value.foto_url = authStore.perfil?.foto_url || ''
 }
 
+/**
+ * Guarda los cambios del perfil en Supabase.
+ * 1. Activa estado de carga.
+ * 2. Realiza el UPDATE en la tabla 'usuarios'.
+ * 3. Si tiene éxito, recarga el perfil en el store global y muestra notificación.
+ */
 const saveProfile = async () => {
   loading.value = true
 
@@ -76,6 +134,11 @@ const saveProfile = async () => {
   toast.success('Perfil actualizado correctamente')
 }
 
+/**
+ * Retorna la clase CSS correspondiente al rol del usuario para colorear la etiqueta (badge).
+ * @param {string} rol - El rol del usuario (ej: 'administrador', 'cliente').
+ * @returns {string} Nombre de la clase CSS.
+ */
 const getRoleBadgeClass = (rol) => {
   const classes = {
     administrador: 'role-admin',
