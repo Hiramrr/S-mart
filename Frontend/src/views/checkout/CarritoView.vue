@@ -6,7 +6,7 @@
  * 1. El listado de productos (ShoppingCart).
  * 2. El resumen de costos (PurchaseSummary).
  * 3. La lógica de estado global mediante Pinia.
- * @author Tu Nombre/Equipo
+ * @author Equipo A
  */
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'

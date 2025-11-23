@@ -1,17 +1,42 @@
 <script setup>
+/**
+ * @file SuccessPage.vue
+ * @description Página de confirmación de compra exitosa.
+ * Muestra el resumen del pedido, dirección de envío y método de pago.
+ * Incluye lógica de protección para redirigir si no hay una venta activa en el estado.
+ * @author Equipo A
+ */
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useVentasStore } from '@/stores/ventas.js'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 
+/**
+ * Instancia del store de Pinia para gestionar las ventas.
+ * @type {Object}
+ */
 const ventasStore = useVentasStore()
+/**
+ * Instancia del router para la navegación.
+ * @type {Router}
+ */
 const router = useRouter()
 
 // Obtenemos los detalles de la última venta guardados en el store
+/**
+ * Obtiene los detalles de la última venta realizada desde el store.
+ * Contiene items, totales, dirección y método de pago.
+ * @type {import('vue').ComputedRef<Object|null>}
+ */
 const detallesCompra = computed(() => ventasStore.ultimaVentaDetalles)
 
 // Si alguien intenta cargar esta página directamente sin haber comprado,
 // los detalles serán nulos. Los redirigimos al inicio.
+/**
+ * Hook de montaje.
+ * Verifica si existen detalles de compra. Si el usuario accede directamente
+ * por URL sin haber comprado, 'detallesCompra' será null y se redirige al home.
+ */
 onMounted(() => {
   if (!detallesCompra.value) {
     router.replace({ name: 'home' })
@@ -19,6 +44,11 @@ onMounted(() => {
 })
 
 // Función para formatear moneda
+/**
+ * Formatea un valor numérico al formato de moneda mexicana (MXN).
+ * @param {number} value - El valor monetario a formatear.
+ * @returns {string} El valor formateado (ej. "$1,200.00").
+ */
 const formatCurrency = (value) => {
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
@@ -27,11 +57,19 @@ const formatCurrency = (value) => {
 }
 
 // Funciones de navegación
+/**
+ * Redirige al usuario de vuelta a la tienda.
+ * Limpia los detalles de la última venta en el store para reiniciar el ciclo.
+ */
 const goToTienda = () => {
   ventasStore.setUltimaVenta(null) // Limpiamos los detalles
   router.push({ name: 'tienda' })
 }
 
+/**
+ * Redirige al usuario a su historial de pedidos o seguimiento.
+ * Limpia los detalles de la última venta antes de navegar.
+ */
 const goToPedidos = () => {
   ventasStore.setUltimaVenta(null) // Limpiamos los detalles
   // 'seguimiento-envio' es la ruta que lista los pedidos del cliente

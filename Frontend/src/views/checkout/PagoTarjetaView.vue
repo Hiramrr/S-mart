@@ -1,4 +1,13 @@
 <script setup>
+/**
+ * @file PaymentPage.vue
+ * @description Componente orquestador de la página de pago (Checkout).
+ * * Responsabilidades:
+ * 1. Gestionar el flujo visual: Lista de tarjetas -> Formulario nueva tarjeta -> Input CVV.
+ * 2. Consumir la lógica de negocio desde `usePaymentCheckout` (API, validaciones).
+ * 3. Coordinar la generación del Ticket PDF y la redirección final.
+ * * @author Equipo A
+ */
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -18,6 +27,10 @@ import PaymentCvvInput from '@/components/Checkout/PaymentCvvInput.vue'
 import Ticket from '@/components/Cajero/Ticket.vue' 
 
 // --- Inicialización ---
+/**
+ * Extraemos el estado reactivo y los métodos del proceso de pago.
+ * Esto mantiene el componente limpio de llamadas directas a API.
+ */
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
@@ -38,14 +51,31 @@ const {
   procesarPago,
 } = usePaymentCheckout(route, authStore, cartStore, ventasStore)
 
+/**
+ * Utilidades para la generación del PDF del ticket.
+ */
 const { ticketData, ticketRef, generatePdf } = useTicketGenerator()
 
 // --- 2. Estado de la UI local ---
+/**
+ * ID de la tarjeta que el usuario ha elegido para pagar.
+ * Si es null, se muestra la lista general.
+ * @type {import('vue').Ref<number|string|null>}
+ */
 const tarjetaSeleccionadaId = ref(null)
+/**
+ * Controla la visibilidad del formulario de "Agregar Nueva Tarjeta".
+ * @type {import('vue').Ref<boolean>}
+ */
 const mostrarFormularioNuevaTarjeta = ref(false)
 
 // --- 3. Carga de Datos ---
 // Llama a la función del composable para cargar todo
+/**
+ * Inicializa el proceso de checkout.
+ * Verifica pre-condiciones (autenticación, items en carrito, dirección).
+ * Si falla, redirige al usuario a la etapa anterior correspondiente.
+ */
 initializeCheckout().catch(err => {
   error.value = err.message
   // Redirigir si falla la inicialización
@@ -57,19 +87,31 @@ initializeCheckout().catch(err => {
 })
 
 // --- 4. Orquestación de eventos ---
-
+/**
+ * Se ejecuta cuando el usuario hace clic en una tarjeta existente.
+ * Cambia la vista para solicitar el CVV de esa tarjeta.
+ * @param {number|string} cardId - ID de la tarjeta seleccionada.
+ */
 function onSelectCard(cardId) {
   tarjetaSeleccionadaId.value = cardId
   mostrarFormularioNuevaTarjeta.value = false
   error.value = null
 }
 
+/**
+ * Cambia la vista para mostrar el formulario de registro de nueva tarjeta.
+ */
 function onAddNewCard() {
   mostrarFormularioNuevaTarjeta.value = true
   tarjetaSeleccionadaId.value = null
   error.value = null
 }
 
+/**
+ * Maneja el guardado de una nueva tarjeta desde el formulario hijo.
+ * Si tiene éxito, selecciona automáticamente la nueva tarjeta.
+ * @param {Object} nuevaTarjetaData - Datos del formulario (token, info, etc).
+ */
 async function onSaveCard(nuevaTarjetaData) {
   const nuevaTarjetaGuardada = await guardarNuevaTarjeta(nuevaTarjetaData)
   
@@ -82,6 +124,11 @@ async function onSaveCard(nuevaTarjetaData) {
   }
 }
 
+/**
+ * Maneja la eliminación de una tarjeta.
+ * Si la tarjeta eliminada era la que estaba seleccionada actualmente, resetea la selección.
+ * @param {number|string} cardId - ID de la tarjeta a eliminar.
+ */
 async function onDeleteCard(cardId) {
   const exito = await eliminarTarjeta(cardId)
   if (exito && tarjetaSeleccionadaId.value === cardId) {
@@ -89,6 +136,16 @@ async function onDeleteCard(cardId) {
   }
 }
 
+/**
+ * Acción Final: Confirma el pago usando el CVV proporcionado.
+ * Flujo:
+ * 1. Obtiene objeto tarjeta completo.
+ * 2. Llama a API (procesarPago).
+ * 3. Genera PDF invisible.
+ * 4. Guarda estado en store.
+ * 5. Redirige a éxito.
+ * @param {string} cvv - Código de seguridad ingresado por el usuario.
+ */
 async function onConfirmPayment(cvv) {
   const tarjeta = tarjetasGuardadas.value.find(t => t.id === tarjetaSeleccionadaId.value)
   
@@ -107,6 +164,9 @@ async function onConfirmPayment(cvv) {
   }
 }
 
+/**
+ * Cancela el proceso y devuelve al carrito.
+ */
 function onCancelOrder() {
   router.push('/carrito')
 }
