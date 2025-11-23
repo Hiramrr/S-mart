@@ -1,4 +1,13 @@
 <script setup>
+/**
+ * @file CarritoPage.vue
+ * @description Componente principal de la página del carrito de compras.
+ * Este componente actúa como contenedor (smart component) que integra:
+ * 1. El listado de productos (ShoppingCart).
+ * 2. El resumen de costos (PurchaseSummary).
+ * 3. La lógica de estado global mediante Pinia.
+ * @author Tu Nombre/Equipo
+ */
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cartStore' // Importamos el store del carrito
@@ -8,22 +17,61 @@ import LandingHeader from '@/components/Landing/LandingHeader.vue'
 import ShoppingCart from '@/components/Cajero/ShoppingCart.vue'
 import PurchaseSummary from '@/components/Cajero/PurchaseSummary.vue'
 
+/**
+ * Instancia del store de Pinia para gestionar el estado del carrito.
+ * @type {Object}
+ */
 const cartStore = useCartStore()
+
+/**
+ * Instancia del router para la navegación.
+ * @type {Router}
+ */
 const router = useRouter()
 
 // Usamos las acciones y getters del store
+/**
+ * Lista reactiva de los productos añadidos al carrito.
+ * Se obtiene directamente del estado de Pinia.
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const items = computed(() => cartStore.items)
+/**
+ * El subtotal calculado de todos los productos en el carrito.
+ * @type {import('vue').ComputedRef<number>}
+ */
 const subtotal = computed(() => cartStore.subtotal)
+/**
+ * El total final a pagar.
+ * @todo Implementar lógica de impuestos o costos de envío si es necesario.
+ * Actualmente retorna el mismo valor que el subtotal.
+ * @type {import('vue').ComputedRef<number>}
+ */
 const total = computed(() => cartStore.subtotal) // (Puedes añadir lógica de envío o impuestos aquí más tarde)
 
+/**
+ * Actualiza la cantidad de un producto específico.
+ * Invoca la acción `updateQuantity` del store.
+ * * @param {number|string} productId - El identificador único del producto.
+ * @param {number} newQuantity - La nueva cantidad seleccionada por el usuario.
+ */
 function updateQuantity(productId, newQuantity) {
   cartStore.updateQuantity(productId, newQuantity)
 }
 
+/**
+ * Elimina un producto completamente del carrito.
+ * Invoca la acción `removeItem` del store.
+ * * @param {number|string} productId - El identificador único del producto a eliminar.
+ */
 function removeItem(productId) {
   cartStore.removeItem(productId)
 }
 
+/**
+ * Maneja el proceso de finalizar compra.
+ * Redirige al usuario a la página de selección de dirección.
+ */
 function handleCheckout() {
   router.push('/seleccionar-direccion')
 }
