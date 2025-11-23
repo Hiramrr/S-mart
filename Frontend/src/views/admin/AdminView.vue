@@ -1,12 +1,35 @@
 <script setup>
+/**
+ * Vista principal del panel de administración.
+ * Permite a los administradores gestionar usuarios, productos, categorías y reportes.
+ * Si la cuenta está suspendida, muestra un mensaje y redirige al login.
+ *
+ * Estructura:
+ * - Muestra información del usuario y accesos rápidos a las secciones administrativas.
+ * - Si el usuario está suspendido, bloquea el acceso y fuerza cierre de sesión.
+ *
+ * Dependencias:
+ * - vue
+ * - @/stores/auth
+ * - vue-router
+ * - @/components/Landing/LandingHeader.vue
+ */
 import { onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 
+
+// Store de autenticación para obtener datos del usuario y estado de suspensión
 const authStore = useAuthStore()
+// Router para navegación programática
 const router = useRouter()
 
+
+/**
+ * Al montar el componente, verifica si el usuario está suspendido.
+ * Si está suspendido, muestra alerta, cierra sesión y redirige al login.
+ */
 onMounted(async () => {
   if (authStore.estaSuspendido) {
     alert('Tu cuenta ha sido suspendida. No puedes acceder al sistema.')
