@@ -1,8 +1,28 @@
 <script setup>
+/**
+ * @file LandingHero.vue
+ * @description Sección "Hero" (principal) de la página de inicio.
+ * * Propósito:
+ * 1. Captar la atención inmediata del usuario con un diseño impactante.
+ * 2. Presentar la propuesta de valor ("#1 Pagina de compra-venta").
+ * 3. Dirigir el tráfico a la tienda mediante un Call to Action (CTA).
+ * 4. Mostrar prueba social mediante insignias de premios (Awards).
+ * * * Nota de estilo: Este componente importa fuentes externas (Inter, Playfair Display)
+ * y utiliza una imagen de fondo de Unsplash.
+ * @author Equipo A
+ */
 import { useRouter } from 'vue-router'
 
+/**
+ * Instancia del router para manejar la navegación programática.
+ * @type {Router}
+ */
 const router = useRouter()
 
+/**
+ * Acción del botón principal (CTA).
+ * Redirige al usuario a la vista principal de la tienda ('/tienda').
+ */
 const goToStore = () => {
   router.push('/tienda')
 }
