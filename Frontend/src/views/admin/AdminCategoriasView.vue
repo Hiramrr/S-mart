@@ -1,21 +1,80 @@
 <script setup>
+/**
+ * Vista de administración de categorías.
+ * Permite listar, agregar, editar y eliminar categorías de productos.
+ * Utiliza Supabase para la persistencia y recuperación de datos.
+ *
+ * Estructura:
+ * - Muestra todas las categorías existentes.
+ * - Permite agregar nuevas categorías y editar o eliminar las existentes.
+ * - Utiliza modales para formularios y confirmaciones.
+ *
+ * Dependencias:
+ * - vue
+ * - @/lib/supabase
+ * - @/components/Landing/LandingHeader.vue
+ */
 import { ref, onMounted } from 'vue'
 import { supabase } from '@/lib/supabase'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 
+
+/**
+ * Lista reactiva de categorías.
+ * @type {import('vue').Ref<Array<Object>>}
+ */
 const categorias = ref([])
+
+/**
+ * Controla la visibilidad del formulario de agregar/editar.
+ * @type {import('vue').Ref<boolean>}
+ */
 const mostrarFormulario = ref(false)
+
+/**
+ * Categoría actualmente en edición.
+ * @type {import('vue').Ref<Object|null>}
+ */
 const categoriaEditando = ref(null)
+
+/**
+ * Estado de carga de la vista.
+ * @type {import('vue').Ref<boolean>}
+ */
 const cargando = ref(false)
+
+/**
+ * Mensaje de error global.
+ * @type {import('vue').Ref<string|null>}
+ */
 const error = ref(null)
+
+/**
+ * Controla la visibilidad del modal de eliminación.
+ * @type {import('vue').Ref<boolean>}
+ */
 const showDeleteCategoriaModal = ref(false)
+
+/**
+ * Categoría seleccionada para eliminar.
+ * @type {import('vue').Ref<Object|null>}
+ */
 const categoriaAEliminar = ref(null)
 
+/**
+ * Estado reactivo para el formulario de nueva categoría.
+ * @type {import('vue').Ref<{nombre: string, descripcion: string}>}
+ */
 const nuevaCategoria = ref({
   nombre: '',
   descripcion: '',
 })
 
+
+/**
+ * Carga todas las categorías desde Supabase y actualiza el estado.
+ * @returns {Promise<void>}
+ */
 const cargarCategorias = async () => {
   try {
     cargando.value = true
@@ -33,6 +92,10 @@ const cargarCategorias = async () => {
   }
 }
 
+
+/**
+ * Abre el formulario para agregar una nueva categoría.
+ */
 const abrirFormulario = () => {
   mostrarFormulario.value = true
   categoriaEditando.value = null
@@ -40,6 +103,10 @@ const abrirFormulario = () => {
   error.value = null
 }
 
+
+/**
+ * Cierra el formulario de agregar/editar y limpia el estado.
+ */
 const cerrarFormulario = () => {
   mostrarFormulario.value = false
   categoriaEditando.value = null
@@ -47,6 +114,12 @@ const cerrarFormulario = () => {
   error.value = null
 }
 
+
+/**
+ * Guarda una nueva categoría o actualiza una existente en Supabase.
+ * Muestra errores si ocurren y recarga la lista tras éxito.
+ * @returns {Promise<void>}
+ */
 const guardarCategoria = async () => {
   try {
     cargando.value = true
@@ -84,22 +157,42 @@ const guardarCategoria = async () => {
   }
 }
 
+
+/**
+ * Abre el formulario para editar una categoría existente.
+ * @param {Object} categoria - Categoría a editar.
+ */
 const editarCategoria = (categoria) => {
   categoriaEditando.value = categoria
   nuevaCategoria.value = { ...categoria }
   mostrarFormulario.value = true
 }
 
+
+/**
+ * Abre el modal de confirmación para eliminar una categoría.
+ * @param {Object} categoria - Categoría a eliminar.
+ */
 const handleDeleteCategoria = (categoria) => {
   categoriaAEliminar.value = categoria
   showDeleteCategoriaModal.value = true
 }
 
+
+/**
+ * Cancela la eliminación de la categoría y cierra el modal.
+ */
 const cancelDeleteCategoria = () => {
   showDeleteCategoriaModal.value = false
   categoriaAEliminar.value = null
 }
 
+
+/**
+ * Confirma y elimina la categoría seleccionada de la base de datos.
+ * Muestra errores si ocurren y recarga la lista tras éxito.
+ * @returns {Promise<void>}
+ */
 const confirmDeleteCategoria = async () => {
   if (!categoriaAEliminar.value) return
   try {
@@ -121,6 +214,8 @@ const confirmDeleteCategoria = async () => {
   }
 }
 
+
+// Al montar el componente, carga las categorías existentes
 onMounted(() => {
   cargarCategorias()
 })
