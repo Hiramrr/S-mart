@@ -1,4 +1,12 @@
 <script setup>
+/**
+ * @file ChatsPage.vue
+ * @description Página principal de mensajería del usuario.
+ * Lista todas las conversaciones activas, permite filtrarlas por rol (comprador/vendedor)
+ * y gestiona la apertura del modal de chat individual.
+ * Incluye lógica de tiempo real mediante suscripciones.
+ * @author Equipo A
+ */
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useChat } from '@/composables/useChat'
 import { useAuthStore } from '@/stores/auth'
@@ -6,12 +14,43 @@ import LandingHeader from '@/components/Landing/LandingHeader.vue'
 import ChatModal from '@/components/Chat/ChatModal.vue'
 
 const authStore = useAuthStore()
+
+/**
+ * Composable que maneja la lógica de negocio del chat (Supabase).
+ * @property {Ref<Array>} conversaciones - Lista reactiva de chats.
+ * @property {Ref<boolean>} loading - Estado de carga.
+ * @property {Function} cargarConversaciones - Fetch inicial.
+ * @property {Function} suscribirseAConversaciones - Listener de tiempo real.
+ */
 const { conversaciones, loading, cargarConversaciones, suscribirseAConversaciones } = useChat()
 
+/**
+ * Almacena el objeto de la conversación activa que se muestra en el modal.
+ * Si es null, el modal está cerrado.
+ * @type {import('vue').Ref<Object|null>}
+ */
 const conversacionSeleccionada = ref(null)
+
+/**
+ * Filtro activo para la lista de conversaciones.
+ * @type {import('vue').Ref<'todas'|'compras'|'ventas'>}
+ */
 const filtro = ref('todas')
+
+/**
+ * Referencia a la función de desuscripción de Supabase/Tiempo real.
+ * Se ejecuta al desmontar el componente para evitar fugas de memoria.
+ * @type {Function|null}
+ */
 let unsubscribe = null
 
+/**
+ * Retorna la lista de conversaciones filtrada según el criterio seleccionado.
+ * - 'compras': Solo donde el usuario actual es el cliente.
+ * - 'ventas': Solo donde el usuario actual es el vendedor.
+ * - 'todas': Sin filtro adicional.
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const conversacionesFiltradas = computed(() => {
   if (!authStore.usuario?.id) return []
   if (filtro.value === 'compras') {
@@ -35,15 +74,31 @@ onUnmounted(() => {
   }
 })
 
+/**
+ * Abre el modal de chat con la conversación seleccionada.
+ * @param {Object} conversacion - Objeto de la conversación a abrir.
+ */
 function abrirChat(conversacion) {
   conversacionSeleccionada.value = conversacion
 }
 
+/**
+ * Cierra el modal de chat y recarga la lista para actualizar 
+ * estados (ej. marcar como leídos, último mensaje).
+ */
 function cerrarChat() {
   conversacionSeleccionada.value = null
   cargarConversaciones()
 }
 
+/**
+ * Formatea una fecha para mostrarla de forma amigable (estilo WhatsApp).
+ * - Menos de 24h: Muestra la hora (HH:MM).
+ * - Menos de 7 días: Muestra "Hace X días".
+ * - Más antiguo: Muestra fecha corta (DD MMM).
+ * @param {string|Date} fecha - Fecha a formatear.
+ * @returns {string} Fecha formateada.
+ */
 function formatearFecha(fecha) {
   if (!fecha) return ''
 
@@ -63,6 +118,12 @@ function formatearFecha(fecha) {
   return date.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })
 }
 
+/**
+ * Identifica y retorna los datos del "otro" participante en la conversación.
+ * Compara el ID del usuario actual con cliente_id/vendedor_id para saber quién es quién.
+ * @param {Object} conversacion - Objeto de la conversación.
+ * @returns {Object} Objeto con datos del usuario contrario (nombre, foto, email).
+ */
 function getOtroUsuario(conversacion) {
   if (!authStore.usuario?.id) return { nombre: 'Usuario', foto_url: null, email: null }
   
@@ -73,6 +134,11 @@ function getOtroUsuario(conversacion) {
   return otroUsuario || { nombre: 'Usuario', foto_url: null, email: null }
 }
 
+/**
+ * Obtiene el nombre a mostrar, con fallbacks de seguridad.
+ * @param {Object} usuario - Objeto usuario.
+ * @returns {string} Nombre, Email o "Usuario".
+ */
 function getNombreUsuario(usuario) {
   if (!usuario) return 'Usuario'
   if (usuario.nombre && usuario.nombre.trim() !== '') return usuario.nombre
@@ -80,6 +146,11 @@ function getNombreUsuario(usuario) {
   return 'Usuario'
 }
 
+/**
+ * Obtiene la URL del avatar, priorizando foto_url sobre avatar_url.
+ * @param {Object} usuario - Objeto usuario.
+ * @returns {string|null} URL de la imagen o null.
+ */
 function getAvatarUrl(usuario) {
   if (!usuario) return null
   if (usuario.foto_url && usuario.foto_url.trim() !== '') return usuario.foto_url
@@ -87,6 +158,13 @@ function getAvatarUrl(usuario) {
   return null
 }
 
+/**
+ * Determina si la conversación tiene mensajes no leídos para el usuario actual.
+ * Verifica la bandera booleana correcta (cliente_leido o vendedor_leido)
+ * dependiendo del rol del usuario en esa conversación específica.
+ * @param {Object} conversacion - Objeto de la conversación.
+ * @returns {boolean} True si hay mensajes sin leer.
+ */
 function tieneNoLeidos(conversacion) {
   if (!authStore.usuario?.id) return false
   const esCliente = conversacion.cliente_id === authStore.usuario.id
