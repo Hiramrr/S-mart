@@ -1,8 +1,27 @@
 <script setup>
+/**
+ * @file Footer.vue
+ * @description Pie de página global de la aplicación.
+ * Contiene la navegación secundaria, enlaces a redes sociales, información de copyright
+ * y lógica para manejar diferentes tipos de navegación (interna, externa y anclas).
+ * @author Equipo A
+ */
 import { useRouter } from 'vue-router'
 
+/**
+ * Instancia del router para la navegación interna.
+ * @type {Router}
+ */
 const router = useRouter()
 
+/**
+ * Configuración de enlaces del pie de página agrupados por columnas.
+ * Estructura estática para facilitar el mantenimiento.
+ * @constant {Object}
+ * @property {Array} comprar - Enlaces relacionados con la experiencia de compra.
+ * @property {Array} acceso - Enlaces a los diferentes paneles (admin, vendedor, etc).
+ * @property {Array} soporte - Enlaces de ayuda y contacto.
+ */
 const footerLinks = {
   comprar: [
     { name: 'Tienda', href: '/tienda' },
@@ -24,8 +43,21 @@ const footerLinks = {
   ],
 }
 
+/**
+ * Lista de redes sociales a mostrar en el pie de página.
+ * @constant {Array<Object>}
+ */
 const socialLinks = [{ name: 'GitHub', icon: '⚡', href: 'https://github.com/Hiramrr/S-mart' }]
 
+/**
+ * Manejador centralizado de navegación.
+ * Detecta el tipo de enlace y ejecuta la acción correspondiente:
+ * 1. '#' -> Ignora la acción.
+ * 2. '#seccion' -> Scroll suave hacia un ancla dentro de la página.
+ * 3. '/ruta' -> Navegación SPA interna con vue-router.
+ * 4. 'http...' -> Abre enlace externo en una nueva pestaña.
+ * * @param {string} href - El destino del enlace.
+ */
 const navigateTo = (href) => {
   if (href === '#') {
     return
@@ -41,6 +73,11 @@ const navigateTo = (href) => {
   }
 }
 
+/**
+ * Realiza un scroll suave hacia un elemento específico del DOM.
+ * Utilizado para los enlaces tipo ancla (ej. Características).
+ * @param {string} sectionId - El ID del elemento HTML destino.
+ */
 const scrollToSection = (sectionId) => {
   const element = document.getElementById(sectionId)
   if (element) {
