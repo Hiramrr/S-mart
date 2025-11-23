@@ -154,6 +154,24 @@
   </div>
 </template>
 <script setup>
+/**
+ * @file VenderView.vue
+ * @description Componente orquestador para el registro de productos por parte del vendedor.
+
+ * Responsabilidades:
+ * 1. Gestionar el formulario de alta de producto (campos, imagen, validaciones).
+ * 2. Consumir la lógica de negocio para cargar categorías y registrar productos (API, validaciones).
+ * 3. Coordinar la subida de imagen a Cloudinary y el registro en Supabase.
+ *
+ * Dependencias:
+ * - vue
+ * - vue-toastification
+ * - vue-router
+ * - @/lib/cloudinary
+ * - @supabase/supabase-js
+ * - @/components/Landing/LandingHeader.vue
+ * @author Equipo A
+ */
 import { ref, nextTick, onMounted } from 'vue'
 import { useToast } from 'vue-toastification'
 
@@ -162,35 +180,86 @@ import { subirImagenCloudinary } from '@/lib/cloudinary'
 import { createClient } from '@supabase/supabase-js'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 
+
+// Configuración de Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
+// Router para navegación programática
 const router = useRouter()
 
+/**
+ * Nombre del producto.
+ * @type {import('vue').Ref<string>}
+ */
 const nombre = ref('')
+/**
+ * Código o SKU del producto.
+ * @type {import('vue').Ref<string>}
+ */
 const sku = ref('')
+/**
+ * Descripción del producto.
+ * @type {import('vue').Ref<string>}
+ */
 const descripcion = ref('')
+/**
+ * Categoría seleccionada.
+ * @type {import('vue').Ref<string>}
+ */
 const categoria = ref('')
+/**
+ * Lista de categorías disponibles.
+ * @type {import('vue').Ref<Array<string>>}
+ */
 const categorias = ref([])
+/**
+ * Stock disponible.
+ * @type {import('vue').Ref<number>}
+ */
 const stock = ref(0)
+/**
+ * Precio de venta.
+ * @type {import('vue').Ref<number>}
+ */
 const precio = ref(0)
+/**
+ * Precio de descuento (opcional).
+ * @type {import('vue').Ref<number|null>}
+ */
 const precioDescuento = ref(null)
+/**
+ * Archivo de imagen seleccionado.
+ * @type {import('vue').Ref<File|null>}
+ */
 const imagen = ref(null)
+/**
+ * URL de previsualización de la imagen.
+ * @type {import('vue').Ref<string|null>}
+ */
 const imagenPreview = ref(null)
+/**
+ * Referencia al input de archivo.
+ * @type {import('vue').Ref<HTMLInputElement|null>}
+ */
 const fileInput = ref(null)
+// Toast para mostrar notificaciones
 const toast = useToast()
 
+
+/**
+ * Carga las categorías disponibles desde Supabase.
+ * @returns {Promise<void>}
+ */
 async function cargarCategorias() {
   try {
     const { data, error } = await supabase.from('categoria').select('nombre').order('nombre')
-
     if (error) {
       console.error('Error al cargar categorías:', error)
       toast.error('Error al cargar categorías')
       return
     }
-
     if (data) {
       categorias.value = data.map((cat) => cat.nombre)
     }
@@ -200,16 +269,27 @@ async function cargarCategorias() {
   }
 }
 
+
+// Al montar el componente, carga las categorías disponibles
 onMounted(() => {
   cargarCategorias()
 })
 
+
+/**
+ * Dispara el input de archivo para seleccionar imagen.
+ */
 function triggerFileInput() {
   nextTick(() => {
     if (fileInput.value) fileInput.value.click()
   })
 }
 
+
+/**
+ * Maneja el cambio de archivo de imagen y genera la previsualización.
+ * @param {Event} e - Evento de cambio del input file.
+ */
 function onFileChange(e) {
   const file = e.target.files[0]
   if (file) {
@@ -225,6 +305,10 @@ function onFileChange(e) {
   }
 }
 
+
+/**
+ * Limpia todos los campos del formulario.
+ */
 function limpiarCampos() {
   nombre.value = ''
   sku.value = ''
@@ -237,30 +321,37 @@ function limpiarCampos() {
   imagenPreview.value = null
 }
 
+
+/**
+ * Cancela el registro y regresa a la vista anterior.
+ */
 function cancelar() {
   router.back()
 }
 
+
+/**
+ * Registra el producto en la base de datos.
+ * Valida los campos, sube la imagen a Cloudinary y guarda el producto en Supabase.
+ * Muestra notificaciones según el resultado.
+ * @returns {Promise<void>}
+ */
 async function registrarProducto() {
   try {
     if (!nombre.value || !sku.value || !descripcion.value || !categoria.value) {
       toast.error('Completa todos los campos requeridos')
       return
     }
-
     if (!imagen.value) {
       toast.error('Selecciona una imagen para el producto')
       return
     }
-
     if (precio.value <= 0) {
       toast.error('El precio debe ser mayor a 0')
       return
     }
-
     const imagenUrl = await subirImagenCloudinary(imagen.value)
     const descuentoFinal = precioDescuento.value > 0 ? precioDescuento.value : null
-
     const { error } = await supabase.from('productos').insert([
       {
         nombre: nombre.value,
@@ -273,9 +364,7 @@ async function registrarProducto() {
         precio_descuento: descuentoFinal,
       },
     ])
-
     if (error) throw error
-
     toast.success('Producto registrado correctamente')
     limpiarCampos()
     router.push('/VendedorProductos')
@@ -285,6 +374,10 @@ async function registrarProducto() {
   }
 }
 
+
+/**
+ * Regresa al panel anterior del vendedor.
+ */
 function goToPanel() {
   router.back()
 }
