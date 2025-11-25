@@ -199,6 +199,25 @@ export default {
 .items-list {
     grid-column: 1 / -1;
     margin-top: 1rem;
+    max-height: 240px; /* Altura máxima para la lista */
+    overflow-y: auto;   /* Habilitar scroll vertical */
+    padding-right: 0.5rem; /* Espacio para el scrollbar */
+}
+
+/* Estilos para el scrollbar para consistencia */
+.items-list::-webkit-scrollbar {
+  width: 6px;
+}
+.items-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+.items-list::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+.items-list::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }
 
 .items-title {

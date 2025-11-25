@@ -135,572 +135,92 @@
   </div>
 </template>
 
-<script>
-import { ref, computed, onMounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
-import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
-import { useProductStore } from '@/stores/products'
-import { useAuthStore } from '@/stores/auth'
-import { supabase } from '@/lib/supabase'
-import Header from '@/components/Landing/LandingHeader.vue'
-import ProductSelector from '@/components/Cajero/ProductSelector.vue'
-import ShoppingCart from '@/components/Cajero/ShoppingCart.vue'
-import PurchaseSummary from '@/components/Cajero/PurchaseSummary.vue'
-import PurchaseHistory from '@/components/Cajero/PurchaseHistory.vue'
-import Ticket from '@/components/Cajero/Ticket.vue'
-import CierreCajaReport from '@/components/Cajero/CierreCajaReport.vue' // <-- 1. Importar reporte
-import SecurityCodeModal from '@/components/Cajero/SecurityCodeModal.vue' // <-- 2. Importar modal
-
-export default {
-  name: 'CajeroView',
-  components: {
-    Header,
-    ProductSelector,
-    ShoppingCart,
-    PurchaseSummary,
-    PurchaseHistory,
-    Ticket,
-    CierreCajaReport, // <-- 3. Registrar componente
-    SecurityCodeModal, // <-- 4. Registrar componente
-  },
-  setup() {
-    const productStore = useProductStore()
-    const authStore = useAuthStore()
-    const router = useRouter()
-    const cartItems = ref([])
-    const purchaseHistory = ref([])
-    const paymentMethod = ref(null)
-    const ticketData = ref(null)
-    const ticketRef = ref(null)
-    const discount = ref(0)
-    const appliedCoupon = ref(null)
-
-    // --- INICIO: Nuevos refs para Cierre de Caja ---
-    const showCierreCajaModal = ref(false)
-    const cierreCajaData = ref(null)
-    const cierreCajaReportRef = ref(null)
-    const showDeleteSecurityModal = ref(false)
-    const purchaseToDelete = ref(null)
-    const showReporteDiaModal = ref(false)
-    // --- FIN: Nuevos refs ---
-
-    const verificarSuspension = () => {
-      if (authStore.estaSuspendido) {
-        alert('Tu cuenta ha sido suspendida. No puedes realizar esta acción.')
-        return false
-      }
-      return true
-    }
-
-    const fetchPurchaseHistory = async () => {
-      try {
-        const { data: purchaseData, error: purchaseError } = await supabase
-          .from('purchase_history')
-          .select('id, created_at, total_amount, payment_method, products, cashier_id')
-          .order('created_at', { ascending: false })
-          .limit(20)
-
-        if (purchaseError) {
-          console.error('Error al cargar el historial de compras:', purchaseError)
-          // Check for specific PostgREST errors if needed
-          if (purchaseError.code === 'PGRST205') {
-            alert('La tabla para el historial de compras no fue encontrada.')
-          } else {
-            alert('No se pudo cargar el historial de compras.')
-          }
-          return // Stop execution if there's an error
-        }
-
-        if (!purchaseData) {
-          purchaseHistory.value = [] // Set to empty array if no data
-          return
-        }
-
-        // Mapear los datos para la vista
-        purchaseHistory.value = purchaseData.map((p) => ({
-          id: p.id,
-          fecha: new Date(p.created_at).toLocaleString('es-MX'),
-          total: p.total_amount,
-          paymentMethod: p.payment_method,
-          cajero: p.cashier_id ? p.cashier_id.substring(0, 8) : 'N/A', // Mostrar primeros 8 caracteres del ID
-          items: p.products.map((item) => ({
-            name: item.name,
-            cantidad: item.quantity,
-            precio: item.price,
-          })),
-        }))
-      } catch (error) {
-        console.error('Error inesperado al cargar el historial de compras:', error)
-        alert('Ocurrió un error inesperado al cargar el historial.')
-      }
-    }
-
-    onMounted(async () => {
-      if (authStore.estaSuspendido) {
-        alert('Tu cuenta ha sido suspendida. No puedes acceder al sistema.')
-        await authStore.cerrarSesion()
-        router.push('/login')
-        return
-      }
-      productStore.fetchProducts()
-      fetchPurchaseHistory() // Cargar historial al montar
-    })
-
-    const generatePdf = async (purchase) => {
-      ticketData.value = purchase
-      await nextTick()
-
-      const ticketElement = ticketRef.value?.$el
-      if (!ticketElement) {
-        console.error('Ticket element not found!')
-        return
-      }
-
-      try {
-        const canvas = await html2canvas(ticketElement)
-        const imgData = canvas.toDataURL('image/png')
-
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'px',
-          format: [canvas.width, canvas.height],
-        })
-
-        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height)
-
-        const fileName = `ticket-${purchase.id}.pdf`
-        pdf.save(fileName)
-      } catch (error) {
-        console.error('Error generating PDF:', error)
-        alert('Hubo un error al generar el ticket en PDF.')
-      } finally {
-        ticketData.value = null
-      }
-    }
-
-    const addProduct = (product) => {
-      if (!verificarSuspension()) return
-
-      const existingItem = cartItems.value.find((item) => item.id === product.id)
-      const cartQuantity = existingItem ? existingItem.cantidad : 0
-
-      if (product.stock <= cartQuantity) {
-        alert('No hay más stock disponible para este producto.')
-        return
-      }
-
-      if (existingItem) {
-        existingItem.cantidad++
-      } else {
-        cartItems.value.push({
-          ...product,
-          cantidad: 1,
-        })
-      }
-      productStore.decreaseStock(product.id, 1)
-    }
-
-    const updateQuantity = (productId, newQuantity) => {
-      if (!verificarSuspension()) return
-
-      const item = cartItems.value.find((item) => item.id === productId)
-      if (!item) return
-
-      const product = productStore.products.find((p) => p.id === productId)
-      if (!product) return
-
-      const quantityDiff = newQuantity - item.cantidad
-
-      if (quantityDiff > 0) {
-        if (product.stock < quantityDiff) {
-          alert('No hay suficiente stock.')
-          item.cantidad = product.stock + item.cantidad
-          productStore.decreaseStock(productId, product.stock)
-          return
-        }
-        productStore.decreaseStock(productId, quantityDiff)
-      } else {
-        productStore.increaseStock(productId, -quantityDiff)
-      }
-
-      if (newQuantity > 0) {
-        item.cantidad = newQuantity
-      } else {
-        cartItems.value = cartItems.value.filter((item) => item.id !== productId)
-      }
-    }
-
-    const removeItem = (productId) => {
-      if (!verificarSuspension()) return
-
-      const item = cartItems.value.find((item) => item.id === productId)
-      if (item) {
-        productStore.increaseStock(productId, item.cantidad)
-      }
-
-      cartItems.value = cartItems.value.filter((item) => item.id !== productId)
-    }
-
-    const subtotal = computed(() => {
-      return cartItems.value.reduce((sum, item) => {
-        return sum + item.precio * item.cantidad
-      }, 0)
-    })
-
-    const total = computed(() => {
-      const finalTotal = subtotal.value - discount.value
-      return finalTotal > 0 ? finalTotal : 0
-    })
-
-    const handleApplyCoupon = async (couponCode) => {
-      if (!verificarSuspension()) return
-
-      const { data: coupon, error } = await supabase
-        .from('cupones')
-        .select('*')
-        .eq('codigo', couponCode.toUpperCase())
-        .single()
-
-      if (error || !coupon) {
-        alert('Cupón no válido.')
-        return
-      }
-
-      // if (coupon.fecha_expiracion && new Date(coupon.fecha_expiracion) < new Date()) {
-      //   alert('El cupón ha expirado.')
-      //   return
-      // }
-
-      if (coupon.usos_maximos && coupon.usos_actuales >= coupon.usos_maximos) {
-        alert('Este cupón ha alcanzado su límite de usos.')
-        return
-      }
-
-      if (coupon.producto_id) {
-        const productInCart = cartItems.value.find((item) => item.id === coupon.producto_id)
-        if (!productInCart) {
-          alert('Este cupón no es válido para los productos en el carrito.')
-          return
-        }
-        if (coupon.tipo_descuento === 'porcentaje') {
-          discount.value = (productInCart.precio * productInCart.cantidad * coupon.valor) / 100
-        } else {
-          const productSubtotal = productInCart.precio * productInCart.cantidad
-          discount.value = Math.min(coupon.valor, productSubtotal)
-        }
-      } else {
-        if (coupon.tipo_descuento === 'porcentaje') {
-          discount.value = (subtotal.value * coupon.valor) / 100
-        } else {
-          discount.value = coupon.valor
-        }
-      }
-
-      appliedCoupon.value = coupon
-      alert('Cupón aplicado exitosamente.')
-    }
-
-    // REESCRITO para usar Supabase con la tabla purchase_history
-    const handleCheckout = async (method) => {
-      if (!verificarSuspension()) return
-
-      if (cartItems.value.length === 0) {
-        alert('El carrito está vacío')
-        return
-      }
-
-      const userId = authStore.usuario?.id
-      if (!userId) {
-        alert('Error: No se pudo identificar al usuario. Por favor, inicia sesión de nuevo.')
-        return
-      }
-
-      const productsToSave = cartItems.value.map((item) => ({
-        product_id: item.id,
-        name: item.nombre,
-        quantity: item.cantidad,
-        price: item.precio,
-      }))
-
-      const { data: purchaseData, error: purchaseError } = await supabase
-        .from('purchase_history')
-        .insert({
-          cashier_id: userId,
-          products: productsToSave,
-          total_amount: total.value,
-          payment_method: method,
-          applied_cupon: appliedCoupon.value ? appliedCoupon.value.codigo : undefined,
-        })
-        .select()
-        .single()
-
-      if (purchaseError) {
-        console.error('Error al registrar la compra:', purchaseError)
-        alert('Hubo un error al registrar la compra. Por favor, inténtalo de nuevo.')
-        return
-      }
-
-      if (appliedCoupon.value) {
-        await supabase
-          .from('cupones')
-          .update({ usos_actuales: appliedCoupon.value.usos_actuales + 1 })
-          .eq('id', appliedCoupon.value.id)
-      }
-
-      // Actualizar el stock en la base de datos
-      await productStore.updateStockInDB(cartItems.value)
-
-      // Generar el PDF
-      const cajeroNombre = authStore.perfil?.nombre || authStore.usuario?.email
-      const purchaseForPdf = {
-        id: purchaseData.id,
-        fecha: new Date(purchaseData.created_at).toLocaleString('es-MX'),
-        items: cartItems.value.map((item) => ({ ...item })),
-        subtotal: subtotal.value,
-        discount: discount.value,
-        total: total.value,
-        cajero: cajeroNombre,
-        paymentMethod: method,
-      }
-      generatePdf(purchaseForPdf)
-
-      // Limpiar estado local
-      cartItems.value = []
-      paymentMethod.value = null
-      discount.value = 0
-      appliedCoupon.value = null
-
-      // Refrescar el historial de compras desde la DB
-      fetchPurchaseHistory()
-    }
-
-    const handleCancelPurchase = () => {
-      if (!verificarSuspension()) return
-
-      cartItems.value.forEach((item) => {
-        productStore.increaseStock(item.id, item.cantidad)
-      })
-
-      cartItems.value = []
-      paymentMethod.value = null
-      discount.value = 0
-      appliedCoupon.value = null
-    }
-
-    // Abre el modal de seguridad para eliminar
-    const handleDeleteRequest = (purchaseId) => {
-      if (!verificarSuspension()) return
-      if (!authStore.perfil?.cierre_code) {
-        alert('No tienes un código de seguridad asignado. Contacta a un administrador.')
-        return
-      }
-      purchaseToDelete.value = purchaseId
-      showDeleteSecurityModal.value = true
-    }
-
-    // Se llama al confirmar el modal de seguridad de eliminación
-    const handleDeleteConfirm = () => {
-      showDeleteSecurityModal.value = false
-      deletePurchase(purchaseToDelete.value)
-      purchaseToDelete.value = null
-    }
-
-    // Lógica real de eliminación
-    const deletePurchase = (purchaseId) => {
-      if (!verificarSuspension()) return
-      alert(
-        `La eliminación de compra (ID: ${purchaseId}) aún no está implementada en la base de datos.`,
-      )
-      // Aquí iría la llamada a Supabase para eliminar
-      // const { error } = await supabase.from('purchase_history').delete().eq('id', purchaseId)
-      // if (error) { ... }
-      // else { fetchPurchaseHistory() }
-    }
-
-    // --- INICIO: NUEVAS FUNCIONES PARA CIERRE DE CAJA ---
-
-    const iniciarCierreCaja = () => {
-      if (!verificarSuspension()) return
-
-      // Verificar que el cajero tenga un código
-      if (!authStore.perfil?.cierre_code) {
-        alert('No tienes un código de cierre asignado. Contacta a un administrador.')
-        return
-      }
-
-      // Verificar si hay ventas (usamos el historial local como proxy rápido)
-      // Idealmente, se consultaría la BD por ventas del día
-      if (purchaseHistory.value.length === 0) {
-        alert('No hay ventas registradas recientemente para incluir en el cierre.')
-        return
-      }
-
-      showCierreCajaModal.value = true
-    }
-
-    const handleCierreCajaConfirm = () => {
-      if (!verificarSuspension()) return
-      showCierreCajaModal.value = false
-      purchaseHistory.value = []
-      alert('Historial limpiado de la pantalla.')
-    }
-
-    const iniciarReporteDia = () => {
-      if (!verificarSuspension()) return
-      showReporteDiaModal.value = true
-    }
-
-    const handleReporteDiaConfirm = async () => {
-      if (!verificarSuspension()) return
-      showReporteDiaModal.value = false
-      await fetchAndGenerateReport(true) // Detallado
-    }
-
-    const fetchAndGenerateReport = async (isDetailed) => {
-      try {
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-        const tomorrow = new Date(today)
-        tomorrow.setDate(tomorrow.getDate() + 1)
-
-        const { data, error } = await supabase
-          .from('purchase_history')
-          .select('*')
-          .eq('cashier_id', authStore.usuario.id)
-          .gte('created_at', today.toISOString())
-          .lt('created_at', tomorrow.toISOString())
-          .order('created_at', { ascending: true })
-
-        if (error) throw error
-        if (!data || data.length === 0) {
-          alert('No se encontraron ventas para el día de hoy.')
-          return
-        }
-
-        const reportData = {
-          fecha: new Date().toLocaleString('es-MX'),
-          cajero: authStore.perfil?.nombre || authStore.usuario?.email,
-          purchases: data.map((p) => ({
-            id: p.id,
-            total: p.total_amount,
-            paymentMethod: p.payment_method,
-            items: p.products,
-          })),
-        }
-
-        await generateCierreCajaPdf({ report: reportData, detailed: isDetailed })
-      } catch (err) {
-        console.error('Error al generar el reporte:', err)
-        alert('Error al generar el reporte: ' + err.message)
-      }
-    }
-
-    const generateCierreCajaPdf = async (data) => {
-      cierreCajaData.value = data
-      await nextTick()
-
-      const reportElement = cierreCajaReportRef.value?.$el
-      if (!reportElement) {
-        console.error('Elemento del reporte no encontrado!')
-        return
-      }
-
-      try {
-        const canvas = await html2canvas(reportElement, { scale: 2 })
-        const imgData = canvas.toDataURL('image/png')
-
-        const pdf = new jsPDF('p', 'px', 'a4')
-        const pdfWidth = pdf.internal.pageSize.getWidth()
-        const pdfHeightInPx = pdf.internal.pageSize.getHeight()
-        const canvasWidth = canvas.width
-        const canvasHeight = canvas.height
-        const ratio = canvasHeight / canvasWidth
-
-        let pdfHeight = pdfWidth * ratio
-
-        if (pdfHeight > pdfHeightInPx) {
-          let heightLeft = canvasHeight
-          const pageHeightInCanvas = (pdfHeightInPx * canvasWidth) / pdfWidth
-          let position = 0
-
-          const pageCanvas = document.createElement('canvas')
-          pageCanvas.width = canvasWidth
-          pageCanvas.height = pageHeightInCanvas
-          const pageCtx = pageCanvas.getContext('2d')
-
-          while (heightLeft > 0) {
-            const srcY = position * pageHeightInCanvas
-            pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height)
-            pageCtx.drawImage(
-              canvas,
-              0,
-              srcY,
-              canvasWidth,
-              pageHeightInCanvas,
-              0,
-              0,
-              canvasWidth,
-              pageHeightInCanvas,
-            )
-            const pageImgData = pageCanvas.toDataURL('image/png')
-
-            if (position > 0) pdf.addPage()
-            pdf.addImage(pageImgData, 'PNG', 0, 0, pdfWidth, pdfHeightInPx, undefined, 'FAST')
-
-            heightLeft -= pageHeightInCanvas
-            position++
-          }
-        } else {
-          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
-        }
-
-        const fileName = `reporte-caja-${new Date().toISOString().split('T')[0]}.pdf`
-        pdf.save(fileName)
-      } catch (error) {
-        console.error('Error generando PDF de cierre:', error)
-        alert('Hubo un error al generar el reporte en PDF.')
-      } finally {
-        cierreCajaData.value = null
-        purchaseHistory.value = []
-      }
-    }
-
-    // --- FIN: NUEVAS FUNCIONES PARA CIERRE DE CAJA ---
-
-    return {
-      products: computed(() => productStore.products),
-      cartItems,
-      purchaseHistory,
-      paymentMethod,
-      ticketData,
-      ticketRef,
-      authStore,
-      addProduct,
-      updateQuantity,
-      removeItem,
-      subtotal,
-      total,
-      discount,
-      handleCheckout,
-      handleCancelPurchase,
-      handleApplyCoupon,
-      // Nuevos retornos
-      showCierreCajaModal,
-      cierreCajaData,
-      cierreCajaReportRef,
-      iniciarCierreCaja,
-      handleCierreCajaConfirm,
-      handleDeleteRequest,
-      handleDeleteConfirm,
-      showDeleteSecurityModal,
-      purchaseToDelete,
-      showReporteDiaModal,
-      iniciarReporteDia,
-      handleReporteDiaConfirm,
-    }
-  },
-}
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useProductStore } from '@/stores/products';
+import { useAuthStore } from '@/stores/auth';
+import { useCajeroCart } from '@/composables/useCajeroCart';
+import { usePurchaseFlow } from '@/composables/usePurchaseFlow';
+
+import Header from '@/components/Landing/LandingHeader.vue';
+import ProductSelector from '@/components/Cajero/ProductSelector.vue';
+import ShoppingCart from '@/components/Cajero/ShoppingCart.vue';
+import PurchaseSummary from '@/components/Cajero/PurchaseSummary.vue';
+import PurchaseHistory from '@/components/Cajero/PurchaseHistory.vue';
+import Ticket from '@/components/Cajero/Ticket.vue';
+import CierreCajaReport from '@/components/Cajero/CierreCajaReport.vue';
+import SecurityCodeModal from '@/components/Cajero/SecurityCodeModal.vue';
+
+const productStore = useProductStore();
+const authStore = useAuthStore();
+const router = useRouter();
+
+const paymentMethod = ref(null);
+
+// Lógica del Carrito
+const {
+  cartItems,
+  discount,
+  appliedCoupon,
+  addProduct,
+  updateQuantity,
+  removeItem,
+  subtotal,
+  total,
+  handleApplyCoupon,
+  handleCancelPurchase,
+  clearCart
+} = useCajeroCart();
+
+// Lógica del Flujo de Compra
+const {
+  purchaseHistory,
+  ticketData,
+  ticketRef,
+  cierreCajaData,
+  cierreCajaReportRef,
+  showCierreCajaModal,
+  showDeleteSecurityModal,
+  showReporteDiaModal,
+  purchaseToDelete,
+  fetchPurchaseHistory,
+  handleCheckout: processCheckout,
+  handleDeleteRequest,
+  handleDeleteConfirm,
+  iniciarCierreCaja,
+  handleCierreCajaConfirm,
+  iniciarReporteDia,
+  handleReporteDiaConfirm,
+} = usePurchaseFlow(cartItems, total, discount, appliedCoupon, clearCart);
+
+const products = computed(() => productStore.products);
+
+const handleCheckout = async (method) => {
+  if (verificarSuspension()) return;
+  paymentMethod.value = method;
+  await processCheckout(method);
+  paymentMethod.value = null; // Reiniciar el método de pago para la siguiente venta
+};
+
+const verificarSuspension = () => {
+  if (authStore.estaSuspendido) {
+    alert('Tu cuenta ha sido suspendida. No puedes realizar esta acción.');
+    return true;
+  }
+  return false;
+};
+
+onMounted(async () => {
+  if (authStore.estaSuspendido) {
+    alert('Tu cuenta ha sido suspendida. No puedes acceder al sistema.');
+    await authStore.cerrarSesion();
+    router.push('/login');
+    return;
+  }
+  productStore.fetchProducts();
+  fetchPurchaseHistory();
+});
 </script>
 
 <style scoped>
@@ -843,5 +363,4 @@ export default {
   width: 20px;
   height: 20px;
 }
-/* FIN: Nuevo estilo */
 </style>

@@ -1,133 +1,116 @@
-import { defineStore } from 'pinia'
-import { supabase } from '@/lib/supabase.js' //
-import { useAuthStore } from './auth' //
-import { ref } from 'vue'
+import { defineStore } from 'pinia';
+import { supabase } from '@/lib/supabase.js';
+import { useAuthStore } from './auth';
+import { useProductStore } from './products';
+import { ref } from 'vue';
 
 export const useVentasStore = defineStore('ventas', () => {
-  const ultimaVentaDetalles = ref(null)
-  async function crearVentaPOS(productos, total, metodoPago) {
-    const authStore = useAuthStore()
-    if (!authStore.usuario) throw new Error('Cajero no autenticado')
+  const ultimaVentaDetalles = ref(null);
+  const purchaseHistory = ref([]);
 
-    console.log('Registrando venta POS...')
-    const { data, error } = await supabase
+  async function fetchPurchaseHistory() {
+    try {
+      const { data, error } = await supabase
+        .from('purchase_history')
+        .select('id, created_at, total_amount, payment_method, products, cashier_id')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+      
+      purchaseHistory.value = data ? data.map((p) => ({
+        id: p.id,
+        fecha: new Date(p.created_at).toLocaleString('es-MX'),
+        total: p.total_amount,
+        paymentMethod: p.payment_method,
+        cajero: p.cashier_id ? p.cashier_id.substring(0, 8) : 'N/A',
+        items: p.products ? p.products.map(item => ({
+          name: item.name,
+          cantidad: item.quantity,
+          precio: item.price
+        })) : [],
+      })) : [];
+
+    } catch (error) {
+      console.error('Error al cargar el historial de compras:', error);
+      purchaseHistory.value = [];
+      throw new Error('No se pudo cargar el historial de compras.');
+    }
+  }
+
+  async function applyCoupon(couponCode) {
+    const { data: coupon, error } = await supabase
+      .from('cupones')
+      .select('*')
+      .eq('codigo', couponCode.toUpperCase())
+      .single();
+
+    if (error || !coupon) {
+      throw new Error('Cupón no válido.');
+    }
+    if (coupon.usos_maximos && coupon.usos_actuales >= coupon.usos_maximos) {
+      throw new Error('Este cupón ha alcanzado su límite de usos.');
+    }
+    return coupon;
+  }
+
+  async function crearVentaPOS(payload) {
+    const authStore = useAuthStore();
+    const productStore = useProductStore();
+    const { cart, total, paymentMethod, appliedCoupon } = payload;
+
+    if (!authStore.usuario) throw new Error('Cajero no autenticado');
+    if (cart.length === 0) throw new Error('El carrito está vacío');
+
+    const productsToSave = cart.map((item) => ({
+      product_id: item.id,
+      name: item.name || item.nombre, // Corregido para usar la propiedad correcta
+      quantity: item.cantidad,
+      price: item.precio,
+    }));
+
+    const { data: purchaseData, error } = await supabase
       .from('purchase_history')
       .insert({
         cashier_id: authStore.usuario.id,
-        products: productos,
+        products: productsToSave,
         total_amount: total,
-        payment_method: metodoPago,
+        payment_method: paymentMethod,
+        applied_cupon: appliedCoupon ? appliedCoupon.codigo : undefined,
       })
       .select()
+      .single();
 
     if (error) {
-      console.error('Error al registrar venta POS:', error)
-      throw error
+      console.error('Error al registrar venta POS:', error);
+      throw error;
     }
 
-    console.log('Venta POS registrada:', data)
-    return data
-  }
-  async function crearVentaEnLinea(itemsDelCarrito, metodoPago, direccionId) {
-    const authStore = useAuthStore()
-    if (!authStore.usuario) throw new Error('Cliente no autenticado')
-
-    // 1. Calcular fecha de entrega
-    const hoy = new Date()
-    const fechaEntrega = new Date(hoy)
-    fechaEntrega.setDate(hoy.getDate() + 7)
-    const fechaEstimadaISO = fechaEntrega.toISOString().split('T')[0]
-
-    // 2. Agrupar productos por vendedor_id
-    const ventasPorVendedor = new Map()
-
-    for (const item of itemsDelCarrito) {
-      const vendedorId = item.vendedor_id
-
-      if (!vendedorId) {
-        console.warn('Producto sin vendedor_id en el carrito:', item)
-        continue
-      }
-
-      // Debug: Verificar datos del item
-      console.log('📦 Procesando item del carrito:', {
-        id: item.id,
-        name: item.name,
-        precio: item.precio,
-        price: item.price,
-        imageUrl: item.imageUrl,
-        imagen_url: item.imagen_url,
-        vendedor_id: item.vendedor_id,
-      })
-
-      if (!ventasPorVendedor.has(vendedorId)) {
-        ventasPorVendedor.set(vendedorId, {
-          productos: [],
-          monto_total: 0,
-        })
-      }
-
-      const venta = ventasPorVendedor.get(vendedorId)
-
-      // Obtener el precio correcto del item del carrito
-      const precioNumerico = parseFloat(item.precio || item.price || 0)
-
-      venta.productos.push({
-        producto_id: item.id,
-        nombre: item.name,
-        cantidad: item.cantidad,
-        precio: precioNumerico,
-        imagen_url: item.imageUrl || item.imagen_url || null,
-      })
-
-      // Validar que el precio sea válido
-      if (isNaN(precioNumerico) || precioNumerico <= 0) {
-        console.warn(`Producto ${item.name} tiene precio inválido o 0:`, item)
-      }
-
-      venta.monto_total += precioNumerico * item.cantidad
+    if (appliedCoupon) {
+      await supabase
+        .from('cupones')
+        .update({ usos_actuales: appliedCoupon.usos_actuales + 1 })
+        .eq('id', appliedCoupon.id);
     }
+    
+    // Actualizar stock en la base de datos
+    await productStore.updateStockInDB(cart);
 
-    // 3. Crear un array de registros para insertar
-    const registrosDeVenta = []
-    const clienteId = authStore.usuario.id
-
-    for (const [vendedorId, venta] of ventasPorVendedor.entries()) {
-      registrosDeVenta.push({
-        cliente_id: clienteId,
-        vendedor_id: vendedorId,
-        productos: venta.productos,
-        monto_total: venta.monto_total, // <-- Esto ahora será un NÚMERO
-        metodo_pago: metodoPago,
-        direccion_id: direccionId,
-        fecha_estimada_entrega: fechaEstimadaISO,
-        seguimiento: [{ estado: 'Pendiente', fecha: new Date().toISOString() }],
-      })
-    }
-
-    // 4. Insertar todos los registros en la BD
-    console.log('Registrando ventas en línea:', registrosDeVenta)
-    const { data, error } = await supabase.from('venta_en_linea').insert(registrosDeVenta).select()
-
-    if (error) {
-      console.error('Error al registrar venta en línea:', error)
-      throw error
-    }
-
-    console.log('Ventas en línea registradas:', data)
-    return data
+    return purchaseData;
   }
 
-  // --- 3. AÑADIR FUNCIÓN "SETTER" ---
+  // --- OTRAS FUNCIONES ---
   function setUltimaVenta(detalles) {
-    ultimaVentaDetalles.value = detalles
+    ultimaVentaDetalles.value = detalles;
   }
 
   return {
-
+    purchaseHistory,
+    ultimaVentaDetalles,
+    fetchPurchaseHistory,
+    applyCoupon,
     crearVentaPOS,
-    crearVentaEnLinea,
-    ultimaVentaDetalles, // <-- Exponer el estado
     setUltimaVenta,
-  }
-})
+  };
+});
+

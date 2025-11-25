@@ -30,7 +30,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const { data, error } = await supabase
         .from('usuarios')
-        .select(`*, codigo_entrada_cajero ( codigo )`)
+        .select(`*`)
         .eq('id', usuario.value.id)
         .maybeSingle()
 
