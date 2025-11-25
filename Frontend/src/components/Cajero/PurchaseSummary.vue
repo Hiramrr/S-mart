@@ -59,6 +59,25 @@
 </template>
 
 <script>
+/**
+ * @file PurchaseSummary.vue
+ * @description
+ * Muestra un resumen de la compra, incluyendo subtotal, descuentos y total.
+ * Contiene los botones para seleccionar el método de pago, finalizar la compra,
+ * cancelar y un campo para aplicar cupones.
+ *
+ * @prop {Number} subtotal - El subtotal de la compra (antes de descuentos).
+ * @prop {Number} total - El total final de la compra.
+ * @prop {Number} discount - El monto del descuento aplicado.
+ * @prop {String|null} paymentMethod - El método de pago seleccionado. Se usa con `v-model`.
+ * @prop {String} [buttonLabel] - Etiqueta opcional para el botón principal de pago.
+ * @prop {Boolean} [skipPaymentModal=false] - Si es `true`, omite el modal de selección de pago.
+ *
+ * @emits {String} apply-coupon - Se emite cuando se intenta aplicar un cupón. Payload: el código del cupón.
+ * @emits {void} checkout - Se emite para proceder a finalizar la compra. Si `paymentMethod` ya está seleccionado, lo incluye en el payload.
+ * @emits {void} cancel-purchase - Se emite para iniciar la cancelación de la compra.
+ * @emits {String} update:paymentMethod - Se emite para actualizar el `v-model` del método de pago.
+ */
 import { ref } from 'vue'
 import PaymentMethodModal from './PaymentMethodModal.vue'
 import SecurityCodeModal from './SecurityCodeModal.vue'

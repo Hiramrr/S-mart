@@ -136,6 +136,15 @@
 </template>
 
 <script setup>
+/**
+ * @file CajeroView.vue
+ * @description
+ * Vista principal de la interfaz de Cajero (Punto de Venta).
+ * Este componente actúa como un orquestador, integrando la lógica de los composables
+ * `useCajeroCart` y `usePurchaseFlow` con los componentes de la interfaz de usuario.
+ * No contiene lógica de negocio directamente, sino que la delega a los composables
+ * y a las tiendas Pinia para mantener una arquitectura limpia y desacoplada.
+ */
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useProductStore } from '@/stores/products';

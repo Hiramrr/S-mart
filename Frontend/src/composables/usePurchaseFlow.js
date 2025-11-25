@@ -5,6 +5,36 @@ import { useAuthStore } from '@/stores/auth';
 import { useVentasStore } from '@/stores/ventas';
 import { supabase } from '@/lib/supabase'; 
 
+/**
+ * @module usePurchaseFlow
+ * @description Composable para manejar el flujo de post-venta, incluyendo el checkout,
+ * historial de compras, y la generación de reportes y tickets en PDF.
+ *
+ * @param {import('vue').Ref<Array<object>>} cart - Referencia a los items del carrito desde `useCajeroCart`.
+ * @param {import('vue').Ref<number>} total - Referencia al total de la compra desde `useCajeroCart`.
+ * @param {import('vue').Ref<number>} discount - Referencia al descuento aplicado desde `useCajeroCart`.
+ * @param {import('vue').Ref<object|null>} appliedCoupon - Referencia al cupón aplicado desde `useCajeroCart`.
+ * @param {function(): void} clearCartCallback - Función para limpiar el carrito, provista por `useCajeroCart`.
+ *
+ * @returns {object} Un objeto con el estado y los métodos para el flujo de compra.
+ * @property {import('vue').ComputedRef<Array<object>>} purchaseHistory - Historial de compras recientes.
+ * @property {import('vue').Ref<object|null>} ticketData - Datos para el componente de ticket (para imprimir PDF).
+ * @property {import('vue').Ref<object|null>} ticketRef - Referencia de la plantilla del componente Ticket.
+ * @property {import('vue').Ref<object|null>} cierreCajaData - Datos para el reporte de cierre de caja.
+ * @property {import('vue').Ref<object|null>} cierreCajaReportRef - Referencia de la plantilla del componente CierreCajaReport.
+ * @property {import('vue').Ref<boolean>} showCierreCajaModal - Controla la visibilidad del modal de seguridad para el cierre.
+ * @property {import('vue').Ref<boolean>} showDeleteSecurityModal - Controla la visibilidad del modal para eliminar una venta.
+ * @property {import('vue').Ref<boolean>} showReporteDiaModal - Controla la visibilidad del modal para el reporte del día.
+ * @property {import('vue').Ref<string|null>} purchaseToDelete - ID de la compra que se va a eliminar.
+ * @property {function(): Promise<void>} fetchPurchaseHistory - Carga el historial de compras desde la tienda Pinia.
+ * @property {function(string): Promise<void>} handleCheckout - Procesa el pago y finaliza la compra.
+ * @property {function(string): void} handleDeleteRequest - Inicia el proceso para eliminar una venta.
+ * @property {function(): void} handleDeleteConfirm - Confirma la eliminación de la venta.
+ * @property {function(): void} iniciarCierreCaja - Inicia el flujo para el cierre de caja.
+ * @property {function(): void} handleCierreCajaConfirm - Confirma y ejecuta el cierre de caja.
+ * @property {function(): void} iniciarReporteDia - Inicia el flujo para generar el reporte del día.
+ * @property {function(): Promise<void>} handleReporteDiaConfirm - Confirma y genera el reporte del día.
+ */
 export function usePurchaseFlow(cart, total, discount, appliedCoupon, clearCartCallback) {
   const authStore = useAuthStore();
   const ventasStore = useVentasStore();

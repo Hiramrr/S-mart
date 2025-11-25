@@ -61,6 +61,19 @@
 </template>
 
 <script>
+/**
+ * @file PurchaseDetailModal.vue
+ * @description
+ * Modal que muestra los detalles completos de una compra específica del historial.
+ * Presenta la información en un formato de ticket e incluye acciones como
+ * imprimir el ticket, eliminar la venta o cerrar el modal.
+ *
+ * @prop {Object} purchase - El objeto de la compra seleccionada para mostrar.
+ *
+ * @emits {void} close - Se emite cuando se pide cerrar el modal (botón o clic fuera).
+ * @emits {string} delete-purchase - Se emite cuando se confirma la eliminación de la venta.
+ *   El payload es el `id` de la compra a eliminar.
+ */
 import { computed, ref } from 'vue';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';

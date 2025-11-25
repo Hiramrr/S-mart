@@ -35,6 +35,18 @@
 </template>
 
 <script>
+/**
+ * @file PurchaseHistory.vue
+ * @description
+ * Componente que muestra una lista de las compras realizadas recientemente.
+ * Para cada compra, muestra un resumen y un botón para ver los detalles completos
+ * en el modal `PurchaseDetailModal`.
+ *
+ * @prop {Array<object>} purchases - La lista de compras a mostrar.
+ *
+ * @emits {string} delete-purchase - Se emite cuando se confirma la eliminación de una compra
+ *   desde el modal de detalles. El payload es el `id` de la compra a eliminar.
+ */
 import { ref } from 'vue'
 import PurchaseDetailModal from './PurchaseDetailModal.vue'
 

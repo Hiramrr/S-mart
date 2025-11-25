@@ -2,6 +2,24 @@ import { ref, computed } from 'vue';
 import { useProductStore } from '@/stores/products';
 import { useVentasStore } from '@/stores/ventas';
 
+/**
+ * @module useCajeroCart
+ * @description Composable que encapsula toda la lógica para la gestión del carrito de compras del cajero.
+ * Se encarga de añadir, actualizar y eliminar productos, calcular totales y aplicar cupones.
+ *
+ * @returns {object} Un objeto con el estado y los métodos para manipular el carrito.
+ * @property {import('vue').Ref<Array<object>>} cartItems - Lista reactiva de los productos en el carrito.
+ * @property {import('vue').Ref<number>} discount - El monto del descuento aplicado.
+ * @property {import('vue').Ref<object|null>} appliedCoupon - El objeto del cupón que se ha aplicado.
+ * @property {import('vue').ComputedRef<number>} subtotal - El subtotal calculado de los items antes de descuentos.
+ * @property {import('vue').ComputedRef<number>} total - El total final después de aplicar descuentos.
+ * @property {function(object): void} addProduct - Función para añadir un producto al carrito.
+ * @property {function(string, number): void} updateQuantity - Función para actualizar la cantidad de un producto en el carrito.
+ * @property {function(string): void} removeItem - Función para eliminar un producto del carrito.
+ * @property {function(string): Promise<boolean>} handleApplyCoupon - Función para validar y aplicar un código de cupón.
+ * @property {function(): void} handleCancelPurchase - Función para cancelar la compra y devolver el stock.
+ * @property {function(): void} clearCart - Función para limpiar el carrito sin devolver stock (usado post-compra).
+ */
 export function useCajeroCart() {
   const productStore = useProductStore();
   const ventasStore = useVentasStore();

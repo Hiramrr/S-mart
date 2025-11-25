@@ -43,6 +43,18 @@
 </template>
 
 <script>
+/**
+ * @file ProductSelector.vue
+ * @description
+ * Componente que muestra una lista de productos disponibles en una tabla.
+ * Incluye una funcionalidad de búsqueda para filtrar los productos por nombre
+ * y un botón en cada fila para agregar un producto al carrito de compras.
+ *
+ * @prop {Array<object>} products - La lista completa de productos a mostrar.
+ *
+ * @emits {object} add-product - Se emite cuando el usuario hace clic en el botón 'Agregar'.
+ *   El payload es el objeto completo del producto seleccionado.
+ */
 import { ref, computed } from 'vue'
 
 export default {

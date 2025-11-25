@@ -65,6 +65,20 @@
 </template>
 
 <script>
+/**
+ * @file ShoppingCart.vue
+ * @description
+ * Muestra una lista de los productos que se han agregado al carrito de compras.
+ * Para cada producto, permite aumentar o disminuir la cantidad, o eliminarlo por completo.
+ *
+ * @prop {Array<object>} items - La lista de productos en el carrito. Cada objeto debe tener
+ *   `id`, `name`, `precio`, y `cantidad`.
+ *
+ * @emits {object} update-quantity - Se emite cuando el usuario presiona '+' o '-'.
+ *   El payload es `{ productId: string, newQuantity: number }`.
+ * @emits {string} remove-item - Se emite cuando el usuario presiona el botón de eliminar.
+ *   El payload es el `id` del producto a eliminar.
+ */
 export default {
   name: 'ShoppingCart',
   props: {
