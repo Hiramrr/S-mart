@@ -1,18 +1,42 @@
 <script setup>
+/**
+ * @file VendedorPedidosView.vue
+ * @description Componente de vista para la Gestión de Pedidos.
+ * Permite a los vendedores y administradores visualizar un listado de ventas,
+ * filtrar por estado, ver estadísticas generales y navegar al detalle de cada pedido.
+ * @author Equiipo A
+ */
 import { ref, onMounted, computed } from 'vue'
 import { supabase } from '@/lib/supabase.js'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 
+// --- Inicialización de Hooks ---
 const authStore = useAuthStore()
 const router = useRouter()
 
+// --- Estado Reactivo ---
+
+/** @type {import('vue').Ref<Array<Object>>} Lista completa de ventas obtenidas de la BD */
 const ventas = ref([])
+/** @type {import('vue').Ref<boolean>} Indicador de carga de datos */
 const loading = ref(true)
+/** @type {import('vue').Ref<string|null>} Mensaje de error en caso de fallo */
 const error = ref(null)
+/** @type {import('vue').Ref<string>} Filtro de estado seleccionado */
 const filtroEstado = ref('todos')
 
+/**
+ * Carga las ventas del vendedor actual desde Supabase.
+ * Realiza las siguientes operaciones:
+ * 1. Obtiene registros de 'venta_en_linea' filtrados por vendedor_id.
+ * 2. Normaliza la estructura del campo JSON 'productos' para compatibilidad hacia atrás.
+ * 3. Extrae los IDs de dirección y realiza una consulta batch a la tabla 'direcciones'.
+ * 4. Combina la información de venta con la dirección correspondiente.
+ * @async
+ * @returns {Promise<void>}
+ */
 async function cargarVentas() {
   if (!authStore.usuario?.id) return
 
@@ -85,6 +109,11 @@ async function cargarVentas() {
   }
 }
 
+/**
+ * Filtra la lista de ventas según el estado seleccionado en `filtroEstado`.
+ * Utiliza `obtenerEstadoActual` para determinar el estado de cada venta.
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const ventasFiltradas = computed(() => {
   if (filtroEstado.value === 'todos') {
     return ventas.value
@@ -96,6 +125,11 @@ const ventasFiltradas = computed(() => {
   })
 })
 
+/**
+ * Calcula conteos de ventas agrupados por su estado actual.
+ * Se utiliza para mostrar las tarjetas de estadísticas en la parte superior.
+ * @type {import('vue').ComputedRef<Object>} Objeto con claves: total, procesando, enPreparacion, enCamino, entregados, cancelados.
+ */
 const estadisticas = computed(() => {
   const total = ventas.value.length
   const procesando = ventas.value.filter(
@@ -124,6 +158,12 @@ const estadisticas = computed(() => {
   }
 })
 
+/**
+ * Determina el estado actual del pedido basado en el historial de seguimiento.
+ * Ordena el array de seguimiento por fecha descendente y toma el primero.
+ * @param {Array<{fecha: string, estado: string}>} seguimiento - Historial de estados.
+ * @returns {string} El estado más reciente o 'Procesando pedido' por defecto.
+ */
 function obtenerEstadoActual(seguimiento) {
   if (!seguimiento || !Array.isArray(seguimiento) || seguimiento.length === 0) {
     return 'Procesando pedido'
@@ -132,6 +172,12 @@ function obtenerEstadoActual(seguimiento) {
   return ordenado[0].estado
 }
 
+/**
+ * Construye una cadena de texto legible con la dirección completa.
+ * Concatena calle, número, colonia, municipio, estado y CP.
+ * @param {Object} direccion - Objeto de dirección de la BD.
+ * @returns {string} Dirección formateada.
+ */
 function obtenerDireccionCompleta(direccion) {
   if (!direccion) return 'No disponible'
 
@@ -174,10 +220,19 @@ function obtenerDireccionCompleta(direccion) {
   return partes.length > 0 ? partes.join(', ') : 'Dirección incompleta'
 }
 
+/**
+ * Navega a la vista de detalle de una venta específica.
+ * @param {string} ventaId - UUID de la venta.
+ */
 function verDetalle(ventaId) {
   router.push({ name: 'detalle-venta', params: { id: ventaId } })
 }
 
+/**
+ * Formatea una fecha incluyendo hora (ej. "27 de noviembre de 2023, 14:30").
+ * @param {string} fecha - Cadena ISO de fecha.
+ * @returns {string} Fecha formateada localmente (es-MX).
+ */
 function formatearFecha(fecha) {
   if (!fecha) return 'No disponible'
   return new Date(fecha).toLocaleString('es-MX', {
@@ -189,6 +244,11 @@ function formatearFecha(fecha) {
   })
 }
 
+/**
+ * Formatea una fecha corta (solo día, mes y año).
+ * @param {string} fecha - Cadena ISO de fecha.
+ * @returns {string} Fecha formateada localmente (es-MX).
+ */
 function formatearFechaCorta(fecha) {
   if (!fecha) return 'No disponible'
   return new Date(fecha).toLocaleDateString('es-MX', {
@@ -198,6 +258,7 @@ function formatearFechaCorta(fecha) {
   })
 }
 
+// --- Ciclo de Vida ---
 onMounted(() => {
   if (!authStore.usuario) {
     router.push({ name: 'login' })
