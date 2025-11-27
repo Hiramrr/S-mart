@@ -1,19 +1,45 @@
 <script setup>
+/**
+ * @file SeguimientoEnvioView.vue
+ * @description Componente para el historial y seguimiento de pedidos.
+ * Funciona como una vista dual:
+ * 1. 'Mis Compras': Para cualquier usuario autenticado.
+ * 2. 'Mis Ventas': Pestaña adicional visible solo para Vendedores/Admins.
+ * Gestiona la obtención de datos, normalización de estructuras de productos
+ * y visualización de estados de envío.
+ * @author Equipo A
+ */
 import { ref, onMounted, computed } from 'vue'
 import { supabase } from '@/lib/supabase.js'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 
+// --- Inicialización de Hooks ---
 const authStore = useAuthStore()
 const router = useRouter()
 
+// --- Estado Reactivo ---
+/** @type {import('vue').Ref<Array<Object>>} Lista de compras realizadas por el usuario */
 const compras = ref([])
+/** @type {import('vue').Ref<Array<Object>>} Lista de ventas realizadas por el usuario (si es vendedor/admin) */
 const ventas = ref([])
+/** @type {import('vue').Ref<boolean>} Indicador de carga general */
 const loading = ref(true)
+/** @type {import('vue').Ref<string|null>} Mensaje de error general */
 const error = ref(null)
+/** @type {import('vue').Ref<string>} Vista activa: 'compras' o 'ventas' */
 const vistaActiva = ref('compras')
 
+// --- Funciones de Carga de Datos ---
+/**
+ * Carga el historial de compras del usuario (rol cliente).
+ * Realiza las siguientes operaciones:
+ * 1. Obtiene ventas filtrando por `cliente_id`.
+ * 2. Normaliza la estructura JSON de productos (manejo de compatibilidad de precios/imágenes).
+ * 3. Obtiene y cruza la información de las direcciones de envío (evitando consultas N+1).
+ * @async
+ */
 async function cargarCompras() {
   if (!authStore.usuario?.id) return
 
@@ -84,6 +110,11 @@ async function cargarCompras() {
   }
 }
 
+/**
+ * Carga el historial de ventas (solo si el usuario es Vendedor o Admin).
+ * Similar a `cargarCompras` pero filtra por `vendedor_id`.
+ * @async
+ */
 async function cargarVentas() {
   if (!authStore.usuario?.id) return
   if (!authStore.esVendedor && !authStore.esAdmin) return
@@ -140,6 +171,11 @@ async function cargarVentas() {
   }
 }
 
+/**
+ * Orquestador principal de carga de datos.
+ * Ejecuta la carga de compras y, si corresponde, la de ventas.
+ * @async
+ */
 async function cargarDatos() {
   loading.value = true
   error.value = null
@@ -157,14 +193,27 @@ async function cargarDatos() {
   }
 }
 
+/**
+ * Retorna la lista de pedidos correspondiente a la pestaña activa.
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const listaActual = computed(() => {
   return vistaActiva.value === 'compras' ? compras.value : ventas.value
 })
 
+/**
+ * Determina si debe mostrarse la pestaña de "Mis Ventas".
+ * @type {import('vue').ComputedRef<boolean>}
+ */
 const mostrarVentas = computed(() => {
   return authStore.esVendedor || authStore.esAdmin
 })
 
+/**
+ * Obtiene el estado más reciente del historial de seguimiento.
+ * @param {Array<{fecha: string, estado: string}>} seguimiento - Array de objetos de estado.
+ * @returns {string} El estado actual o 'Procesando pedido' por defecto.
+ */
 function obtenerEstadoActual(seguimiento) {
   if (!seguimiento || !Array.isArray(seguimiento) || seguimiento.length === 0) {
     return 'Procesando pedido'
@@ -173,6 +222,12 @@ function obtenerEstadoActual(seguimiento) {
   return ordenado[0].estado
 }
 
+/**
+ * Construye una dirección completa a partir de un objeto de dirección.
+ * Maneja campos opcionales y formatos variados.
+ * @param {Object} direccion - Objeto de dirección con posibles campos.
+ * @returns {string} Dirección formateada o 'No disponible' si no hay datos.
+ */
 function obtenerDireccionCompleta(direccion) {
   if (!direccion) return 'No disponible'
 
@@ -215,10 +270,19 @@ function obtenerDireccionCompleta(direccion) {
   return partes.length > 0 ? partes.join(', ') : 'Dirección incompleta'
 }
 
+/**
+ * Navega a la vista de detalle de una venta específica.
+ * @param {string} ventaId - ID de la venta a detallar.
+ */
 function verDetalle(ventaId) {
   router.push({ name: 'detalle-venta', params: { id: ventaId } })
 }
 
+/**
+ * Formatea una fecha en un string legible en español (México).
+ * @param {string} fecha - Fecha en formato ISO o similar.
+ * @returns {string} Fecha formateada o 'No disponible' si es inválida.
+ */
 function formatearFecha(fecha) {
   if (!fecha) return 'No disponible'
   return new Date(fecha).toLocaleString('es-MX', {
@@ -230,6 +294,11 @@ function formatearFecha(fecha) {
   })
 }
 
+/**
+ * Formatea una fecha en un string corto legible en español (México).
+ * @param {string} fecha - Fecha en formato ISO o similar.
+ * @returns {string} Fecha formateada o 'No disponible' si es inválida.
+ */
 function formatearFechaCorta(fecha) {
   if (!fecha) return 'No disponible'
   return new Date(fecha).toLocaleDateString('es-MX', {
@@ -239,10 +308,12 @@ function formatearFechaCorta(fecha) {
   })
 }
 
+
 function volverAtras() {
   router.back()
 }
 
+// --- Ciclo de Vida ---
 onMounted(() => {
   if (!authStore.usuario) {
     router.push({ name: 'login' })
