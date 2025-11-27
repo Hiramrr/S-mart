@@ -1,4 +1,13 @@
 <script setup>
+/**
+ * @file ProductoDetalleView.vue
+ * @description Vista principal para el detalle de un producto individual.
+ * Orquesta la visualización de la galería, información, acciones de compra,
+ * productos relacionados y reseñas. Gestiona la lógica de añadido al carrito,
+ * compra inmediata y comunicación (chat) con el vendedor.
+ * @author Equipo A
+ */
+
 import { ref, onMounted, computed, watch } from 'vue'
 import { supabase } from '@/lib/supabase.js'
 import { useRouter } from 'vue-router'
@@ -15,11 +24,13 @@ import ChatModal from '@/components/Chat/ChatModal.vue'
 import { useCartStore } from '@/stores/cartStore'
 import { useRole } from '@/composables/useRole'
 
+// --- Inicialización de Stores y Hooks ---
 const cartStore = useCartStore()
 const authStore = useAuthStore()
 const router = useRouter()
 const { requireAuth } = useRole()
 
+// --- Props ---
 const props = defineProps({
   id: {
     type: [String, Number],
@@ -27,12 +38,25 @@ const props = defineProps({
   },
 })
 
+// --- Props ---
+/** @type {import('vue').Ref<Object|null>} Objeto con los datos del producto cargado desde Supabase */
 const product = ref(null)
+/** @type {import('vue').Ref<boolean>} Indica si la información del producto se está cargando */
 const loading = ref(true)
+/** @type {import('vue').Ref<string|null>} Mensaje de error en caso de fallo al cargar el producto */
 const error = ref(null)
+/** @type {import('vue').Ref<boolean>} Controla la visibilidad del modal de chat */
 const chatAbierto = ref(false)
+/** @type {import('vue').Ref<Object|null>} Datos de la conversación activa para el chat */
 const conversacionActual = ref(null)
 
+/**
+ * Carga la información detallada del producto desde Supabase basada en `props.id`.
+ * Selecciona campos específicos incluyendo el `vendedor_id` para el chat.
+ * Maneja errores específicos como el código PGRST116 (fila no encontrada).
+ * @async
+ * @returns {Promise<void>}
+ */
 async function cargarDetalleProducto() {
   product.value = null
   loading.value = true
@@ -72,7 +96,12 @@ async function cargarDetalleProducto() {
   }
 }
 
-// ... (tus computed properties 'finalPrice' y 'originalPrice' están perfectas) ...
+/**
+ * Calcula el precio final a mostrar.
+ * Si existe un precio de descuento válido (mayor a 0 y menor al precio original),
+ * se muestra el descuento; de lo contrario, el precio de venta normal.
+ * @returns {string} Precio formateado con símbolo de moneda (ej. "$100.00").
+ */
 const finalPrice = computed(() => {
   if (!product.value) return ''
   const tieneDescuento =
@@ -85,6 +114,10 @@ const finalPrice = computed(() => {
     : `$${product.value.precio_venta.toFixed(2)}`
 })
 
+/**
+ * Calcula el precio original para mostrar tachado si aplica descuento.
+ * @returns {string|null} Precio original formateado o null si no hay descuento.
+ */
 const originalPrice = computed(() => {
   if (!product.value) return null
   const tieneDescuento =
@@ -95,6 +128,7 @@ const originalPrice = computed(() => {
   return tieneDescuento ? `$${product.value.precio_venta.toFixed(2)}` : null
 })
 
+// --- Ciclo de Vida y Watchers ---
 onMounted(() => {
   cargarDetalleProducto()
 })
@@ -108,7 +142,13 @@ watch(
   }
 )
 
-// --- FUNCIÓN "AÑADIR A CARRITO" ACTUALIZADA ---
+/**
+ * Maneja la acción de agregar al carrito.
+ * 1. Verifica si la cuenta está suspendida.
+ * 2. Verifica autenticación mediante `requireAuth()`.
+ * 3. Si pasa las validaciones, agrega al store global del carrito.
+ * @param {number} quantity - Cantidad seleccionada.
+ */
 const handleAddToCart = (quantity) => {
   if (authStore.estaSuspendido) {
     alert('Tu cuenta ha sido suspendida. No puedes realizar compras.')
@@ -126,6 +166,13 @@ const handleAddToCart = (quantity) => {
   }
 }
 
+/**
+ * Maneja la acción de compra inmediata ("Comprar ahora").
+ * 1. Verifica suspensión y autenticación.
+ * 2. Redirige directamente al paso de selección de dirección, pasando
+ * el ID del producto y la cantidad en la URL para saltar el carrito global.
+ * @param {number} quantity - Cantidad seleccionada.
+ */
 const handleBuyNow = (quantity) => {
   // 1. Verifica suspensión (como ya lo tenías)
   if (authStore.estaSuspendido) {
@@ -152,11 +199,18 @@ const handleBuyNow = (quantity) => {
   }
 }
 
+/**
+ * Abre el modal de chat estableciendo la conversación actual.
+ * @param {Object} conversacion - Datos de la conversación iniciada o existente.
+ */
 function abrirChat(conversacion) {
   conversacionActual.value = conversacion
   chatAbierto.value = true
 }
 
+/**
+ * Cierra el modal de chat y limpia la conversación actual.
+ */
 function cerrarChat() {
   chatAbierto.value = false
   conversacionActual.value = null
