@@ -162,6 +162,14 @@
 </template>
 
 <script setup>
+/**
+ * @file EditarProducto.vue
+ * @description Componente de Vue para editar la información de un producto existente.
+ * Permite actualizar datos básicos, precios e imágenes. Gestiona permisos basados
+ * en el rol del usuario (admin vs vendedor) utilizando Supabase.
+ * @author Equipo A
+ */
+
 import { ref, onMounted } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useRouter, useRoute } from 'vue-router'
@@ -170,30 +178,70 @@ import { supabase } from '@/lib/supabase.js'
 import { useAuthStore } from '@/stores/auth'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 
+// --- Inicialización de Hooks ---
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
+/**
+ * ID del producto obtenido de los parámetros de la URL.
+ * @type {import('vue').Ref<string>}
+ */
 const productId = ref(route.params.id)
+
+/**
+ * Estado de carga inicial al obtener los datos del producto.
+ * @type {import('vue').Ref<boolean>}
+ */
 const loading = ref(true)
+
+/**
+ * Estado de carga durante el proceso de actualización (guardado).
+ * @type {import('vue').Ref<boolean>}
+ */
 const updating = ref(false)
+
+/**
+ * Mensaje de error para mostrar en la interfaz si falla la carga.
+ * @type {import('vue').Ref<string|null>}
+ */
 const error = ref(null)
 
+// --- Campos del Formulario ---
 const nombre = ref('')
 const sku = ref('')
 const descripcion = ref('')
 const categoria = ref('')
 const categorias = ref([])
-const stock = ref(0)
+const stock = ref(0)/** @type {import('vue').Ref<File|null>} Archivo de imagen seleccionado por el usuario */
 const precio = ref(0)
 const precioDescuento = ref(null)
+
+// --- Manejo de Imágenes ---
+
+/** @type {import('vue').Ref<File|null>} Archivo de imagen seleccionado por el usuario */
 const imagen = ref(null)
+
+/** @type {import('vue').Ref<string|null>} URL base64 para previsualización local */
 const imagenPreview = ref(null)
+
+/** @type {import('vue').Ref<string|null>} URL de la imagen existente en base de datos */
 const imagenUrlOriginal = ref(null)
+
+/** Reference al elemento input type="file" del DOM */
 const fileInput = ref(null)
 
 const toast = useToast()
 
+
+// --- Funciones ---
+
+/**
+ * Obtiene la lista de categorías disponibles desde Supabase.
+ * Ordena los resultados alfabéticamente por nombre.
+ * @async
+ * @returns {Promise<void>}
+ */
 async function cargarCategorias() {
   try {
     const { data, error } = await supabase.from('categoria').select('nombre').order('nombre')
@@ -211,6 +259,16 @@ async function cargarCategorias() {
   }
 }
 
+
+/**
+ * Carga los datos del producto específico basado en `productId`.
+ * Verifica la sesión del usuario y aplica filtros de seguridad (RLS):
+ * - Si es 'vendedor', solo puede ver sus propios productos.
+ * - Si es 'admin', puede ver cualquier producto.
+ * Mapea los datos recibidos a las variables reactivas del formulario.
+ * @async
+ * @returns {Promise<void>}
+ */
 async function cargarProducto() {
   try {
     loading.value = true
@@ -260,10 +318,20 @@ async function cargarProducto() {
   }
 }
 
+
+/**
+ * Activa programáticamente el click en el input de archivo oculto.
+ */
 function triggerFileInput() {
   fileInput.value?.click()
 }
 
+/**
+ * Maneja el evento de cambio del input de archivo.
+ * Valida que el archivo sea una imagen y que pese menos de 10MB.
+ * Genera una previsualización local usando FileReader.
+ * @param {Event} event - Evento nativo del input file
+ */
 function onFileChange(event) {
   const file = event.target.files?.[0]
   if (!file) return
@@ -287,6 +355,14 @@ function onFileChange(event) {
   reader.readAsDataURL(file)
 }
 
+/**
+ * Actualiza la información del producto en Supabase.
+ * Si se seleccionó una nueva imagen, la sube a Cloudinary primero.
+ * Aplica filtros de seguridad (RLS) según el rol del usuario.
+ * Muestra notificaciones de éxito o error.
+ * @async
+ * @returns {Promise<void>}
+ */
 async function actualizarProducto() {
   try {
     updating.value = true
@@ -341,6 +417,9 @@ async function actualizarProducto() {
   }
 }
 
+/**
+ * Cancela la edición y redirige a la lista de productos correspondiente al rol.
+ */
 function cancelar() {
   if (authStore.rolUsuario === 'vendedor') {
       router.push('/VdndedorProductos')
@@ -349,6 +428,9 @@ function cancelar() {
   }
 }
 
+/**
+ * Navega de regreso al panel principal correspondiente al rol del usuario.
+ */
 function goToPanel() {
   if (authStore.rolUsuario === 'vendedor') {
       router.push('/VendedorProductos')
