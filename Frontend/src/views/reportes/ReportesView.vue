@@ -1,21 +1,48 @@
 <script setup>
+/**
+ * @file ReporteVentas.vue
+ * @description Componente de visualización de reportes de ventas.
+ * Muestra una tabla con el historial de ventas (En línea y POS).
+ * Incluye una funcionalidad de "Master-Detail" para expandir cada fila
+ * y ver los productos específicos vendidos en esa transacción.
+ * Restringe y adapta la vista según el rol del usuario (Admin ve responsables, etc.).
+ * @author Equipos A
+ */
+
 import { ref, onMounted, computed } from 'vue'
 import { supabase } from '@/lib/supabase.js'
 import { useAuthStore } from '@/stores/auth'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 
+// --- Estado Reactivo ---
+/** @type {import('vue').Ref<Array<Object>>} Lista procesada de ventas para la tabla */
 const ventas = ref([])
+/** @type {import('vue').Ref<boolean>} Indicador de carga */
 const loading = ref(true)
+/** @type {import('vue').Ref<string|null>} Mensaje de error */
 const error = ref(null)
+
 const authStore = useAuthStore()
+
+/**
+ * Rol del usuario actual derivado del store de autenticación.
+ * Se usa para condicionar columnas de la tabla (ej. mostrar columna 'Responsable' solo a admins).
+ * @type {import('vue').ComputedRef<string>}
+ */
 const userRole = computed(() => authStore.rolUsuario)
 
-// --- NUEVO ---
-// Guarda el ID de la fila que está expandida
+/** * Guarda el ID de la venta cuya fila de detalles está actualmente visible.
+ * Si es null, ninguna fila está expandida.
+ * @type {import('vue').Ref<number|string|null>} 
+ */
 const expandedRowId = ref(null)
 
-// --- NUEVO ---
-// Función para mostrar/ocultar el detalle de una fila
+/**
+ * Alterna la visibilidad del detalle de una fila.
+ * Si se hace clic en la misma fila abierta, se cierra.
+ * Si se hace clic en otra, se cierra la anterior y se abre la nueva.
+ * @param {number|string} ventaId - ID único de la venta.
+ */
 function toggleRow(ventaId) {
   if (expandedRowId.value === ventaId) {
     expandedRowId.value = null // Ciérrala si ya estaba abierta
@@ -24,7 +51,11 @@ function toggleRow(ventaId) {
   }
 }
 
-// Formateador de moneda
+/**
+ * Formatea un valor numérico a moneda mexicana (MXN).
+ * @param {number} value - Valor monetario.
+ * @returns {string} Cadena formateada (ej. "$1,200.50").
+ */
 const formatCurrency = (value) => {
   if (value === null || value === undefined) return 'N/A'
   return new Intl.NumberFormat('es-MX', {
@@ -33,7 +64,11 @@ const formatCurrency = (value) => {
   }).format(value)
 }
 
-// Formateador de fecha
+/**
+ * Formatea una fecha en formato legible en español (es-MX).
+ * @param {string} dateString - Cadena de fecha ISO.
+ * @returns {string} Fecha formateada (ej. "15 mar 2024, 14:30").
+ */
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A'
   return new Date(dateString).toLocaleString('es-MX', {
@@ -45,6 +80,15 @@ const formatDate = (dateString) => {
   })
 }
 
+/**
+ * Obtiene el reporte de ventas desde Supabase ejecutando una función RPC (`get_reporte_ventas`).
+ * Procesa los datos recibidos para:
+ * 1. Calcular el total de items por venta.
+ * 2. Pre-formatear fechas y monedas para evitar cálculos en el template.
+ * 3. Ordenar las ventas de la más reciente a la más antigua.
+ * @async
+ * @returns {Promise<void>}
+ */
 async function cargarReporte() {
   try {
     loading.value = true
@@ -73,6 +117,11 @@ async function cargarReporte() {
   }
 }
 
+/**
+ * Al montar, verifica si el authStore ya terminó de cargar el usuario.
+ * Si está cargando, se suscribe a los cambios hasta que termine.
+ * Una vez cargado, verifica roles permitidos antes de pedir el reporte.
+ */
 onMounted(() => {
   if (authStore.loading) {
     const unwatch = authStore.$subscribe(() => {
