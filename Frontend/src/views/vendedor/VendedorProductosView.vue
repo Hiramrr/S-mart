@@ -1,4 +1,12 @@
 <script setup>
+/**
+ * @file VendedorProductosView.vue
+ * @description Tablero principal para usuarios con rol de Vendedor.
+ * Permite visualizar el inventario, ver estadísticas (stock y valor total),
+ * buscar productos, y realizar acciones como agregar, editar, eliminar productos
+ * o crear cupones. Incluye validaciones de seguridad para cuentas suspendidas.
+ * @author Equipo A
+ */
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '@/lib/supabase.js'
 import { useAuthStore } from '@/stores/auth'
@@ -7,9 +15,15 @@ import ProductCard from '@/components/PrincipalComponents/ProductCard.vue'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 import CouponModal from '@/components/PrincipalComponents/CouponModal.vue'
 
+// --- Inicialización de Hooks ---
 const authStore = useAuthStore()
 const router = useRouter()
 
+/**
+ * Verifica si la cuenta del vendedor está suspendida.
+ * Si lo está, muestra una alerta y bloquea la acción.
+ * @returns {boolean} `true` si la cuenta está activa, `false` si está suspendida.
+ */
 const verificarSuspension = () => {
   if (authStore.estaSuspendido) {
     alert('Tu cuenta ha sido suspendida. No puedes realizar esta acción.')
@@ -18,17 +32,36 @@ const verificarSuspension = () => {
   return true
 }
 
+/** @type {import('vue').Ref<Array<Object>>} Lista de productos transformados para visualización */
 const products = ref([])
+/** @type {import('vue').Ref<boolean>} Estado de carga de la petición de productos */
 const loading = ref(true)
+/** @type {import('vue').Ref<string|null>} Mensaje de error en caso de fallo al cargar productos */
 const error = ref(null)
+/** @type {import('vue').Ref<string>} Término de búsqueda para filtrar productos */
 const search = ref('')
+/** @type {import('vue').Ref<number>} Valor monetario total del inventario (Precio * Stock) */
 const totalVentas = ref(0)
+/** @type {import('vue').Ref<number>} Cantidad total de productos en el inventario */
 const stockTotal = ref(0)
+/** @type {import('vue').Ref<boolean>} Controla la visibilidad del modal de confirmación de eliminación */
 const showDeleteModal = ref(false)
+/** @type {import('vue').Ref<Object|null>} Producto seleccionado para eliminación */
 const productToDelete = ref(null)
+/** @type {import('vue').Ref<boolean>} Controla la visibilidad del modal para crear cupones */
 const showCouponModal = ref(false)
+/** @type {import('vue').Ref<Object>} Producto seleccionado para crear cupón */
 const selectedProduct = ref({ id: '', name: '' })
 
+/**
+ * Obtiene los productos del vendedor actual desde Supabase.
+ * Realiza las siguientes operaciones:
+ * 1. Filtra por `vendedor_id`.
+ * 2. Mapea los datos para formatear precios (detectando descuentos).
+ * 3. Calcula el stock total y el valor total del inventario.
+ * @async
+ * @returns {Promise<void>}
+ */
 async function cargarMisProductos() {
   try {
     loading.value = true
@@ -100,6 +133,11 @@ onMounted(async () => {
   cargarMisProductos()
 })
 
+/**
+ * Filtra la lista de productos localmente basándose en el campo de búsqueda.
+ * La búsqueda es insensible a mayúsculas/minúsculas.
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const filteredProducts = computed(() => {
   if (!search.value.trim()) return products.value
   return products.value.filter((p) =>
@@ -107,17 +145,30 @@ const filteredProducts = computed(() => {
   )
 })
 
+
+/**
+ * Redirige a la vista de creación de productos.
+ * Verifica suspensión antes de navegar.
+ */
 function goToVender() {
   if (!verificarSuspension()) return
   router.push('/AgregarProducto')
 }
 
+/**
+ * Redirige a la vista de edición de un producto específico.
+ * @param {string} productId - ID del producto a editar.
+ */
 function handleEditProduct(productId) {
   if (!productId) return
   if (!verificarSuspension()) return
   router.push(`/EditarProducto/${productId}`)
 }
 
+/**
+ * Abre el modal de confirmación para eliminar un producto.
+ * @param {string} productId - ID del producto a eliminar.
+ */
 function handleDeleteProduct(productId) {
   if (!productId) return
   if (!verificarSuspension()) return
@@ -125,11 +176,19 @@ function handleDeleteProduct(productId) {
   showDeleteModal.value = true
 }
 
+/**
+ * Cierra el modal de eliminación y limpia la selección.
+ */
 function cancelDelete() {
   showDeleteModal.value = false
   productToDelete.value = null
 }
 
+/**
+ * Ejecuta la eliminación del producto en Supabase tras la confirmación.
+ * Si tiene éxito, actualiza la lista local.
+ * @async
+ */
 async function confirmDelete() {
   if (!productToDelete.value) return
 
@@ -148,12 +207,21 @@ async function confirmDelete() {
   }
 }
 
+/**
+ * Abre el modal para crear un cupón asociado a un producto.
+ * @param {string} productId - ID del producto.
+ * @param {string} productName - Nombre del producto.
+ */
 function handleCreateCoupon(productId, productName) {
   if (!verificarSuspension()) return
   selectedProduct.value = { id: productId, name: productName }
   showCouponModal.value = true
 }
 
+/**
+ * Maneja el evento cuando un cupón es creado.
+ * @param {Object} coupon - Datos del cupón creado.
+ */
 function handleCouponCreated(coupon) {
   console.log('Cupón creado:', coupon)
 }
