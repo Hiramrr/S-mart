@@ -1,4 +1,13 @@
 <script setup>
+/**
+ * @file DetalleSeguimiento.vue
+ * @description Vista detallada de un pedido específico.
+ * Funcionalidad Dual:
+ * 1. Cliente: Ver estado, dirección, productos y timeline de envío.
+ * 2. Vendedor/Admin: Todo lo anterior + formulario para actualizar el estado del envío.
+ * Incluye validaciones de seguridad para asegurar que solo las partes involucradas accedan.
+ * @author Equipo A
+ */
 import { ref, onMounted, computed } from 'vue'
 import { supabase } from '@/lib/supabase.js'
 import { useRoute, useRouter } from 'vue-router'
@@ -6,16 +15,28 @@ import { useAuthStore } from '@/stores/auth'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 import { useToast } from 'vue-toastification'
 
+// --- Inicialización de Hooks ---
 const toast = useToast()
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
+// --- Estado Reactivo ---
+/** @type {import('vue').ComputedRef<string>} ID de la venta obtenido de la URL */
 const ventaId = computed(() => route.params.id)
+/** @type {import('vue').Ref<Object|null>} Objeto de la venta cargada */
 const venta = ref(null)
+/** @type {import('vue').Ref<boolean>} Estado de carga */
 const loading = ref(true)
+/** @type {import('vue').Ref<string|null>} Mensaje de error */
 const error = ref(null)
 
+/**
+ * Carga los detalles completos de la venta.
+ * Realiza validaciones de seguridad manuales para impedir acceso no autorizado.
+ * Normaliza la estructura de productos y carga la dirección asociada.
+ * @async
+ */
 async function cargarDetalle() {
   loading.value = true
   error.value = null
@@ -92,6 +113,10 @@ async function cargarDetalle() {
   }
 }
 
+/**
+ * Construye la dirección completa concatenando campos.
+ * @type {import('vue').ComputedRef<string>}
+ */
 const direccionCompleta = computed(() => {
   if (!venta.value?.direccion) return 'No disponible'
   const dir = venta.value.direccion
@@ -135,6 +160,10 @@ const direccionCompleta = computed(() => {
   return partes.length > 0 ? partes.join(', ') : 'Dirección incompleta'
 })
 
+/**
+ * Historial de seguimiento ordenado de forma descendente por fecha.
+ * @type {import('vue').ComputedRef<Array>}
+ */
 const seguimientoOrdenado = computed(() => {
   if (!venta.value?.seguimiento || !Array.isArray(venta.value.seguimiento)) {
     return []
@@ -142,6 +171,10 @@ const seguimientoOrdenado = computed(() => {
   return [...venta.value.seguimiento].sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
 })
 
+/**
+ * Estado actual del pedido basado en el historial de seguimiento.
+ * @type {import('vue').ComputedRef<string>}
+ */
 const estadoActual = computed(() => {
   if (seguimientoOrdenado.value.length === 0) {
     return 'Procesando pedido'
@@ -149,10 +182,15 @@ const estadoActual = computed(() => {
   return seguimientoOrdenado.value[0].estado
 })
 
+/**
+ * Indica si el usuario actual es el vendedor o un administrador.
+ * @type {import('vue').ComputedRef<boolean>}
+ */
 const esVendedor = computed(() => {
   return venta.value?.vendedor_id === authStore.usuario?.id || authStore.esAdmin
 })
 
+// --- Estado para Actualización (Vendedor) ---
 const mostrarFormularioActualizacion = ref(false)
 const nuevoEstado = ref('')
 const nuevaDescripcion = ref('')
@@ -168,6 +206,11 @@ const estadosDisponibles = [
   'Cancelado',
 ]
 
+/**
+ * Agrega un nuevo evento al historial de seguimiento de la venta.
+ * Actualiza el campo JSONB `seguimiento` en la base de datos.
+ * @async
+ */
 async function agregarSeguimiento() {
   if (!nuevoEstado.value) {
     toast.error('Debes seleccionar un estado')
@@ -212,6 +255,9 @@ async function agregarSeguimiento() {
   }
 }
 
+/**
+ * Limpia el formulario de actualización.
+ */
 function cancelarActualizacion() {
   nuevoEstado.value = ''
   nuevaDescripcion.value = ''
@@ -219,6 +265,11 @@ function cancelarActualizacion() {
   mostrarFormularioActualizacion.value = false
 }
 
+/**
+ * Formatea una fecha en un string legible en español (México).
+ * @param {string} fecha - Fecha en formato ISO o similar.
+ * @returns {string} Fecha formateada o 'No disponible' si es inválida.
+ */
 function formatearFecha(fecha) {
   if (!fecha) return 'No disponible'
   return new Date(fecha).toLocaleString('es-MX', {
@@ -230,6 +281,11 @@ function formatearFecha(fecha) {
   })
 }
 
+/**
+ * Formatea una fecha en un string corto legible en español (México).
+ * @param {string} fecha - Fecha en formato ISO o similar.
+ * @returns {string} Fecha formateada o 'No disponible' si es inválida.
+ */
 function formatearFechaCorta(fecha) {
   if (!fecha) return 'No disponible'
   return new Date(fecha).toLocaleDateString('es-MX', {
@@ -239,6 +295,9 @@ function formatearFechaCorta(fecha) {
   })
 }
 
+/**
+ * Navega de regreso a la vista de seguimiento de envíos.
+ */
 function volverAtras() {
   router.push({ name: 'seguimiento-envio' })
 }
