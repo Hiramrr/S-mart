@@ -1,26 +1,52 @@
 <script setup>
+/**
+ * @file AdminUsuariosView.vue
+ * @description Panel de administración para la gestión de usuarios.
+ * Permite a los administradores:
+ * 1. Listar todos los usuarios registrados.
+ * 2. Cambiar roles (Cliente, Admin, Vendedor, Cajero).
+ * 3. Suspender o reactivar cuentas (control de acceso).
+ * 4. Asignar/Modificar códigos de acceso para el módulo de Cajero (POS).
+ * @author Equipo A
+ */
 import { ref, onMounted } from 'vue'
 import { supabase } from '@/lib/supabase'
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 
+/** @type {import('vue').Ref<Array<Object>>} Lista de usuarios con sus códigos aplanados */
 const usuarios = ref([])
+/** @type {import('vue').Ref<boolean>} Controla la visibilidad del modal de edición de rol */
 const mostrarFormulario = ref(false)
+/** @type {import('vue').Ref<boolean>} Controla la visibilidad del modal de suspensión */
 const mostrarModalSuspension = ref(false)
+/** @type {import('vue').Ref<Object|null>} Usuario seleccionado para editar rol */
 const usuarioEditando = ref(null)
+/** @type {import('vue').Ref<Object|null>} Usuario seleccionado para suspensión */
 const usuarioASuspender = ref(null)
+/** @type {import('vue').Ref<boolean>} Indica si se está cargando una operación */
 const cargando = ref(false)
+/** @type {import('vue').Ref<string|null>} Mensaje de error global */
 const error = ref(null)
 
+/** @type {Array<string>} Roles disponibles en el sistema */
 const roles = ['cliente', 'administrador', 'vendedor', 'cajero']
-
+/** @type {import('vue').Ref<Object>} Modelo para el formulario de cambio de rol */
 const nuevoUsuario = ref({
   rol: 'cliente',
 })
 
+// --- Estado para Códigos de Cajero ---
 const mostrarModalCodigo = ref(false)
 const usuarioParaCodigo = ref(null)
 const nuevoCodigoCierre = ref('')
 
+/**
+ * Carga la lista de usuarios desde Supabase.
+ * Realiza un Join con la tabla `codigo_entrada_cajero` para obtener el PIN asignado.
+ * * NOTA: Aplana la estructura de la respuesta. Supabase devuelve la relación como un objeto,
+ * pero la UI espera una propiedad `cierre_code` directa en el objeto usuario.
+ * @async
+ */
 const cargarUsuarios = async () => {
   try {
     cargando.value = true
@@ -64,6 +90,8 @@ const cargarUsuarios = async () => {
   }
 }
 
+// --- Gestión de Roles ---
+
 const abrirFormulario = (usuario) => {
   usuarioEditando.value = usuario
   nuevoUsuario.value = { rol: usuario.rol }
@@ -101,6 +129,8 @@ const guardarRol = async () => {
   }
 }
 
+// --- Gestión de Suspensión ---
+
 const abrirModalSuspension = (usuario) => {
   usuarioASuspender.value = usuario
   mostrarModalSuspension.value = true
@@ -113,6 +143,11 @@ const cerrarModalSuspension = () => {
   error.value = null
 }
 
+/**
+ * Invierte el estado de suspensión (`suspendido`) del usuario seleccionado.
+ * Un usuario suspendido no puede iniciar sesión ni realizar acciones.
+ * @async
+ */
 const confirmarSuspension = async () => {
   if (!usuarioASuspender.value) return
   const nuevoEstado = !usuarioASuspender.value.suspendido
@@ -135,6 +170,8 @@ const confirmarSuspension = async () => {
   }
 }
 
+// --- Gestión de Códigos de Cajero ---
+
 const abrirModalCodigo = (usuario) => {
   usuarioParaCodigo.value = usuario
   nuevoCodigoCierre.value = usuario.cierre_code || ''
@@ -149,7 +186,12 @@ const cerrarModalCodigo = () => {
   error.value = null
 }
 
-// Esta función ya incluye el arreglo de la sesión anterior
+/**
+ * Asigna o actualiza el código de cierre (PIN) para un usuario (generalmente cajero/admin).
+ * Utiliza `upsert` en la tabla `codigo_entrada_cajero`.
+ * Maneja el error de unicidad (código 23505) si el PIN ya está en uso.
+ * @async
+ */
 const guardarCodigoCierre = async () => {
   if (nuevoCodigoCierre.value.length !== 4) {
     error.value = 'El código debe ser de 4 dígitos.'
@@ -198,6 +240,7 @@ const guardarCodigoCierre = async () => {
   }
 }
 
+// --- Ciclo de Vida ---
 onMounted(() => {
   cargarUsuarios()
 })
