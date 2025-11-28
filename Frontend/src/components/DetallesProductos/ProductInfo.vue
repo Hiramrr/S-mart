@@ -1,4 +1,15 @@
 <script setup>
+/**
+ * @file ProductInfo.vue
+ * @description Componente que muestra la información detallada de un producto, como nombre, precio, descripción, etc.
+ * @property {String} name - El nombre del producto.
+ * @property {String} price - El precio actual del producto, formateado como texto.
+ * @property {String|null} [originalPrice=null] - El precio original del producto para mostrar un descuento. Opcional.
+ * @property {String} description - La descripción detallada del producto.
+ * @property {String} category - La categoría a la que pertenece el producto.
+ * @property {String} sku - El código SKU (Stock Keeping Unit) del producto.
+ * @property {Number} stock - La cantidad de unidades disponibles en inventario.
+ */
 defineProps({
   name: String,
   price: String, 

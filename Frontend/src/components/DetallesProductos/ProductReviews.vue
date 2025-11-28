@@ -1,8 +1,18 @@
 <script setup>
+/**
+ * @file ProductReviews.vue
+ * @description Componente para mostrar y enviar reseñas de un producto.
+ * Gestiona la carga de reseñas existentes, permite a los usuarios autenticados y autorizados
+ * publicar nuevas reseñas y muestra mensajes adecuados según el estado del usuario (logueado, suspendido, etc.).
+ */
 import { ref, onMounted, computed } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
 
+/**
+ * @props {Object} props - Propiedades del componente.
+ * @property {String|Number} productId - El ID del producto para el cual se gestionan las reseñas. Requerido.
+ */
 const props = defineProps({
   productId: {
     type: [String, Number],
@@ -10,19 +20,59 @@ const props = defineProps({
   },
 })
 
+/**
+ * @type {import('@/stores/auth').AuthStore}
+ * @description Instancia del store de autenticación para gestionar el estado del usuario.
+ */
 const authStore = useAuthStore()
+/**
+ * @type {import('vue').Ref<Array>}
+ * @description Lista de las reseñas cargadas desde la base de datos.
+ */
 const reviews = ref([])
+/**
+ * @type {import('vue').Ref<Boolean>}
+ * @description Estado de carga para la obtención de reseñas.
+ */
 const loading = ref(true)
+/**
+ * @type {import('vue').Ref<String|null>}
+ * @description Mensaje de error si falla la carga o envío de reseñas.
+ */
 const error = ref(null)
 
+/**
+ * @type {import('vue').Ref<String>}
+ * @description Contenido de la nueva reseña que se está escribiendo.
+ */
 const newValue = ref('')
+/**
+ * @type {import('vue').Ref<Number>}
+ * @description Calificación en estrellas para la nueva reseña.
+ */
 const newEstrellas = ref(5)
+/**
+ * @type {import('vue').Ref<Boolean>}
+ * @description Estado que indica si se está procesando el envío de una nueva reseña.
+ */
 const submitting = ref(false)
 
+/**
+ * @computed canPostReview
+ * @description Verifica si el usuario actual tiene permisos para publicar una reseña.
+ * El usuario debe estar logueado, ser cliente o vendedor y no estar suspendido.
+ * @returns {Boolean} - `true` si el usuario puede publicar, de lo contrario `false`.
+ */
 const canPostReview = computed(() => {
   return authStore.usuario && (authStore.esCliente || authStore.esVendedor) && !authStore.estaSuspendido;
 });
 
+/**
+ * @function fetchReviews
+ * @description Obtiene las reseñas del producto desde Supabase.
+ * Ordena las reseñas por fecha de creación descendente y actualiza el estado del componente.
+ * @async
+ */
 async function fetchReviews() {
   try {
     loading.value = true
@@ -51,6 +101,13 @@ async function fetchReviews() {
   }
 }
 
+/**
+ * @function handleSubmitReview
+ * @description Valida y envía una nueva reseña a Supabase.
+ * Realiza comprobaciones de permisos, contenido y calificación antes de enviar.
+ * Actualiza la lista de reseñas después de un envío exitoso.
+ * @async
+ */
 async function handleSubmitReview() {
   if (authStore.estaSuspendido) {
     alert('Tu cuenta ha sido suspendida. No puedes publicar reseñas.')
@@ -104,6 +161,13 @@ async function handleSubmitReview() {
   }
 }
 
+/**
+ * @function getReviewerName
+ * @description Obtiene el nombre a mostrar para el autor de una reseña.
+ * Prioriza el nombre de perfil, si no, usa la parte local del email.
+ * @param {Object} review - El objeto de la reseña.
+ * @returns {String} - El nombre del autor a mostrar.
+ */
 function getReviewerName(review) {
   const userProfile = review.usuarios;
   if (userProfile && userProfile.nombre) {
@@ -115,6 +179,12 @@ function getReviewerName(review) {
   return 'Usuario'
 }
 
+/**
+ * @function formatDate
+ * @description Formatea una cadena de fecha a un formato legible en español.
+ * @param {String} dateString - La fecha en formato de cadena (ISO).
+ * @returns {String} - La fecha formateada (e.g., "27 de noviembre de 2025").
+ */
 function formatDate(dateString) {
   if (!dateString) return '';
   return new Date(dateString).toLocaleDateString('es-ES', {
@@ -124,6 +194,11 @@ function formatDate(dateString) {
   })
 }
 
+/**
+ * @hook onMounted
+ * @description Llama a `fetchReviews` cuando el componente se monta en el DOM
+ * para cargar las reseñas iniciales.
+ */
 onMounted(fetchReviews)
 </script>
 

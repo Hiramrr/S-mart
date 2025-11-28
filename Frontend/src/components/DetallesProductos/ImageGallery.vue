@@ -1,4 +1,10 @@
 <script setup>
+/**
+ * @file ImageGallery.vue
+ * @description Componente para mostrar la imagen principal de un producto.
+ * @property {String} imageUrl - La URL de la imagen principal del producto.
+ * @property {String} productName - El nombre del producto, usado para el texto alternativo de la imagen.
+ */
 defineProps({
   imageUrl: String,
   productName: String,

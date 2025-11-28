@@ -1,6 +1,15 @@
 <script setup>
+/**
+ * @file PurchaseActions.vue
+ * @description Componente que gestiona las acciones de compra de un producto,
+ * incluyendo la selección de cantidad y los botones para añadir al carrito y comprar ahora.
+ */
 import { ref } from 'vue'
 
+/**
+ * @props {Object} props - Propiedades del componente.
+ * @property {Number} stock - La cantidad de stock disponible para el producto. Requerido.
+ */
 const props = defineProps({
   stock: {
     type: Number,
@@ -8,26 +17,53 @@ const props = defineProps({
   },
 })
 
+/**
+ * @emits add-to-cart - Evento emitido al hacer clic en "Añadir al carrito".
+ * @property {Number} quantity - La cantidad de productos seleccionada.
+ *
+ * @emits buy-now - Evento emitido al hacer clic en "Comprar ahora".
+ * @property {Number} quantity - La cantidad de productos seleccionada.
+ */
 const emit = defineEmits(['add-to-cart', 'buy-now'])
 
+/**
+ * @type {import('vue').Ref<Number>}
+ * @description La cantidad de producto seleccionada por el usuario.
+ */
 const quantity = ref(1)
 
+/**
+ * @function incrementQuantity
+ * @description Incrementa la cantidad seleccionada, sin superar el stock disponible.
+ */
 const incrementQuantity = () => {
   if (quantity.value < props.stock) {
     quantity.value++
   }
 }
 
+/**
+ * @function decrementQuantity
+ * @description Decrementa la cantidad seleccionada, sin ser menor que 1.
+ */
 const decrementQuantity = () => {
   if (quantity.value > 1) {
     quantity.value--
   }
 }
 
+/**
+ * @function handleAddToCart
+ * @description Emite el evento 'add-to-cart' con la cantidad actual.
+ */
 const handleAddToCart = () => {
   emit('add-to-cart', quantity.value)
 }
 
+/**
+ * @function handleBuyNow
+ * @description Emite el evento 'buy-now' con la cantidad actual.
+ */
 const handleBuyNow = () => {
   emit('buy-now', quantity.value)
 }

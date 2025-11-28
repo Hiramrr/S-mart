@@ -1,8 +1,18 @@
 <script setup>
+/**
+ * @file RelatedProducts.vue
+ * @description Componente que muestra una selección de productos relacionados
+ * basados en la categoría del producto actual.
+ */
 import { ref, onMounted, watch } from 'vue'
 import { supabase } from '@/lib/supabase'
 import ProductCard from '@/components/PrincipalComponents/ProductCard.vue' // Reutilizamos la tarjeta
 
+/**
+ * @props {Object} props - Propiedades del componente.
+ * @property {String} category - La categoría del producto actual para buscar relacionados.
+ * @property {String|Number} currentProductId - El ID del producto actual para excluirlo de la lista.
+ */
 const props = defineProps({
   category: {
     type: String,
@@ -14,10 +24,27 @@ const props = defineProps({
   },
 })
 
+/**
+ * @type {import('vue').Ref<Array>}
+ * @description Lista de productos relacionados obtenidos de la base de datos.
+ */
 const relatedProducts = ref([])
+/**
+ * @type {import('vue').Ref<Boolean>}
+ * @description Estado de carga mientras se obtienen los productos.
+ */
 const loading = ref(true)
+/**
+ * @type {import('vue').Ref<String|null>}
+ * @description Mensaje de error si falla la carga.
+ */
 const error = ref(null)
 
+/**
+ * @function fetchRelatedProducts
+ * @description Obtiene hasta 3 productos de la misma categoría, excluyendo el actual.
+ * @async
+ */
 async function fetchRelatedProducts() {
   if (!props.category) return
 
@@ -50,8 +77,12 @@ async function fetchRelatedProducts() {
   }
 }
 
-// Observamos si la prop 'category' cambia (aunque en esta vista no debería)
-// y cargamos los productos cuando el componente se monta.
+/**
+ * @watch props.category
+ * @description Observa cambios en la categoría del producto. Si cambia,
+ * vuelve a cargar los productos relacionados. Se ejecuta inmediatamente
+ * al montar el componente para la carga inicial.
+ */
 watch(
   () => props.category,
   (newCategory) => {
