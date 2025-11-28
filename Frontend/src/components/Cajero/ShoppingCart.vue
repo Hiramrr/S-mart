@@ -65,14 +65,39 @@
 </template>
 
 <script>
+/**
+ * @file ShoppingCart.vue - Componente que representa el carrito de compras del cajero.
+ * @description Muestra los productos agregados a la venta actual, permitiendo modificar la cantidad
+ * de cada producto o eliminarlo del carrito.
+ */
 export default {
+  /**
+   * @property {string} name - Nombre del componente.
+   */
   name: 'ShoppingCart',
+  /**
+   * @typedef {Object} CartItem
+   * @property {number|string} id - Identificador único del producto en el carrito.
+   * @property {string} name - Nombre del producto.
+   * @property {number} cantidad - Cantidad del producto en el carrito.
+   * @property {number} precio - Precio unitario del producto (puede tener descuentos aplicados).
+   * @property {number} precioOriginal - Precio original del producto, para mostrar tachado si hay descuento.
+   */
+  /**
+   * @property {Object} props - Propiedades del componente.
+   * @property {Array<CartItem>} props.items - La lista de productos en el carrito.
+   */
   props: {
     items: {
       type: Array,
       required: true,
     },
   },
+  /**
+   * @property {Array<string>} emits - Lista de eventos que el componente puede emitir.
+   * @emits update-quantity - Se emite cuando se cambia la cantidad de un producto. Pasa el ID del item y la nueva cantidad.
+   * @emits remove-item - Se emite cuando se elimina un producto del carrito. Pasa el ID del item.
+   */
   emits: ['update-quantity', 'remove-item'],
 }
 </script>

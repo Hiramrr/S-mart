@@ -27,8 +27,22 @@
 <script>
 import { ref } from 'vue';
 
+/**
+ * @file SecurityCodeModal.vue - Modal para la entrada y validación de un código de seguridad.
+ * @description Un componente de superposición que solicita al usuario un código numérico para confirmar una acción.
+ */
 export default {
+  /**
+   * @property {string} name - Nombre del componente.
+   */
   name: 'SecurityCodeModal',
+  /**
+   * @property {Object} props - Propiedades del componente.
+   * @property {string} [props.title='Código de Seguridad'] - El título que se muestra en el modal.
+   * @property {string} props.description - Texto descriptivo que explica por qué se necesita el código.
+   * @property {number} [props.codeLength=4] - La longitud esperada del código de seguridad.
+   * @property {string} props.securityCode - El código de seguridad correcto contra el cual se validará la entrada.
+   */
   props: {
     title: {
       type: String,
@@ -47,11 +61,36 @@ export default {
       required: true,
     },
   },
+  /**
+   * @property {Array<string>} emits - Lista de eventos que el componente puede emitir.
+   * @emits cancel - Se emite cuando el usuario cierra o cancela el modal.
+   * @emits confirm - Se emite cuando el usuario introduce el código correcto y confirma.
+   */
   emits: ['cancel', 'confirm'],
+  /**
+   * @function setup
+   * @description Función de configuración del componente Composition API.
+   * @param {Object} props - Las propiedades del componente.
+   * @param {Object} context - El contexto del componente, incluye `emit`.
+   * @returns {Object} Un objeto con las referencias y funciones expuestas a la plantilla.
+   */
   setup(props, { emit }) {
+    /**
+     * @type {import('vue').Ref<string>}
+     * @description Almacena el código ingresado por el usuario.
+     */
     const code = ref('');
+    /**
+     * @type {import('vue').Ref<string|null>}
+     * @description Almacena el mensaje de error si el código es incorrecto.
+     */
     const error = ref(null);
 
+    /**
+     * @function handleConfirm
+     * @description Valida el código ingresado. Si es correcto, emite el evento 'confirm'.
+     * Si es incorrecto, muestra un mensaje de error y limpia el campo de entrada.
+     */
     const handleConfirm = () => {
       if (code.value === props.securityCode) {
         emit('confirm');

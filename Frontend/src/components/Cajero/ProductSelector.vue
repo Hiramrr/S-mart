@@ -45,18 +45,56 @@
 <script>
 import { ref, computed } from 'vue'
 
+/**
+ * @file ProductSelector.vue - Componente para buscar y seleccionar productos de una lista.
+ * @description Muestra una lista de productos en una tabla con una función de búsqueda en tiempo real.
+ * Permite al usuario agregar un producto al carrito de compras.
+ */
 export default {
+  /**
+   * @property {string} name - Nombre del componente.
+   */
   name: 'ProductSelector',
+  /**
+   * @typedef {Object} Product
+   * @property {number|string} id - El identificador único del producto.
+   * @property {string} name - El nombre del producto.
+   * @property {number} precio - El precio del producto.
+   * @property {number} stock - La cantidad de existencias del producto.
+   */
+  /**
+   * @property {Object} props - Propiedades del componente.
+   * @property {Array<Product>} props.products - La lista completa de productos a mostrar.
+   */
   props: {
     products: {
       type: Array,
       required: true,
     },
   },
+  /**
+   * @property {Array<string>} emits - Lista de eventos que el componente puede emitir.
+   * @emits add-product - Se emite cuando el usuario hace clic en 'Agregar' para un producto.
+   */
   emits: ['add-product'],
+  /**
+   * @function setup
+   * @description Función de configuración del componente Composition API.
+   * @param {Object} props - Las propiedades del componente, incluyendo `products`.
+   * @returns {Object} Un objeto con la referencia para el término de búsqueda y la lista de productos filtrados.
+   */
   setup(props) {
+    /**
+     * @type {import('vue').Ref<string>}
+     * @description Almacena el término de búsqueda introducido por el usuario.
+     */
     const searchTerm = ref('')
 
+    /**
+     * @type {import('vue').ComputedRef<Array<Product>>}
+     * @description Devuelve la lista de productos filtrada según el `searchTerm`.
+     * Si no hay término de búsqueda, devuelve la lista completa.
+     */
     const filteredProducts = computed(() => {
       if (!searchTerm.value) return props.products
 

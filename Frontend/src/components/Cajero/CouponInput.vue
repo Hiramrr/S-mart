@@ -16,18 +16,49 @@
 <script>
 import { ref } from 'vue';
 
+/**
+ * @file CouponInput.vue - Componente para aplicar un cupón de descuento.
+ * @description Un campo de texto y un botón que permiten al usuario ingresar un código de cupón y emitir un evento para aplicarlo.
+ */
 export default {
+  /**
+   * @property {string} name - Nombre del componente.
+   */
   name: 'CouponInput',
+  /**
+   * @property {Object} props - Propiedades del componente.
+   * @property {boolean} props.applied - Indica si ya se ha aplicado un cupón.
+   */
   props: {
     applied: {
       type: Boolean,
       default: false,
     },
   },
+  /**
+   * @property {Array<string>} emits - Lista de eventos que el componente puede emitir.
+   * @emits apply - Se emite cuando el usuario intenta aplicar un cupón.
+   */
   emits: ['apply'],
+  /**
+   * @function setup
+   * @description Función de configuración del componente Composition API.
+   * @param {Object} props - Las propiedades del componente.
+   * @param {Object} context - El contexto del componente, incluye `emit`.
+   * @param {Function} context.emit - Función para emitir eventos.
+   * @returns {Object} Un objeto con las referencias y funciones expuestas a la plantilla.
+   */
   setup(props, { emit }) {
+    /**
+     * @type {import('vue').Ref<string>}
+     * @description Almacena el código del cupón ingresado por el usuario.
+     */
     const couponCode = ref('');
 
+    /**
+     * @function handleApply
+     * @description Emite el evento 'apply' con el código del cupón si el campo no está vacío.
+     */
     const handleApply = () => {
       if (couponCode.value) {
         emit('apply', couponCode.value);

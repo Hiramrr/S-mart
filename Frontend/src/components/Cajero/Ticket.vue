@@ -76,15 +76,54 @@
 </template>
 
 <script>
+/**
+ * @file Ticket.vue - Componente para mostrar un ticket de venta con formato.
+ * @description Este componente toma un objeto de compra y lo presenta en un formato de ticket de venta tradicional,
+ * listo para ser visualizado o impreso.
+ */
 export default {
+  /**
+   * @property {string} name - Nombre del componente.
+   */
   name: 'Ticket',
+  /**
+   * @typedef {Object} PurchaseItem
+   * @property {number|string} id - Identificador del producto.
+   * @property {number} cantidad - Cantidad del producto.
+   * @property {string} name - Nombre del producto.
+   * @property {number} precio - Precio unitario del producto.
+   */
+  /**
+   * @typedef {Object} Purchase
+   * @property {number|string} id - Identificador de la venta.
+   * @property {string} fecha - Fecha de la venta.
+   * @property {string} [cajero] - Nombre del cajero.
+   * @property {Array<PurchaseItem>} items - Lista de productos en la venta.
+   * @property {number} subtotal - Monto antes de descuentos.
+   * @property {number} [discount] - Monto del descuento.
+   * @property {number} total - Monto final.
+   * @property {string} [paymentMethod] - Método de pago.
+   */
+  /**
+   * @property {Object} props - Propiedades del componente.
+   * @property {Purchase} props.purchase - Objeto con los datos de la compra a mostrar en el ticket.
+   */
   props: {
     purchase: {
       type: Object,
       required: true,
     },
   },
+  /**
+   * @property {Object} methods - Métodos del componente.
+   */
   methods: {
+    /**
+     * @function formatPrice
+     * @description Formatea un número como una cadena de texto en formato de moneda mexicana (MXN).
+     * @param {number} price - El precio a formatear.
+     * @returns {string} El precio formateado.
+     */
     formatPrice(price) {
       return price.toLocaleString('es-MX', { 
         minimumFractionDigits: 2, 

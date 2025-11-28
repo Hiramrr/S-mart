@@ -64,9 +64,29 @@ import PaymentMethodModal from './PaymentMethodModal.vue'
 import SecurityCodeModal from './SecurityCodeModal.vue'
 import CouponInput from './CouponInput.vue'
 
+/**
+ * @file PurchaseSummary.vue - Componente que muestra el resumen de una compra y gestiona las acciones de pago.
+ * @description Muestra el subtotal, descuento y total. Permite aplicar cupones, seleccionar un método de pago,
+ * y proceder al checkout o cancelar la compra (con confirmación de seguridad).
+ */
 export default {
+  /**
+   * @property {string} name - Nombre del componente.
+   */
   name: 'PurchaseSummary',
+  /**
+   * @property {Object} components - Componentes hijos utilizados.
+   */
   components: { PaymentMethodModal, SecurityCodeModal, CouponInput },
+  /**
+   * @property {Object} props - Propiedades del componente.
+   * @property {number} props.subtotal - El total de la compra antes de descuentos.
+   * @property {number} props.total - El total final de la compra después de descuentos.
+   * @property {number} [props.discount=0] - El monto del descuento aplicado.
+   * @property {string|null} [props.paymentMethod=null] - El método de pago seleccionado.
+   * @property {string} [props.buttonLabel=''] - Etiqueta personalizada para el botón principal de pago.
+   * @property {boolean} [props.skipPaymentModal=false] - Si es `true`, el modal de pago se omite y se emite 'checkout' directamente.
+   */
   props: {
     subtotal: {
       type: Number,
@@ -93,20 +113,55 @@ export default {
       default: false,
     },
   },
+  /**
+   * @property {Array<string>} emits - Lista de eventos que el componente puede emitir.
+   * @emits checkout - Se emite para proceder al pago final.
+   * @emits cancel-purchase - Se emite para cancelar la compra actual.
+   * @emits update:paymentMethod - Se emite para actualizar el método de pago en el componente padre.
+   * @emits apply-coupon - Se emite para aplicar un código de cupón.
+   */
   emits: ['checkout', 'cancel-purchase', 'update:paymentMethod', 'apply-coupon'],
+  /**
+   * @function setup
+   * @description Función de configuración del componente Composition API.
+   * @param {Object} props - Las propiedades del componente.
+   * @param {Object} context - El contexto del componente, incluye `emit`.
+   * @returns {Object} Un objeto con las referencias y funciones expuestas a la plantilla.
+   */
   setup(props, { emit }) {
+    /**
+     * @type {import('vue').Ref<boolean>}
+     * @description Controla la visibilidad del modal de selección de método de pago.
+     */
     const showModal = ref(false)
+    /**
+     * @type {import('vue').Ref<boolean>}
+     * @description Controla la visibilidad del modal de código de seguridad para cancelación.
+     */
     const showSecurityModal = ref(false)
 
+    /**
+     * @function handlePaymentContinue
+     * @description Actualiza el método de pago y cierra el modal de selección.
+     * @param {string} method - El método de pago seleccionado ('efectivo' o 'tarjeta').
+     */
     const handlePaymentContinue = (method) => {
       emit('update:paymentMethod', method)
       showModal.value = false
     }
 
+    /**
+     * @function handleCancelPurchase
+     * @description Muestra el modal de código de seguridad para iniciar la cancelación de la compra.
+     */
     const handleCancelPurchase = () => {
       showSecurityModal.value = true
     }
 
+    /**
+     * @function handleSecurityConfirm
+     * @description Confirma la cancelación, resetea el método de pago y emite el evento 'cancel-purchase'.
+     */
     const handleSecurityConfirm = () => {
       emit('update:paymentMethod', null)
       showSecurityModal.value = false

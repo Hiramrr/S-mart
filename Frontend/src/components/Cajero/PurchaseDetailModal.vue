@@ -67,27 +67,93 @@ import html2canvas from 'html2canvas';
 import SecurityCodeModal from './SecurityCodeModal.vue';
 import { useAuthStore } from '@/stores/auth';
 
+/**
+ * @file PurchaseDetailModal.vue - Modal que muestra los detalles de una compra específica.
+ * @description Este componente presenta información detallada de una venta, permite imprimir un ticket en PDF y
+ * ofrece la opción de eliminar la venta, protegida por un código de seguridad.
+ */
 export default {
+  /**
+   * @property {string} name - Nombre del componente.
+   */
   name: 'PurchaseDetailModal',
+  /**
+   * @property {Object} components - Componentes hijos utilizados.
+   */
   components: { SecurityCodeModal },
+  /**
+   * @typedef {Object} PurchaseItem
+   * @property {string} name - Nombre del producto.
+   * @property {number} cantidad - Cantidad del producto.
+   * @property {number} precio - Precio unitario del producto.
+   */
+  /**
+   * @typedef {Object} Purchase
+   * @property {number|string} id - Identificador de la compra.
+   * @property {string} fecha - Fecha y hora de la compra.
+   * @property {string} [cajero] - Nombre del cajero.
+   * @property {string} [paymentMethod] - Método de pago.
+   * @property {Array<PurchaseItem>} items - Array de productos de la compra.
+   * @property {number} total - Monto total de la compra.
+   */
+  /**
+   * @property {Object} props - Propiedades del componente.
+   * @property {Purchase} props.purchase - Objeto con los detalles de la compra a mostrar.
+   */
   props: {
     purchase: {
       type: Object,
       required: true,
     },
   },
+  /**
+   * @property {Array<string>} emits - Lista de eventos que el componente puede emitir.
+   * @emits close - Se emite para cerrar el modal.
+   * @emits delete-purchase - Se emite para solicitar la eliminación de la compra, pasando el ID de la misma.
+   */
   emits: ['close', 'delete-purchase'],
+  /**
+   * @function setup
+   * @description Función de configuración del componente Composition API.
+   * @param {Object} props - Las propiedades del componente.
+   * @param {Object} context - El contexto del componente, incluye `emit`.
+   * @returns {Object} Un objeto con las referencias y funciones expuestas a la plantilla.
+   */
   setup(props, { emit }) {
+    /**
+     * @type {import('vue').Ref<HTMLElement|null>}
+     * @description Referencia al elemento del DOM que contiene el contenido del ticket a imprimir.
+     */
     const ticketContent = ref(null);
+    /**
+     * @type {import('vue').Ref<HTMLElement|null>}
+     * @description Referencia al contenedor de los botones de acción del modal.
+     */
     const modalActions = ref(null);
+    /**
+     * @type {import('vue').Ref<boolean>}
+     * @description Controla la visibilidad del modal de código de seguridad.
+     */
     const showSecurityModal = ref(false);
+    /**
+     * @description Instancia del store de autenticación (Pinia) para acceder a los datos del perfil.
+     */
     const authStore = useAuthStore();
 
+    /**
+     * @type {import('vue').ComputedRef<number>}
+     * @description Calcula la cantidad total de artículos en la compra.
+     */
     const totalItems = computed(() => {
         if (!props.purchase || !props.purchase.items) return 0;
         return props.purchase.items.reduce((sum, item) => sum + item.cantidad, 0);
     });
 
+    /**
+     * @function printTicket
+     * @description Genera un archivo PDF a partir del contenido del ticket y lo descarga.
+     * Utiliza html2canvas para renderizar el DOM en una imagen y jsPDF para crear el documento.
+     */
     const printTicket = () => {
       if (!ticketContent.value) return;
 
@@ -113,6 +179,11 @@ export default {
       });
     };
 
+    /**
+     * @function handleDeleteRequest
+     * @description Inicia el proceso para eliminar una venta. Verifica si el cajero tiene un código de seguridad
+     * antes de mostrar el modal de confirmación.
+     */
     const handleDeleteRequest = () => {
         // 3. Verificar que el cajero tenga un código asignado
         if (!authStore.perfil?.cierre_code) {
@@ -122,6 +193,11 @@ export default {
         showSecurityModal.value = true;
     };
 
+    /**
+     * @function handleSecurityConfirm
+     * @description Se ejecuta cuando el código de seguridad es confirmado. Cierra el modal de seguridad y
+     * emite el evento para eliminar la compra.
+     */
     const handleSecurityConfirm = () => {
         showSecurityModal.value = false;
         emit('delete-purchase', props.purchase.id);

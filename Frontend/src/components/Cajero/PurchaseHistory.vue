@@ -38,25 +38,80 @@
 import { ref } from 'vue'
 import PurchaseDetailModal from './PurchaseDetailModal.vue'
 
+/**
+ * @file PurchaseHistory.vue - Componente que muestra una lista del historial de compras.
+ * @description Presenta una lista de compras pasadas y permite ver los detalles de cada una a través de un modal.
+ * También gestiona la delegación de la eliminación de compras.
+ */
 export default {
+  /**
+   * @property {string} name - Nombre del componente.
+   */
   name: 'PurchaseHistory',
+  /**
+   * @property {Object} components - Componentes hijos utilizados.
+   */
   components: { PurchaseDetailModal },
+  /**
+   * @typedef {Object} Item
+   * @property {string} name - Nombre del producto.
+   */
+  /**
+   * @typedef {Object} Purchase
+   * @property {number|string} id - Identificador de la compra.
+   * @property {string} fecha - Fecha de la compra.
+   * @property {Array<Item>} items - Array de productos de la compra.
+   * @property {number} total - Monto total de la compra.
+   */
+  /**
+   * @property {Object} props - Propiedades del componente.
+   * @property {Array<Purchase>} props.purchases - Lista de compras a mostrar.
+   */
   props: {
     purchases: {
       type: Array,
       required: true,
     },
   },
+  /**
+   * @property {Array<string>} emits - Lista de eventos que el componente puede emitir.
+   * @emits delete-purchase - Se emite cuando se confirma la eliminación de una compra, pasando el ID de la misma.
+   */
   emits: ['delete-purchase'],
+  /**
+   * @function setup
+   * @description Función de configuración del componente Composition API.
+   * @param {Object} props - Las propiedades del componente.
+   * @param {Object} context - El contexto del componente, incluye `emit`.
+   * @returns {Object} Un objeto con las referencias y funciones expuestas a la plantilla.
+   */
   setup(props, { emit }) {
+    /**
+     * @type {import('vue').Ref<Purchase|null>}
+     * @description Almacena la compra seleccionada para mostrar en el modal de detalles.
+     */
     const selectedPurchase = ref(null)
+    /**
+     * @type {import('vue').Ref<boolean>}
+     * @description Controla la visibilidad del modal de detalles de la compra.
+     */
     const showDetailModal = ref(false)
 
+    /**
+     * @function showDetails
+     * @description Muestra el modal con los detalles de una compra específica.
+     * @param {Purchase} purchase - La compra que se va a mostrar.
+     */
     const showDetails = (purchase) => {
       selectedPurchase.value = purchase
       showDetailModal.value = true
     }
 
+    /**
+     * @function handleDelete
+     * @description Emite el evento para eliminar una compra y cierra el modal de detalles.
+     * @param {number|string} purchaseId - El ID de la compra a eliminar.
+     */
     const handleDelete = (purchaseId) => {
       emit('delete-purchase', purchaseId)
       showDetailModal.value = false

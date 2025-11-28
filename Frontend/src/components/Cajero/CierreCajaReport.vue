@@ -106,17 +106,65 @@
 <script setup>
 import { computed } from 'vue';
 
+/**
+ * @file CierreCajaReport.vue - Componente para visualizar un reporte de cierre de caja.
+ * @description Muestra un resumen de las ventas y transacciones realizadas durante un turno de cajero.
+ * Puede presentar una vista general o detallada de las transacciones.
+ */
+
+/**
+ * @typedef {Object} Purchase
+ * @property {number} id - El identificador único de la venta.
+ * @property {string} paymentMethod - El método de pago ('efectivo' o 'tarjeta').
+ * @property {number} total_amount - El monto total de la venta.
+ * @property {number} total - Alias para el monto total de la venta.
+ * @property {Array<Object>} [items] - Lista de artículos en la venta (para vista detallada).
+ */
+
+/**
+ * @typedef {Object} ReportData
+ * @property {string} fecha - La fecha en que se generó el reporte.
+ * @property {string} cajero - El nombre del cajero que cerró la caja.
+ * @property {Array<Purchase>} purchases - Una lista de las compras registradas en el turno.
+ */
+
+/**
+ * @typedef {Object} Props
+ * @property {ReportData} report - El objeto con todos los datos del reporte.
+ * @property {boolean} [detailed=false] - Si es `true`, muestra los detalles de los productos de cada transacción.
+ */
+
+/**
+ * @type {Props}
+ * @description Define las propiedades que el componente espera recibir.
+ */
 const props = defineProps({
+  /**
+   * @description Objeto que contiene los datos del cierre de caja, incluyendo la lista de transacciones.
+   * @type {Object as () => ReportData}
+   * @required
+   */
   report: {
     type: Object,
     required: true,
   },
+  /**
+   * @description Controla si se muestra el desglose de productos por cada transacción.
+   * @type {Boolean}
+   * @default false
+   */
   detailed: {
     type: Boolean,
     default: false,
   }
 });
 
+/**
+ * @function formatPrice
+ * @description Formatea un número a una cadena de texto con formato de moneda mexicana (MXN).
+ * @param {number} price - El precio a formatear.
+ * @returns {string} El precio formateado como string (e.g., "1,234.50").
+ */
 const formatPrice = (price) => {
   if (typeof price !== 'number') {
     price = 0;
@@ -127,26 +175,46 @@ const formatPrice = (price) => {
   });
 };
 
+/**
+ * @type {import('vue').ComputedRef<number>}
+ * @description Calcula el monto total de todas las ventas en el reporte.
+ */
 const totalVentas = computed(() => {
   return props.report.purchases.reduce((sum, p) => sum + (p.total_amount || p.total), 0);
 });
 
+/**
+ * @type {import('vue').ComputedRef<number>}
+ * @description Calcula el monto total de las ventas pagadas en efectivo.
+ */
 const totalEfectivo = computed(() => {
   return props.report.purchases
     .filter(p => p.paymentMethod === 'efectivo')
     .reduce((sum, p) => sum + (p.total_amount || p.total), 0);
 });
 
+/**
+ * @type {import('vue').ComputedRef<number>}
+ * @description Calcula el monto total de las ventas pagadas con tarjeta.
+ */
 const totalTarjeta = computed(() => {
   return props.report.purchases
     .filter(p => p.paymentMethod === 'tarjeta')
     .reduce((sum, p) => sum + (p.total_amount || p.total), 0);
 });
 
+/**
+ * @type {import('vue').ComputedRef<number>}
+ * @description Calcula el número total de transacciones en el reporte.
+ */
 const totalTransacciones = computed(() => {
   return props.report.purchases.length;
 });
 
+/**
+ * @type {import('vue').ComputedRef<number>}
+ * @description Calcula la cantidad total de artículos vendidos en todas las transacciones.
+ */
 const totalItems = computed(() => {
   return props.report.purchases.reduce((sum, p) => {
     // Asegurarse de que p.items existe y es un array

@@ -62,10 +62,31 @@
 <script>
 import { ref } from 'vue'
 
+/**
+ * @file PaymentMethodModal.vue - Modal para la selección del método de pago.
+ * @description Un componente de superposición que permite al usuario elegir entre 'efectivo' y 'tarjeta' como método de pago.
+ */
 export default {
+  /**
+   * @property {string} name - Nombre del componente.
+   */
   name: 'PaymentMethodModal',
+  /**
+   * @property {Array<string>} emits - Lista de eventos que el componente puede emitir.
+   * @emits cancel - Se emite cuando el usuario cierra o cancela el modal.
+   * @emits continue - Se emite cuando el usuario selecciona un método y hace clic en continuar.
+   */
   emits: ['cancel', 'continue'],
+  /**
+   * @function setup
+   * @description Función de configuración del componente Composition API.
+   * @returns {{selectedMethod: import('vue').Ref<string|null>}} Un objeto que expone la referencia del método de pago seleccionado.
+   */
   setup() {
+    /**
+     * @type {import('vue').Ref<string|null>}
+     * @description Almacena el método de pago seleccionado por el usuario ('efectivo' o 'tarjeta').
+     */
     const selectedMethod = ref(null)
     return { selectedMethod }
   },
