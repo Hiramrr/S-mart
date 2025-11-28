@@ -2,11 +2,47 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 
+/**
+ * @typedef {object} CartItem
+ * @property {number} id - El ID único del producto.
+ * @property {string} name - El nombre del producto.
+ * @property {number} precio - El precio final del producto (puede ser con descuento).
+ * @property {string|null} imagen_url - La URL de la imagen del producto.
+ * @property {number} cantidad - La cantidad de este producto en el carrito.
+ * @property {number} stock - El stock disponible del producto.
+ * @property {number} precio_venta - El precio de venta original del producto.
+ * @property {string} vendedor_id - El ID del vendedor del producto.
+ */
+
+/**
+ * @typedef {object} Product
+ * @property {number} id - El ID único del producto.
+ * @property {string} nombre - El nombre del producto.
+ * @property {number} [precio_descuento] - El precio con descuento del producto (opcional).
+ * @property {number} precio_venta - El precio de venta original del producto.
+ * @property {string|null} imagen_url - La URL de la imagen del producto.
+ * @property {number} [stock] - El stock disponible del producto (opcional).
+ * @property {string} vendedor_id - El ID del vendedor del producto.
+ */
+
+
+/**
+ * Store para la gestión del carrito de compras.
+ * Maneja la lista de productos, su persistencia en localStorage y las operaciones relacionadas.
+ *
+ * @exports useCartStore
+ */
 export const useCartStore = defineStore('cart', () => {
-  // 1. ESTADO: La lista de items en el carrito
+  /**
+   * La lista de items en el carrito de compras.
+   * @type {import('vue').Ref<CartItem[]>}
+   */
   const items = ref([])
 
-  // 2. ACCIÓN: Cargar el carrito desde localStorage (para persistencia)
+  /**
+   * Carga los items del carrito desde localStorage para mantener la persistencia entre sesiones.
+   * @private
+   */
   function loadCartFromStorage() {
     const storedItems = localStorage.getItem('cartItems')
     if (storedItems) {
@@ -14,12 +50,20 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
-  // 3. ACCIÓN: Guardar el carrito en localStorage
+  /**
+   * Guarda el estado actual del carrito en localStorage.
+   * @private
+   */
   function saveCartToStorage() {
     localStorage.setItem('cartItems', JSON.stringify(items.value))
   }
 
-  // 4. ACCIÓN: Añadir un producto al carrito
+  /**
+   * Añade un producto al carrito o incrementa su cantidad si ya existe.
+   * La cantidad no puede superar el stock disponible.
+   * @param {Product} product - El objeto del producto a añadir.
+   * @param {number} [quantity=1] - La cantidad a añadir.
+   */
   function addProduct(product, quantity = 1) {
     const existingItem = items.value.find((item) => item.id === product.id)
 
@@ -55,7 +99,12 @@ export const useCartStore = defineStore('cart', () => {
     saveCartToStorage()
   }
 
-  // 5. ACCIÓN: Actualizar la cantidad de un item (como en CajeroView)
+  /**
+   * Actualiza la cantidad de un producto específico en el carrito.
+   * Si la cantidad llega a 0, el producto es eliminado.
+   * @param {number} productId - El ID del producto a actualizar.
+   * @param {number} newQuantity - La nueva cantidad del producto.
+   */
   function updateQuantity(productId, newQuantity) {
     const item = items.value.find((item) => item.id === productId)
     if (item) {
@@ -71,33 +120,48 @@ export const useCartStore = defineStore('cart', () => {
     saveCartToStorage()
   }
 
-  // 6. ACCIÓN: Eliminar un item del carrito
+  /**
+   * Elimina un producto del carrito por su ID.
+   * @param {number} productId - El ID del producto a eliminar.
+   */
   function removeItem(productId) {
     items.value = items.value.filter((item) => item.id !== productId)
     saveCartToStorage()
   }
 
-  // 7. ACCIÓN: Eliminar múltiples items por ID (para post-compra)
+  /**
+   * Elimina múltiples productos del carrito a partir de una lista de IDs.
+   * Útil para limpiar el carrito después de una compra.
+   * @param {number[]} productIds - Un array con los IDs de los productos a eliminar.
+   */
   function removeProductsByIds(productIds) {
     if (!Array.isArray(productIds)) return
     items.value = items.value.filter((item) => !productIds.includes(item.id))
     saveCartToStorage()
   }
 
-  // 8. ACCIÓN: Vaciar el carrito
+  /**
+   * Vacía completamente el carrito de compras.
+   */
   function clearCart() {
     items.value = []
     saveCartToStorage()
   }
 
-  // 9. GETTER (Computada): Calcular el subtotal
+  /**
+   * El subtotal de la compra, calculado como la suma de (precio * cantidad) para cada item.
+   * @type {import('vue').ComputedRef<number>}
+   */
   const subtotal = computed(() => {
     return items.value.reduce((sum, item) => {
       return sum + item.precio * item.cantidad
     }, 0)
   })
 
-  // 10. GETTER (Computada): Calcular el número total de items
+  /**
+   * El número total de artículos en el carrito (sumando las cantidades de cada producto).
+   * @type {import('vue').ComputedRef<number>}
+   */
   const totalItems = computed(() => {
     return items.value.reduce((sum, item) => sum + item.cantidad, 0)
   })
