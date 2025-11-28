@@ -1,7 +1,18 @@
 <script setup>
-import { ref, computed } from 'vue'
+/**
+ * @file PaymentCvvInput.vue
+ * @description Un componente para que el usuario ingrese el CVV de una tarjeta seleccionada
+ * y confirme el pago.
+ * @component
+ */
+import { ref } from 'vue'
 import { useCreditCardFormatters } from '@/composables/Payment/useCreditCardFormatters.js'
 
+/**
+ * @props
+ * @property {Object} tarjetaSeleccionada - El objeto de la tarjeta que ha sido seleccionada para el pago.
+ * @property {Boolean} loading - Indica si una operación de pago está en curso.
+ */
 const props = defineProps({
   tarjetaSeleccionada: {
     type: Object,
@@ -12,11 +23,32 @@ const props = defineProps({
     default: false,
   },
 })
+
+/**
+ * @emits
+ * @event {string} confirm-payment - Se emite cuando el usuario confirma el pago, enviando el CVV como payload.
+ * @event {void} cancel-order - Se emite si el usuario decide cancelar todo el pedido.
+ * @event {void} change-card - Se emite si el usuario decide cambiar la tarjeta seleccionada.
+ */
 const emit = defineEmits(['confirm-payment', 'cancel-order', 'change-card'])
 
+/**
+ * @composable
+ * @description Importa funciones de utilidad para formatear datos de tarjetas de crédito.
+ */
 const { getLastFour, getCardType } = useCreditCardFormatters()
+
+/**
+ * @state
+ * @description Almacena el valor del input del CVV introducido por el usuario.
+ * @type {import('vue').Ref<String>}
+ */
 const cvvInput = ref('')
 
+/**
+ * @function handleConfirm
+ * @description Emite el evento 'confirm-payment' con el CVV ingresado.
+ */
 const handleConfirm = () => {
   emit('confirm-payment', cvvInput.value)
 }

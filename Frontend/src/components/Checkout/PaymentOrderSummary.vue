@@ -1,4 +1,16 @@
 <script setup>
+/**
+ * @file PaymentOrderSummary.vue
+ * @description Muestra un resumen del pedido, incluyendo una lista de productos
+ * con sus cantidades y precios, y el total a pagar.
+ * @component
+ */
+
+/**
+ * @props
+ * @property {Array} items - La lista de artículos en el pedido. Cada artículo debe tener `name`/`nombre`, `cantidad` y `precio`/`precio_venta`.
+ * @property {Number} total - El costo total del pedido.
+ */
 defineProps({
   items: {
     type: Array,
@@ -10,6 +22,12 @@ defineProps({
   },
 })
 
+/**
+ * @function formatCurrency
+ * @description Formatea un valor numérico a una cadena de moneda en formato MXN.
+ * @param {number} value - El valor a formatear.
+ * @returns {string} El valor formateado como moneda.
+ */
 const formatCurrency = (value) => {
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',

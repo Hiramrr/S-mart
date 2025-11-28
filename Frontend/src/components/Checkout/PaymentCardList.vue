@@ -1,6 +1,19 @@
 <script setup>
+/**
+ * @file PaymentCardList.vue
+ * @description Muestra una lista de tarjetas de crédito guardadas, permitiendo la selección,
+ * eliminación y adición de nuevas tarjetas.
+ * @component
+ */
+
 import { useCreditCardFormatters } from '@/composables/Payment/useCreditCardFormatters.js'
 
+/**
+ * @props
+ * @property {Array} tarjetas - Lista de objetos de tarjeta guardados por el usuario.
+ * @property {String|Number} tarjetaSeleccionadaId - El ID de la tarjeta actualmente seleccionada.
+ * @property {Boolean} loading - Indica si el componente está en estado de carga.
+ */
 defineProps({
   tarjetas: {
     type: Array,
@@ -16,18 +29,44 @@ defineProps({
   },
 })
 
+/**
+ * @emits
+ * @event {String|Number} select-card - Se emite cuando el usuario selecciona una tarjeta. El payload es el ID de la tarjeta.
+ * @event {String|Number} delete-card - Se emite cuando el usuario intenta eliminar una tarjeta. El payload es el ID de la tarjeta.
+ * @event {void} add-new-card - Se emite cuando el usuario hace clic en el botón para agregar una nueva tarjeta.
+ */
 const emit = defineEmits(['select-card', 'delete-card', 'add-new-card'])
 
+/**
+ * @composable
+ * @description Importa funciones de utilidad para formatear y obtener información de las tarjetas de crédito.
+ */
 const { getLastFour, getCardType, formatExpiryDisplay } = useCreditCardFormatters()
 
+/**
+ * @function onSelectCard
+ * @description Emite el evento 'select-card' con el ID de la tarjeta seleccionada.
+ * @param {String|Number} id - El ID de la tarjeta que fue seleccionada.
+ */
 const onSelectCard = (id) => {
   emit('select-card', id)
 }
+
+/**
+ * @function onDeleteCard
+ * @description Pide confirmación y, si se confirma, emite el evento 'delete-card' con el ID de la tarjeta a eliminar.
+ * @param {String|Number} id - El ID de la tarjeta a eliminar.
+ */
 const onDeleteCard = (id) => {
   if (confirm('¿Estás seguro de que deseas eliminar esta tarjeta? Esta acción no se puede deshacer.')) {
     emit('delete-card', id)
   }
 }
+
+/**
+ * @function onAddNewCard
+ * @description Emite el evento 'add-new-card' para indicar la intención de agregar una nueva tarjeta.
+ */
 const onAddNewCard = () => {
   emit('add-new-card')
 }
