@@ -16,8 +16,20 @@ import PagoTarjetaView from '../views/checkout/PagoTarjetaView.vue'
 import MisChatsView from '../views/perfil/MisChatsView.vue'
 import ReportesView from '../views/reportes/ReportesView.vue'
 
+/**
+ * @description Instancia del enrutador de Vue.
+ * @type {import('vue-router').Router}
+ */
 const router = createRouter({
+  /**
+   * @description Configuración del historial de navegación.
+   * Utiliza el modo de historial web para URLs limpias.
+   */
   history: createWebHistory(import.meta.env.BASE_URL),
+  /**
+   * @description Definición de las rutas de la aplicación.
+   * @type {import('vue-router').RouteRecordRaw[]}
+   */
   routes: [
     {
       path: '/',
@@ -272,6 +284,13 @@ const router = createRouter({
       meta: { title: '404 - S-mart' },
     } */
   ],
+  /**
+   * @description Controla el comportamiento del scroll al navegar.
+   * @param {import('vue-router').RouteLocationNormalized} to - La ruta de destino.
+   * @param {import('vue-router').RouteLocationNormalizedLoaded} from - La ruta de origen.
+   * @param {import('vue-router').ScrollPosition | null} savedPosition - La posición guardada del scroll si existe.
+   * @returns {import('vue-router').ScrollPosition | { top: number }} La posición del scroll.
+   */
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
       return savedPosition
@@ -281,6 +300,13 @@ const router = createRouter({
   },
 })
 
+/**
+ * @description Guardia de navegación global que se ejecuta antes de cada cambio de ruta.
+ * Controla el acceso a rutas protegidas y actualiza el título del documento.
+ * @param {import('vue-router').RouteLocationNormalized} to - La ruta de destino.
+ * @param {import('vue-router').RouteLocationNormalizedLoaded} from - La ruta de origen.
+ * @param {import('vue-router').NavigationGuardNext} next - Función para resolver el gancho de navegación.
+ */
 router.beforeEach(async (to, from, next) => {
   document.title = to.meta.title || 'S-mart'
 
