@@ -3,8 +3,53 @@ import { supabase } from '@/lib/supabase.js' //
 import { useAuthStore } from './auth' //
 import { ref } from 'vue'
 
+/**
+ * @typedef {object} VentaProducto
+ * @property {number} producto_id - El ID del producto.
+ * @property {string} nombre - El nombre del producto.
+ * @property {number} cantidad - La cantidad vendida.
+ * @property {number} precio - El precio unitario del producto en esta venta.
+ * @property {string|null} imagen_url - La URL de la imagen del producto.
+ */
+
+/**
+ * @typedef {object} SeguimientoEstado
+ * @property {string} estado - El estado actual del envío (e.g., 'Pendiente', 'Enviado').
+ * @property {string} fecha - La fecha en formato ISO en que se actualizó el estado.
+ */
+
+/**
+ * @typedef {object} VentaEnLinea
+ * @property {string} cliente_id - El ID del cliente que realizó la compra.
+ * @property {string} vendedor_id - El ID del vendedor al que se le compró.
+ * @property {VentaProducto[]} productos - Array de productos incluidos en esta venta.
+ * @property {number} monto_total - El monto total de la venta para este vendedor.
+ * @property {string} metodo_pago - El método de pago utilizado.
+ * @property {number} direccion_id - El ID de la dirección de envío.
+ * @property {string} fecha_estimada_entrega - La fecha estimada de entrega en formato ISO.
+ * @property {SeguimientoEstado[]} seguimiento - El historial de seguimiento del envío.
+ */
+
+/**
+ * Store para la gestión de ventas, tanto en punto de venta (POS) como en línea.
+ *
+ * @exports useVentasStore
+ */
 export const useVentasStore = defineStore('ventas', () => {
+  /**
+   * Almacena los detalles de la última venta realizada para poder mostrarlos en una vista de confirmación.
+   * @type {import('vue').Ref<any|null>}
+   */
   const ultimaVentaDetalles = ref(null)
+
+  /**
+   * Registra una nueva venta en el sistema de Punto de Venta (POS).
+   * @param {object[]} productos - Los productos vendidos.
+   * @param {number} total - El monto total de la venta.
+   * @param {string} metodoPago - El método de pago (e.g., 'efectivo', 'tarjeta').
+   * @returns {Promise<any>} Los datos de la venta registrada.
+   * @async
+   */
   async function crearVentaPOS(productos, total, metodoPago) {
     const authStore = useAuthStore()
     if (!authStore.usuario) throw new Error('Cajero no autenticado')
@@ -28,6 +73,16 @@ export const useVentasStore = defineStore('ventas', () => {
     console.log('Venta POS registrada:', data)
     return data
   }
+
+  /**
+   * Registra una o más ventas en línea a partir de los items de un carrito.
+   * Agrupa los productos por vendedor y crea una venta separada para cada uno.
+   * @param {import('./cartStore').CartItem[]} itemsDelCarrito - Los items que se van a comprar.
+   * @param {string} metodoPago - El método de pago utilizado.
+   * @param {number} direccionId - El ID de la dirección de envío del cliente.
+   * @returns {Promise<VentaEnLinea[]>} Un array con los datos de las ventas registradas.
+   * @async
+   */
   async function crearVentaEnLinea(itemsDelCarrito, metodoPago, direccionId) {
     const authStore = useAuthStore()
     if (!authStore.usuario) throw new Error('Cliente no autenticado')
@@ -118,7 +173,10 @@ export const useVentasStore = defineStore('ventas', () => {
     return data
   }
 
-  // --- 3. AÑADIR FUNCIÓN "SETTER" ---
+  /**
+   * Establece los detalles de la última venta para que puedan ser accedidos por otros componentes.
+   * @param {any} detalles - Los detalles de la venta a almacenar.
+   */
   function setUltimaVenta(detalles) {
     ultimaVentaDetalles.value = detalles
   }
