@@ -4,15 +4,34 @@ import { useChat } from '@/composables/useChat'
 import { useAuthStore } from '@/stores/auth'
 import { useRole } from '@/composables/useRole'
 
+/**
+ * @file ChatButton.vue
+ * @description Un botón que permite a los usuarios iniciar una conversación de chat con el vendedor de un producto.
+ * Realiza comprobaciones de autenticación y estado de la cuenta antes de iniciar el chat.
+ * @vue-prop {Number|String} productoId - El ID del producto sobre el que se va a chatear.
+ * @vue-prop {String} vendedorId - El ID del vendedor del producto.
+ * @vue-prop {String} productoNombre - El nombre del producto.
+ * @vue-event {Function} abrir-chat - Se emite cuando el chat se ha creado o recuperado con éxito, pasando los detalles de la conversación.
+ */
+
 const props = defineProps({
+  /**
+   * El ID del producto. Puede ser un número o un string (UUID).
+   */
   productoId: {
     type: [Number, String], // Aceptar ambos tipos (UUID es String)
     required: true,
   },
+  /**
+   * El ID del vendedor (UUID).
+   */
   vendedorId: {
     type: String,
     required: true,
   },
+  /**
+   * El nombre del producto a mostrar.
+   */
   productoNombre: {
     type: String,
     required: true,
@@ -25,6 +44,14 @@ const authStore = useAuthStore()
 const { requireAuth } = useRole()
 const { obtenerOCrearConversacion, loading } = useChat()
 
+/**
+ * @function handleIniciarChat
+ * @description Maneja el evento de clic en el botón de chat.
+ * Verifica si el usuario está autenticado, si su cuenta no está suspendida y
+ * si no está intentando chatear con él mismo.
+ * Si todo es correcto, obtiene o crea una conversación y emite el evento 'abrir-chat'.
+ * @returns {Promise<void>}
+ */
 async function handleIniciarChat() {
   // Verificar autenticación
   if (!requireAuth()) {
