@@ -4,7 +4,27 @@ import { useChat } from '@/composables/useChat'
 import { useAuthStore } from '@/stores/auth'
 import { supabase } from '@/lib/supabase'
 
+/**
+ * @file ChatModal.vue
+ * @description Un componente modal que muestra una conversación de chat entre dos usuarios.
+ * Carga mensajes existentes, se suscribe a nuevos mensajes en tiempo real,
+ * y permite al usuario enviar nuevos mensajes.
+ * @vue-prop {Object} conversacion - El objeto de la conversación que contiene IDs y detalles del producto.
+ * @vue-event {Function} cerrar - Se emite para solicitar el cierre del modal.
+ */
+
 const props = defineProps({
+  /**
+   * El objeto de la conversación activa.
+   * @type {Object}
+   * @property {string} id - ID de la conversación.
+   * @property {string} producto_id - ID del producto asociado.
+   * @property {string} cliente_id - ID del usuario cliente.
+   * @property {string} vendedor_id - ID del usuario vendedor.
+   * @property {Object} [producto] - Objeto del producto.
+   * @property {Object} [vendedor] - Objeto del usuario vendedor.
+   * @property {Object} [cliente] - Objeto del usuario cliente.
+   */
   conversacion: {
     type: Object,
     required: true,
@@ -16,13 +36,43 @@ const emit = defineEmits(['cerrar'])
 const authStore = useAuthStore()
 const { mensajes, loading, cargarMensajes, enviarMensaje, suscribirseAMensajes } = useChat()
 
+/**
+ * @type {import('vue').Ref<string>}
+ * @description El contenido del nuevo mensaje que se va a enviar.
+ */
 const nuevoMensaje = ref('')
+/**
+ * @type {import('vue').Ref<boolean>}
+ * @description Estado de carga mientras se envía un mensaje.
+ */
 const enviando = ref(false)
+/**
+ * @type {import('vue').Ref<HTMLElement|null>}
+ * @description Referencia al contenedor de los mensajes para hacer scroll.
+ */
 const mensajesContainer = ref(null)
+/**
+ * @type {import('vue').Ref<Object|null>}
+ * @description Almacena los datos del otro participante en el chat.
+ */
 const otroUsuario = ref(null)
+/**
+ * @type {import('vue').Ref<boolean>}
+ * @description Estado de carga para la información del otro usuario.
+ */
 const cargandoUsuario = ref(false)
+/**
+ * @type {Function | null}
+ * @description Almacena la función de cancelación de la suscripción de Supabase.
+ */
 let unsubscribe = null
 
+/**
+ * @function cargarOtroUsuario
+ * @description Carga la información del otro participante del chat (vendedor o cliente) desde Supabase.
+ * @async
+ * @returns {Promise<void>}
+ */
 async function cargarOtroUsuario() {
   cargandoUsuario.value = true
   try {
@@ -66,6 +116,12 @@ async function cargarOtroUsuario() {
   }
 }
 
+/**
+ * @function getNombreUsuario
+ * @description Obtiene un nombre de usuario para mostrar, priorizando el nombre sobre el email.
+ * @param {Object} usuario - El objeto del usuario.
+ * @returns {string} El nombre a mostrar.
+ */
 function getNombreUsuario(usuario) {
   if (!usuario) return 'Usuario'
   if (usuario.nombre && usuario.nombre.trim() !== '') return usuario.nombre
@@ -73,6 +129,12 @@ function getNombreUsuario(usuario) {
   return 'Usuario'
 }
 
+/**
+ * @function getAvatarUrl
+ * @description Obtiene la URL del avatar del usuario, priorizando `foto_url` sobre `avatar_url`.
+ * @param {Object} usuario - El objeto del usuario.
+ * @returns {string|null} La URL del avatar o null si no hay.
+ */
 function getAvatarUrl(usuario) {
   if (!usuario) return null
   if (usuario.foto_url && usuario.foto_url.trim() !== '') return usuario.foto_url
@@ -80,6 +142,11 @@ function getAvatarUrl(usuario) {
   return null
 }
 
+/**
+ * @hook onMounted
+ * @description Carga la información del otro usuario, los mensajes existentes y
+ * se suscribe a nuevos mensajes cuando el componente se monta.
+ */
 onMounted(async () => {
   await cargarOtroUsuario()
   await cargarMensajes(props.conversacion.id)
@@ -93,12 +160,21 @@ onMounted(async () => {
   })
 })
 
+/**
+ * @hook onUnmounted
+ * @description Cancela la suscripción a los mensajes al destruir el componente para evitar fugas de memoria.
+ */
 onUnmounted(() => {
   if (unsubscribe) {
     unsubscribe()
   }
 })
 
+/**
+ * @watch mensajes.value.length
+ * @description Observa cambios en la cantidad de mensajes y hace scroll hasta el final
+ * para asegurar que el último mensaje sea visible.
+ */
 watch(
   () => mensajes.value.length,
   () => {
@@ -106,6 +182,12 @@ watch(
   },
 )
 
+/**
+ * @function handleEnviar
+ * @description Maneja el envío de un nuevo mensaje.
+ * @async
+ * @returns {Promise<void>}
+ */
 async function handleEnviar() {
   if (!nuevoMensaje.value.trim() || enviando.value) return
 
@@ -121,6 +203,11 @@ async function handleEnviar() {
   }
 }
 
+/**
+ * @function scrollToBottom
+ * @description Hace scroll del contenedor de mensajes hasta el final.
+ * @returns {void}
+ */
 function scrollToBottom() {
   if (mensajesContainer.value) {
     mensajesContainer.value.scrollTop = mensajesContainer.value.scrollHeight
