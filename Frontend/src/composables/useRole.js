@@ -1,16 +1,36 @@
 // Frontend/src/composables/useRole.js
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { useRouter, useRoute } from 'vue-router' // <-- Importar useRoute
+import { useRouter, useRoute } from 'vue-router'
 
+/**
+ * @module useRole
+ * @description Composable para la gestión de roles y autenticación de usuarios.
+ * Proporciona una serie de propiedades computadas y funciones para verificar
+ * el estado de autenticación, los roles del usuario y los permisos asociados.
+ */
 export function useRole() {
   const authStore = useAuthStore()
   const router = useRouter()
-  const route = useRoute() // <-- Instanciar useRoute
+  const route = useRoute()
 
+  /**
+   * @type {import('vue').ComputedRef<boolean>}
+   * @description Indica si el usuario está actualmente autenticado.
+   */
   const isAuthenticated = computed(() => !!authStore.usuario)
+
+  /**
+   * @type {import('vue').ComputedRef<string|null>}
+   * @description Devuelve el rol actual del usuario autenticado.
+   */
   const currentRole = computed(() => authStore.rolUsuario)
 
+  /**
+   * Verifica si el usuario actual tiene uno de los roles especificados.
+   * @param {string|string[]} roles - Un único rol o un array de roles a verificar.
+   * @returns {boolean} `true` si el usuario tiene al menos uno de los roles, de lo contrario `false`.
+   */
   const hasRole = (roles) => {
     if (!Array.isArray(roles)) {
       roles = [roles]
@@ -18,6 +38,11 @@ export function useRole() {
     return roles.includes(authStore.rolUsuario)
   }
 
+  /**
+   * Alias de `hasRole`. Verifica si el usuario tiene alguno de los roles proporcionados.
+   * @param {string[]} roles - Un array de roles a verificar.
+   * @returns {boolean} `true` si el usuario tiene al menos uno de los roles, de lo contrario `false`.
+   */
   const hasAnyRole = (roles) => {
     if (!Array.isArray(roles)) {
       roles = [roles]
@@ -25,6 +50,11 @@ export function useRole() {
     return roles.some((role) => role === authStore.rolUsuario)
   }
 
+  /**
+   * Verifica si el usuario actual tiene todos los roles especificados.
+   * @param {string[]} roles - Un array de roles a verificar.
+   * @returns {boolean} `true` si el usuario tiene todos los roles especificados, de lo contrario `false`.
+   */
   const hasAllRoles = (roles) => {
     if (!Array.isArray(roles)) {
       roles = [roles]
@@ -32,6 +62,13 @@ export function useRole() {
     return roles.every((role) => role === authStore.rolUsuario)
   }
 
+  /**
+   * Exige que el usuario tenga un rol específico para acceder a una ruta.
+   * Si no tiene el rol, muestra una alerta y redirige.
+   * @param {string|string[]} roles - El rol o roles requeridos.
+   * @param {string} [redirectTo='/'] - La ruta a la que se redirigirá si el usuario no tiene el rol.
+   * @returns {boolean} `true` si el usuario tiene el rol, `false` si es redirigido.
+   */
   const requireRole = (roles, redirectTo = '/') => {
     if (!hasRole(roles)) {
       alert('No tienes permisos para acceder a esta página')
@@ -41,11 +78,14 @@ export function useRole() {
     return true
   }
 
-  // --- FUNCIÓN CORREGIDA ---
-  // Esta función ahora guarda la ruta actual antes de redirigir a login
+  /**
+   * Exige que el usuario esté autenticado para acceder a una ruta.
+   * Si no está autenticado, guarda la ruta actual y redirige a la página de login.
+   * @param {string} [redirectTo='/login'] - La ruta a la que se redirigirá si el usuario no está autenticado.
+   * @returns {boolean} `true` si el usuario está autenticado, `false` si es redirigido.
+   */
   const requireAuth = (redirectTo = '/login') => {
     if (!isAuthenticated.value) {
-      // Guarda la ruta actual completa (con query params)
       try {
         localStorage.setItem('authRedirect', route.fullPath)
       } catch (e) {
@@ -57,17 +97,36 @@ export function useRole() {
     return true
   }
 
-  // Helpers específicos para cada rol
+  /** @type {import('vue').ComputedRef<boolean>} */
   const isAdmin = computed(() => authStore.esAdmin)
+  /** @type {import('vue').ComputedRef<boolean>} */
   const isVendedor = computed(() => authStore.esVendedor)
+  /** @type {import('vue').ComputedRef<boolean>} */
   const isCliente = computed(() => authStore.esCliente)
+  /** @type {import('vue').ComputedRef<boolean>} */
   const isCajero = computed(() => authStore.esCajero)
+  /** @type {import('vue').ComputedRef<boolean>} */
   const isInvitado = computed(() => authStore.esInvitado)
 
-  // Verificar si puede realizar acciones específicas
+  /**
+   * @type {import('vue').ComputedRef<boolean>}
+   * @description Determina si el usuario puede vender (si es Vendedor o Admin).
+   */
   const canSell = computed(() => authStore.esVendedor || authStore.esAdmin)
+  /**
+   * @type {import('vue').ComputedRef<boolean>}
+   * @description Determina si el usuario puede gestionar otros usuarios (solo Admin).
+   */
   const canManageUsers = computed(() => authStore.esAdmin)
+  /**
+   * @type {import('vue').ComputedRef<boolean>}
+   * @description Determina si el usuario puede acceder al panel de administración (solo Admin).
+   */
   const canAccessAdmin = computed(() => authStore.esAdmin)
+  /**
+   * @type {import('vue').ComputedRef<boolean>}
+   * @description Determina si el usuario puede realizar compras.
+   */
   const canBuy = computed(() => authStore.esCliente || authStore.esVendedor || authStore.esAdmin)
 
   return {
@@ -80,13 +139,28 @@ export function useRole() {
     hasAnyRole,
     hasAllRoles,
     requireRole,
-    requireAuth, 
-    
+    requireAuth,
+
     // Roles específicos
+    /**
+     * @property {import('vue').ComputedRef<boolean>} isAdmin - `true` si el usuario es Administrador.
+     */
     isAdmin,
+    /**
+     * @property {import('vue').ComputedRef<boolean>} isVendedor - `true` si el usuario es Vendedor.
+     */
     isVendedor,
+    /**
+     * @property {import('vue').ComputedRef<boolean>} isCliente - `true` si el usuario es Cliente.
+     */
     isCliente,
+    /**
+     * @property {import('vue').ComputedRef<boolean>} isCajero - `true` si el usuario es Cajero.
+     */
     isCajero,
+    /**
+     * @property {import('vue').ComputedRef<boolean>} isInvitado - `true` si el usuario no está autenticado.
+     */
     isInvitado,
 
     // Permisos

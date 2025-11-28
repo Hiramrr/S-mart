@@ -3,14 +3,43 @@ import { ref, computed } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
 
+/**
+ * @module useChat
+ * @description Composable para gestionar la funcionalidad de chat en tiempo real.
+ * Proporciona funciones para crear, cargar y gestionar conversaciones y mensajes,
+ * así como para suscribirse a actualizaciones en tiempo real a través de Supabase.
+ */
 export function useChat() {
   const authStore = useAuthStore()
+
+  /**
+   * @type {import('vue').Ref<Array<Object>>}
+   * @description Almacena la lista de conversaciones del usuario actual.
+   */
   const conversaciones = ref([])
+
+  /**
+   * @type {import('vue').Ref<Array<Object>>}
+   * @description Almacena la lista de mensajes de la conversación activa.
+   */
   const mensajes = ref([])
+
+  /**
+   * @type {import('vue').Ref<boolean>}
+   * @description Indica si hay una operación de chat en curso.
+   */
   const loading = ref(false)
+
+  /**
+   * @type {import('vue').Ref<Error|null>}
+   * @description Almacena el último error ocurrido en una operación de chat.
+   */
   const error = ref(null)
 
-  // Contador de mensajes no leídos
+  /**
+   * @type {import('vue').ComputedRef<number>}
+   * @description Calcula el número total de conversaciones con mensajes no leídos para el usuario actual.
+   */
   const mensajesNoLeidos = computed(() => {
     if (!authStore.usuario) return 0
 
@@ -24,13 +53,19 @@ export function useChat() {
     }).length
   })
 
-  // Obtener o crear conversación
+  /**
+   * Busca una conversación existente entre el cliente y el vendedor para un producto específico.
+   * Si no existe, crea una nueva.
+   * @param {string} productoId - El ID del producto.
+   * @param {string} vendedorId - El ID del vendedor.
+   * @returns {Promise<Object>} La conversación existente o la nueva recién creada.
+   * @throws {Error} Si el usuario no está autenticado o si ocurre un error en la base de datos.
+   */
   async function obtenerOCrearConversacion(productoId, vendedorId) {
     try {
       loading.value = true
       error.value = null
 
-      // Verificar que el usuario esté autenticado
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -39,7 +74,6 @@ export function useChat() {
         throw new Error('Debes iniciar sesión para chatear')
       }
 
-      // Buscar conversación existente
       const { data: existente, error: errorBuscar } = await supabase
         .from('conversaciones')
         .select('*')
@@ -56,7 +90,6 @@ export function useChat() {
         return existente
       }
 
-      // Crear nueva conversación
       const { data: nueva, error: errorCrear } = await supabase
         .from('conversaciones')
         .insert({
@@ -79,7 +112,10 @@ export function useChat() {
     }
   }
 
-  // Cargar conversaciones del usuario
+  /**
+   * Carga todas las conversaciones en las que el usuario actual es cliente o vendedor.
+   * @returns {Promise<void>}
+   */
   async function cargarConversaciones() {
     try {
       loading.value = true
@@ -111,7 +147,11 @@ export function useChat() {
     }
   }
 
-  // Cargar mensajes de una conversación
+  /**
+   * Carga todos los mensajes de una conversación específica y los marca como leídos.
+   * @param {string} conversacionId - El ID de la conversación.
+   * @returns {Promise<void>}
+   */
   async function cargarMensajes(conversacionId) {
     try {
       loading.value = true
@@ -132,7 +172,6 @@ export function useChat() {
 
       mensajes.value = data || []
 
-      // Marcar mensajes como leídos
       await marcarComoLeido(conversacionId)
     } catch (err) {
       console.error('Error al cargar mensajes:', err)
@@ -142,7 +181,13 @@ export function useChat() {
     }
   }
 
-  // Enviar mensaje
+  /**
+   * Envía un nuevo mensaje a una conversación.
+   * @param {string} conversacionId - El ID de la conversación.
+   * @param {string} contenido - El texto del mensaje.
+   * @returns {Promise<Object>} El mensaje recién enviado.
+   * @throws {Error} Si el usuario no está autenticado o el mensaje está vacío.
+   */
   async function enviarMensaje(conversacionId, contenido) {
     try {
       if (!authStore.usuario) {
@@ -170,7 +215,6 @@ export function useChat() {
 
       if (errorEnviar) throw errorEnviar
 
-      // Agregar mensaje localmente
       mensajes.value.push(data)
 
       return data
@@ -181,12 +225,16 @@ export function useChat() {
     }
   }
 
-  // Marcar conversación como leída
+  /**
+   * Marca una conversación como leída para el usuario actual.
+   * Actualiza el estado de la conversación y los mensajes correspondientes.
+   * @param {string} conversacionId - El ID de la conversación a marcar como leída.
+   * @returns {Promise<void>}
+   */
   async function marcarComoLeido(conversacionId) {
     try {
       if (!authStore.usuario) return
 
-      // Obtener la conversación para saber qué campo actualizar
       const conversacion = conversaciones.value.find((c) => c.id === conversacionId)
       if (!conversacion) return
 
@@ -198,13 +246,11 @@ export function useChat() {
         .update({ [campo]: true })
         .eq('id', conversacionId)
 
-      // Actualizar localmente
       const index = conversaciones.value.findIndex((c) => c.id === conversacionId)
       if (index !== -1) {
         conversaciones.value[index][campo] = true
       }
 
-      // Marcar mensajes como leídos
       await supabase
         .from('mensajes')
         .update({ leido: true })
@@ -215,7 +261,12 @@ export function useChat() {
     }
   }
 
-  // Suscribirse a nuevos mensajes en tiempo real
+  /**
+   * Se suscribe a nuevos mensajes en tiempo real para una conversación específica.
+   * @param {string} conversacionId - El ID de la conversación.
+   * @param {function(Object):void} callback - Función que se ejecuta al recibir un nuevo mensaje.
+   * @returns {function():void} Una función para cancelar la suscripción.
+   */
   function suscribirseAMensajes(conversacionId, callback) {
     const channel = supabase
       .channel(`mensajes:${conversacionId}`)
@@ -228,7 +279,6 @@ export function useChat() {
           filter: `conversacion_id=eq.${conversacionId}`,
         },
         async (payload) => {
-          // Obtener datos completos del mensaje con remitente
           const { data } = await supabase
             .from('mensajes')
             .select(
@@ -252,7 +302,11 @@ export function useChat() {
     }
   }
 
-  // Suscribirse a actualizaciones de conversaciones
+  /**
+   * Se suscribe a actualizaciones en las conversaciones del usuario en tiempo real.
+   * @param {function(Object):void} callback - Función que se ejecuta al recibir una actualización.
+   * @returns {function():void} Una función para cancelar la suscripción.
+   */
   function suscribirseAConversaciones(callback) {
     if (!authStore.usuario) return () => {}
 
@@ -269,7 +323,6 @@ export function useChat() {
           if (callback) {
             callback(payload)
           }
-          // Recargar conversaciones
           cargarConversaciones()
         },
       )
@@ -281,10 +334,30 @@ export function useChat() {
   }
 
   return {
+    /**
+     * @type {import('vue').Ref<Array<Object>>}
+     * @description Lista de conversaciones del usuario.
+     */
     conversaciones,
+    /**
+     * @type {import('vue').Ref<Array<Object>>}
+     * @description Lista de mensajes de la conversación activa.
+     */
     mensajes,
+    /**
+     * @type {import('vue').Ref<boolean>}
+     * @description Estado de carga de las operaciones.
+     */
     loading,
+    /**
+     * @type {import('vue').Ref<Error|null>}
+     * @description Objeto de error si alguna operación falla.
+     */
     error,
+    /**
+     * @type {import('vue').ComputedRef<number>}
+     * @description Número de conversaciones con mensajes no leídos.
+     */
     mensajesNoLeidos,
     obtenerOCrearConversacion,
     cargarConversaciones,

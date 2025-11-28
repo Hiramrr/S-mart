@@ -2,17 +2,45 @@ import { ref, computed } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { useCreditCardFormatters } from '@/composables/Payment/useCreditCardFormatters.js'
 
+/**
+ * @module usePaymentCheckout
+ * @description Composable de Vue para gestionar todo el proceso de pago, desde la carga de datos hasta la finalización de la compra.
+ *
+ * @param {import('vue-router').RouteLocationNormalizedLoaded} route - El objeto de la ruta actual de Vue Router, usado para obtener parámetros de consulta.
+ * @param {object} authStore - La tienda Pinia de autenticación (useAuthStore) para acceder a la información del usuario.
+ * @param {object} cartStore - La tienda Pinia del carrito (useCartStore) para gestionar los artículos del carrito.
+ * @param {object} ventasStore - La tienda Pinia de ventas (useVentasStore) para registrar las transacciones.
+ *
+ * @returns {{
+ *   itemsParaComprar: import('vue').Ref<Array<object>>,
+ *   direccionSeleccionada: import('vue').Ref<object|null>,
+ *   tarjetasGuardadas: import('vue').Ref<Array<object>>,
+ *   loading: import('vue').Ref<boolean>,
+ *   error: import('vue').Ref<string|null>,
+ *   checkoutTotal: import('vue').ComputedRef<number>,
+ *   initializeCheckout: () => Promise<void>,
+ *   guardarNuevaTarjeta: (nuevaTarjeta: {numero: string, vencimiento: string, cvv: string, titular: string}) => Promise<object|null>,
+ *   eliminarTarjeta: (cardId: number|string) => Promise<boolean>,
+ *   procesarPago: (tarjeta: object, cvv: string) => Promise<{purchaseDataForTicket: object, detallesCompraParaExito: object}|null>
+ * }}
+ */
 export function usePaymentCheckout(route, authStore, cartStore, ventasStore) {
   const { validateCardNumber, validateExpirationDate, getCardType } = useCreditCardFormatters()
 
   // --- Estado ---
+  /** @type {import('vue').Ref<Array<object>>} Los artículos que se van a comprar. */
   const itemsParaComprar = ref([])
+  /** @type {import('vue').Ref<object|null>} La dirección de envío seleccionada por el usuario. */
   const direccionSeleccionada = ref(null)
+  /** @type {import('vue').Ref<Array<object>>} La lista de tarjetas de crédito guardadas por el usuario. */
   const tarjetasGuardadas = ref([])
+  /** @type {import('vue').Ref<boolean>} Indica si hay una operación en curso. */
   const loading = ref(true)
+  /** @type {import('vue').Ref<string|null>} Almacena el mensaje de error si ocurre uno. */
   const error = ref(null)
 
   // --- Computadas ---
+  /** @type {import('vue').ComputedRef<number>} El costo total de los artículos en el checkout. */
   const checkoutTotal = computed(() => {
     return itemsParaComprar.value.reduce((total, item) => {
       const price = parseFloat(item.precio || item.precio_venta || 0)
@@ -22,6 +50,11 @@ export function usePaymentCheckout(route, authStore, cartStore, ventasStore) {
   })
 
   // --- Métodos Internos ---
+  /**
+   * Carga las tarjetas de crédito guardadas del usuario actual desde Supabase.
+   * @private
+   * @async
+   */
   async function _cargarTarjetas() {
     const idCliente = authStore.usuario?.id
     if (!idCliente) return
@@ -40,6 +73,12 @@ export function usePaymentCheckout(route, authStore, cartStore, ventasStore) {
     }
   }
 
+  /**
+   * Carga los artículos para el checkout. Puede ser desde "Comprar ahora" (query param) o desde el carrito.
+   * @private
+   * @async
+   * @throws {Error} Si el producto no se encuentra, no tiene vendedor, o el carrito está vacío.
+   */
   async function _cargarItemsParaCheckout() {
     try {
       const { buyNowId, qty } = route.query
@@ -79,6 +118,12 @@ export function usePaymentCheckout(route, authStore, cartStore, ventasStore) {
     }
   }
 
+  /**
+   * Carga la dirección de envío seleccionada desde Supabase usando el ID de la query.
+   * @private
+   * @async
+   * @throws {Error} Si no se proporciona un ID de dirección o no se encuentra.
+   */
   async function _cargarDireccion() {
     try {
       const idDireccion = route.query.direccionId
@@ -99,6 +144,10 @@ export function usePaymentCheckout(route, authStore, cartStore, ventasStore) {
   }
 
   // --- Métodos Expuestos ---
+  /**
+   * Inicializa la página de pago, cargando en paralelo la dirección, tarjetas y artículos.
+   * @async
+   */
   async function initializeCheckout() {
     loading.value = true
     error.value = null
@@ -116,6 +165,12 @@ export function usePaymentCheckout(route, authStore, cartStore, ventasStore) {
     }
   }
 
+  /**
+   * Valida y guarda una nueva tarjeta de crédito para el usuario autenticado.
+   * @async
+   * @param {{numero: string, vencimiento: string, cvv: string, titular: string}} nuevaTarjeta - Datos de la nueva tarjeta.
+   * @returns {Promise<object|null>} El objeto de la tarjeta guardada o null si hay un error.
+   */
   async function guardarNuevaTarjeta(nuevaTarjeta) {
     loading.value = true
     error.value = null
@@ -177,6 +232,12 @@ export function usePaymentCheckout(route, authStore, cartStore, ventasStore) {
     }
   }
 
+  /**
+   * Elimina una tarjeta de crédito guardada por su ID.
+   * @async
+   * @param {number|string} cardId - El ID de la tarjeta a eliminar.
+   * @returns {Promise<boolean>} `true` si la eliminación fue exitosa, `false` en caso contrario.
+   */
   async function eliminarTarjeta(cardId) {
     loading.value = true
     error.value = null
@@ -194,6 +255,13 @@ export function usePaymentCheckout(route, authStore, cartStore, ventasStore) {
     }
   }
 
+  /**
+   * Procesa el pago final: simula el pago, actualiza el stock, registra la venta y limpia el carrito.
+   * @async
+   * @param {object} tarjeta - La tarjeta seleccionada para el pago.
+   * @param {string} cvv - El CVV de la tarjeta seleccionada.
+   * @returns {Promise<{purchaseDataForTicket: object, detallesCompraParaExito: object}|null>} Objeto con datos para la página de éxito y el ticket, o null si falla.
+   */
   async function procesarPago(tarjeta, cvv) {
     if (!tarjeta) {
       error.value = 'Tarjeta no seleccionada.'
