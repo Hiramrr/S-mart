@@ -4,12 +4,30 @@ import { useChat } from '@/composables/useChat'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 
+/**
+ * @file ChatIndicator.vue
+ * @description Muestra un ícono de chat y un indicador numérico (badge) con la cantidad de mensajes no leídos.
+ * Se suscribe a las conversaciones del usuario para actualizar el contador en tiempo real.
+ * Al hacer clic, redirige al usuario a la página de sus chats.
+ * El componente solo se renderiza si el usuario está autenticado.
+ */
+
 const authStore = useAuthStore()
 const router = useRouter()
 const { mensajesNoLeidos, cargarConversaciones, suscribirseAConversaciones } = useChat()
 
+/**
+ * @type {Function | null}
+ * @description Almacena la función para cancelar la suscripción a los cambios de la conversación de Supabase.
+ */
 let unsubscribe = null
 
+/**
+ * @hook onMounted
+ * @description Cuando el componente se monta, si hay un usuario autenticado,
+ * carga sus conversaciones iniciales y se suscribe a cambios en tiempo real
+ * para actualizar el contador de mensajes no leídos.
+ */
 onMounted(async () => {
   if (authStore.usuario) {
     await cargarConversaciones()
@@ -20,6 +38,12 @@ onMounted(async () => {
   }
 })
 
+/**
+ * @hook authStore.$subscribe
+ * @description Observa cambios en el estado de autenticación.
+ * Si el usuario inicia sesión, se cargan las conversaciones y se establece la suscripción.
+ * Si el usuario cierra sesión, se cancela la suscripción para limpiar los listeners.
+ */
 authStore.$subscribe(async (mutation, state) => {
   if (state.usuario && !unsubscribe) {
     await cargarConversaciones()
@@ -34,12 +58,22 @@ authStore.$subscribe(async (mutation, state) => {
   }
 })
 
+/**
+ * @hook onUnmounted
+ * @description Limpia la suscripción a Supabase cuando el componente se destruye
+ * para evitar fugas de memoria.
+ */
 onUnmounted(() => {
   if (unsubscribe) {
     unsubscribe()
   }
 })
 
+/**
+ * @function abrirChats
+ * @description Redirige al usuario a la vista de 'Mis Chats'.
+ * @returns {void}
+ */
 function abrirChats() {
   router.push('/mis-chats')
 }
