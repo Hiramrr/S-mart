@@ -2,12 +2,60 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { supabase } from '@/lib/supabase';
 
+/**
+ * @typedef {object} Categoria
+ * @property {string} nombre - El nombre de la categoría.
+ * @property {string} descripcion - La descripción de la categoría.
+ */
+
+/**
+ * @typedef {object} Product
+ * @property {number} id - El ID del producto.
+ * @property {string} name - El nombre del producto.
+ * @property {string} price - El precio final formateado como string (e.g., "$12.99").
+ * @property {string|null} originalPrice - El precio original formateado como string (si hay descuento).
+ * @property {string} description - La descripción del producto.
+ * @property {string} imageUrl - La URL de la imagen del producto.
+ * @property {number} precio - El precio final numérico.
+ * @property {number} precioOriginal - El precio de venta original numérico.
+ * @property {number} stock - La cantidad de stock disponible.
+ * @property {string} vendedor_id - El ID del vendedor del producto.
+ * @property {string} categoria - La categoría del producto.
+ */
+
+/**
+ * Store para la gestión de productos y categorías.
+ * Maneja la carga de datos desde Supabase y las operaciones de stock.
+ *
+ * @exports useProductStore
+ */
 export const useProductStore = defineStore('products', () => {
+  /**
+   * La lista de productos cargados.
+   * @type {import('vue').Ref<Product[]>}
+   */
   const products = ref([]);
+  /**
+   * La lista de categorías de productos.
+   * @type {import('vue').Ref<Categoria[]>}
+   */
   const categorias = ref([]);
+  /**
+   * Bandera que indica si se están cargando los productos.
+   * @type {import('vue').Ref<boolean>}
+   */
   const loading = ref(true);
+  /**
+   * Almacena un mensaje de error si la carga falla.
+   * @type {import('vue').Ref<string|null>}
+   */
   const error = ref(null);
 
+  /**
+   * Carga la lista de categorías desde la base de datos.
+   * @returns {Promise<void>}
+   * @async
+   */
   async function fetchCategorias() {
     try {
       const { data, error: supabaseError } = await supabase
@@ -26,6 +74,11 @@ export const useProductStore = defineStore('products', () => {
     }
   }
 
+  /**
+   * Carga la lista de productos desde la base de datos y los formatea para la vista.
+   * @returns {Promise<void>}
+   * @async
+   */
   async function fetchProducts() {
     try {
       loading.value = true;
@@ -86,6 +139,11 @@ export const useProductStore = defineStore('products', () => {
     }
   }
 
+  /**
+   * Disminuye el stock de un producto en el estado local.
+   * @param {number} productId - El ID del producto.
+   * @param {number} quantity - La cantidad a disminuir.
+   */
   function decreaseStock(productId, quantity) {
     const product = products.value.find((p) => p.id === productId);
     if (product) {
@@ -93,6 +151,11 @@ export const useProductStore = defineStore('products', () => {
     }
   }
 
+  /**
+   * Aumenta el stock de un producto en el estado local.
+   * @param {number} productId - El ID del producto.
+   * @param {number} quantity - La cantidad a aumentar.
+   */
   function increaseStock(productId, quantity) {
     const product = products.value.find((p) => p.id === productId);
     if (product) {
@@ -100,6 +163,12 @@ export const useProductStore = defineStore('products', () => {
     }
   }
 
+  /**
+   * Actualiza el stock de los productos en la base de datos a partir de los items del carrito.
+   * @param {import('./cartStore').CartItem[]} cartItems - Los items del carrito cuya compra se ha completado.
+   * @returns {Promise<void>}
+   * @async
+   */
   async function updateStockInDB(cartItems) {
     console.log('Iniciando actualización de stock en la base de datos...');
     console.log('Artículos del carrito:', cartItems);
