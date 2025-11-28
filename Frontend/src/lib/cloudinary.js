@@ -1,3 +1,9 @@
+/**
+ * Sube una imagen a Cloudinary.
+ * @param {File} archivo - El archivo de imagen a subir.
+ * @returns {Promise<string>} La URL segura de la imagen subida.
+ * @throws {Error} Si ocurre un error durante la subida de la imagen.
+ */
 export async function subirImagenCloudinary(archivo) {
   const formData = new FormData()
   formData.append('file', archivo)
