@@ -4,17 +4,74 @@ import { useRouter } from 'vue-router'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/auth'
 import ForgotPasswordForm from './ForgotPasswordForm.vue'
+
+/**
+ * @file LoginForm.vue - Componente para el inicio de sesión, registro y autenticación de usuarios.
+ * @description Este componente maneja el inicio de sesión con correo/contraseña, el registro de nuevas cuentas,
+ * y la autenticación a través de proveedores OAuth (Google, GitHub). También integra un formulario para
+ * recuperar la contraseña.
+ */
+
+/**
+ * @type {import('vue-router').Router}
+ * @description Instancia del router de Vue para la navegación.
+ */
 const router = useRouter()
+
+/**
+ * @type {import('../stores/auth').AuthStore}
+ * @description Instancia del store de autenticación (Pinia) para gestionar el estado del usuario.
+ */
 const authStore = useAuthStore()
+
+/**
+ * @type {import('vue').Ref<boolean>}
+ * @description Controla la visibilidad del formulario de recuperación de contraseña.
+ */
 const showForgotPassword = ref(false)
 
+/**
+ * @type {import('vue').Ref<string>}
+ * @description Almacena el correo electrónico del usuario.
+ */
 const email = ref('')
+
+/**
+ * @type {import('vue').Ref<string>}
+ * @description Almacena la contraseña del usuario.
+ */
 const password = ref('')
+
+/**
+ * @type {import('vue').Ref<string>}
+ * @description Almacena el nombre del usuario para el registro.
+ */
 const nombre = ref('')
+
+/**
+ * @type {import('vue').Ref<boolean>}
+ * @description Indica si una operación (login, signup, etc.) está en curso.
+ */
 const loading = ref(false)
+
+/**
+ * @type {import('vue').Ref<string>}
+ * @description Almacena mensajes de error de las operaciones de autenticación.
+ */
 const errorMessage = ref('')
+
+/**
+ * @type {import('vue').Ref<boolean>}
+ * @description Alterna entre el modo de inicio de sesión (`true`) y el de registro (`false`).
+ */
 const isLogin = ref(true)
 
+/**
+ * @function handleLogin
+ * @async
+ * @description Gestiona el proceso de inicio de sesión del usuario utilizando correo y contraseña.
+ * Llama a `signInWithPassword` de Supabase y redirige al usuario a la página principal si tiene éxito.
+ */
 const handleLogin = async () => {
   try {
     loading.value = true
@@ -35,6 +92,13 @@ const handleLogin = async () => {
   }
 }
 
+/**
+ * @function handleSignup
+ * @async
+ * @description Gestiona el proceso de registro de un nuevo usuario.
+ * Llama a `signUp` de Supabase, incluyendo el nombre del usuario en los metadatos.
+ * Muestra una alerta para la confirmación por correo electrónico.
+ */
 const handleSignup = async () => {
   try {
     loading.value = true
@@ -61,6 +125,12 @@ const handleSignup = async () => {
   }
 }
 
+/**
+ * @function signInWithGoogle
+ * @async
+ * @description Inicia el flujo de autenticación con Google como proveedor OAuth.
+ * Redirige al usuario a la página de autenticación de Google.
+ */
 const signInWithGoogle = async () => {
   try {
     loading.value = true
@@ -81,6 +151,12 @@ const signInWithGoogle = async () => {
   }
 }
 
+/**
+ * @function signInWithGithub
+ * @async
+ * @description Inicia el flujo de autenticación con GitHub como proveedor OAuth.
+ * Redirige al usuario a la página de autenticación de GitHub.
+ */
 const signInWithGithub = async () => {
   try {
     loading.value = true

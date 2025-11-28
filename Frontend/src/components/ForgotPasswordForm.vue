@@ -2,13 +2,48 @@
 import { ref } from 'vue'
 import { supabase } from '@/lib/supabase'
 
+/**
+ * @file ForgotPasswordForm.vue - Componente de formulario para solicitar el restablecimiento de contraseña.
+ * @description Este componente permite a los usuarios ingresar su correo electrónico para recibir un enlace de restablecimiento de contraseña.
+ * Utiliza Supabase para la gestión de la autenticación.
+ */
+
+/**
+ * @type {import('vue').Ref<string>}
+ * @description Almacena el correo electrónico ingresado por el usuario.
+ */
 const email = ref('')
+
+/**
+ * @type {import('vue').Ref<boolean>}
+ * @description Controla el estado de carga para deshabilitar el formulario mientras se procesa la solicitud.
+ */
 const loading = ref(false)
+
+/**
+ * @type {import('vue').Ref<string>}
+ * @description Muestra mensajes de éxito al usuario (por ejemplo, cuando el correo ha sido enviado).
+ */
 const message = ref('')
+
+/**
+ * @type {import('vue').Ref<string>}
+ * @description Muestra mensajes de error si la solicitud falla.
+ */
 const error = ref('')
 
+/**
+ * @description Emite eventos del componente.
+ * @emits back-to-login - Evento para notificar al componente padre que se debe volver a la vista de login.
+ */
 const emit = defineEmits(['back-to-login'])
 
+/**
+ * @function handlePasswordReset
+ * @async
+ * @description Maneja el envío del formulario de restablecimiento de contraseña.
+ * Valida la entrada, llama al método `resetPasswordForEmail` de Supabase y gestiona los estados de carga, éxito y error.
+ */
 const handlePasswordReset = async () => {
   if (!email.value) {
     error.value = 'Por favor ingresa tu correo electrónico'
