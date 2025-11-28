@@ -152,8 +152,20 @@ import Ticket from '@/components/Cajero/Ticket.vue'
 import CierreCajaReport from '@/components/Cajero/CierreCajaReport.vue' // <-- 1. Importar reporte
 import SecurityCodeModal from '@/components/Cajero/SecurityCodeModal.vue' // <-- 2. Importar modal
 
+/**
+ * @file CajeroView.vue - Vista principal para la interfaz del cajero.
+ * @description Esta vista orquesta todas las operaciones de un punto de venta, incluyendo la selección de productos,
+ * gestión del carrito, historial de compras, proceso de pago, aplicación de cupones y generación de reportes.
+ * Integra múltiples componentes y se comunica con Supabase para la persistencia de datos.
+ */
 export default {
+  /**
+   * @property {string} name - Nombre del componente.
+   */
   name: 'CajeroView',
+  /**
+   * @property {Object} components - Componentes hijos utilizados en la vista.
+   */
   components: {
     Header,
     ProductSelector,
@@ -164,27 +176,55 @@ export default {
     CierreCajaReport, // <-- 3. Registrar componente
     SecurityCodeModal, // <-- 4. Registrar componente
   },
+  /**
+   * @function setup
+   * @description Función de configuración principal que define la lógica de la vista del cajero.
+   * @returns {Object} Un objeto con todo el estado reactivo y los métodos expuestos a la plantilla.
+   */
   setup() {
+    // Stores y Router
+    /** @type {import('@/stores/products').ProductStore} */
     const productStore = useProductStore()
+    /** @type {import('@/stores/auth').AuthStore} */
     const authStore = useAuthStore()
+    /** @type {import('vue-router').Router} */
     const router = useRouter()
+
+    // Estado Reactivo Principal
+    /** @type {import('vue').Ref<Array<Object>>} */
     const cartItems = ref([])
+    /** @type {import('vue').Ref<Array<Object>>} */
     const purchaseHistory = ref([])
+    /** @type {import('vue').Ref<string|null>} */
     const paymentMethod = ref(null)
+    /** @type {import('vue').Ref<Object|null>} */
     const ticketData = ref(null)
+    /** @type {import('vue').Ref<HTMLElement|null>} */
     const ticketRef = ref(null)
+    /** @type {import('vue').Ref<number>} */
     const discount = ref(0)
+    /** @type {import('vue').Ref<Object|null>} */
     const appliedCoupon = ref(null)
 
-    // --- INICIO: Nuevos refs para Cierre de Caja ---
+    // Estado para Cierre de Caja y Reportes
+    /** @type {import('vue').Ref<boolean>} */
     const showCierreCajaModal = ref(false)
+    /** @type {import('vue').Ref<Object|null>} */
     const cierreCajaData = ref(null)
+    /** @type {import('vue').Ref<HTMLElement|null>} */
     const cierreCajaReportRef = ref(null)
+    /** @type {import('vue').Ref<boolean>} */
     const showDeleteSecurityModal = ref(false)
+    /** @type {import('vue').Ref<number|string|null>} */
     const purchaseToDelete = ref(null)
+    /** @type {import('vue').Ref<boolean>} */
     const showReporteDiaModal = ref(false)
-    // --- FIN: Nuevos refs ---
 
+    /**
+     * @function verificarSuspension
+     * @description Comprueba si la cuenta del usuario está suspendida y muestra una alerta.
+     * @returns {boolean} `false` si está suspendido, `true` en caso contrario.
+     */
     const verificarSuspension = () => {
       if (authStore.estaSuspendido) {
         alert('Tu cuenta ha sido suspendida. No puedes realizar esta acción.')
@@ -193,6 +233,11 @@ export default {
       return true
     }
 
+    /**
+     * @function fetchPurchaseHistory
+     * @async
+     * @description Obtiene las últimas 20 compras de la base de datos de Supabase y actualiza el estado local.
+     */
     const fetchPurchaseHistory = async () => {
       try {
         const { data: purchaseData, error: purchaseError } = await supabase
@@ -236,6 +281,10 @@ export default {
       }
     }
 
+    /**
+     * @description Hook del ciclo de vida que se ejecuta al montar el componente.
+     * Verifica la suspensión del usuario, y carga los productos y el historial de compras.
+     */
     onMounted(async () => {
       if (authStore.estaSuspendido) {
         alert('Tu cuenta ha sido suspendida. No puedes acceder al sistema.')
@@ -247,6 +296,12 @@ export default {
       fetchPurchaseHistory() // Cargar historial al montar
     })
 
+    /**
+     * @function generatePdf
+     * @async
+     * @description Genera un ticket en PDF para una compra específica.
+     * @param {Object} purchase - El objeto de la compra a imprimir.
+     */
     const generatePdf = async (purchase) => {
       ticketData.value = purchase
       await nextTick()
@@ -279,6 +334,14 @@ export default {
       }
     }
 
+    // --- Métodos del Carrito ---
+
+    /**
+     * @function addProduct
+     * @description Añade un producto al carrito o incrementa su cantidad si ya existe.
+     * Verifica el stock disponible.
+     * @param {Object} product - El producto a añadir.
+     */
     const addProduct = (product) => {
       if (!verificarSuspension()) return
 
@@ -301,6 +364,13 @@ export default {
       productStore.decreaseStock(product.id, 1)
     }
 
+    /**
+     * @function updateQuantity
+     * @description Actualiza la cantidad de un producto en el carrito.
+     * Ajusta el stock en el store de productos.
+     * @param {number|string} productId - ID del producto a actualizar.
+     * @param {number} newQuantity - Nueva cantidad del producto.
+     */
     const updateQuantity = (productId, newQuantity) => {
       if (!verificarSuspension()) return
 
@@ -331,6 +401,11 @@ export default {
       }
     }
 
+    /**
+     * @function removeItem
+     * @description Elimina un producto completamente del carrito y restaura su stock.
+     * @param {number|string} productId - ID del producto a eliminar.
+     */
     const removeItem = (productId) => {
       if (!verificarSuspension()) return
 
@@ -341,18 +416,30 @@ export default {
 
       cartItems.value = cartItems.value.filter((item) => item.id !== productId)
     }
-
+    
+    // --- Propiedades Computadas ---
+    
+    /** @type {import('vue').ComputedRef<number>} */
     const subtotal = computed(() => {
       return cartItems.value.reduce((sum, item) => {
         return sum + item.precio * item.cantidad
       }, 0)
     })
-
+    
+    /** @type {import('vue').ComputedRef<number>} */
     const total = computed(() => {
       const finalTotal = subtotal.value - discount.value
       return finalTotal > 0 ? finalTotal : 0
     })
 
+    // --- Lógica de Checkout y Cupones ---
+    
+    /**
+     * @function handleApplyCoupon
+     * @async
+     * @description Valida un código de cupón contra la base de datos y lo aplica al total si es válido.
+     * @param {string} couponCode - El código del cupón a aplicar.
+     */
     const handleApplyCoupon = async (couponCode) => {
       if (!verificarSuspension()) return
 
@@ -401,7 +488,13 @@ export default {
       alert('Cupón aplicado exitosamente.')
     }
 
-    // REESCRITO para usar Supabase con la tabla purchase_history
+    /**
+     * @function handleCheckout
+     * @async
+     * @description Procesa la compra final. Guarda la venta en la base de datos, actualiza el stock,
+     * genera el ticket en PDF y limpia el estado del carrito.
+     * @param {string} method - El método de pago seleccionado.
+     */
     const handleCheckout = async (method) => {
       if (!verificarSuspension()) return
 
@@ -475,6 +568,10 @@ export default {
       fetchPurchaseHistory()
     }
 
+    /**
+     * @function handleCancelPurchase
+     * @description Cancela la compra actual, restaurando el stock de los productos y limpiando el carrito.
+     */
     const handleCancelPurchase = () => {
       if (!verificarSuspension()) return
 
@@ -488,7 +585,13 @@ export default {
       appliedCoupon.value = null
     }
 
-    // Abre el modal de seguridad para eliminar
+    // --- Lógica de Eliminación y Reportes ---
+
+    /**
+     * @function handleDeleteRequest
+     * @description Inicia el proceso de eliminación de una compra del historial, mostrando un modal de seguridad.
+     * @param {number|string} purchaseId - ID de la compra a eliminar.
+     */
     const handleDeleteRequest = (purchaseId) => {
       if (!verificarSuspension()) return
       if (!authStore.perfil?.cierre_code) {
@@ -499,14 +602,21 @@ export default {
       showDeleteSecurityModal.value = true
     }
 
-    // Se llama al confirmar el modal de seguridad de eliminación
+    /**
+     * @function handleDeleteConfirm
+     * @description Confirma la eliminación de una compra después de pasar el chequeo de seguridad.
+     */
     const handleDeleteConfirm = () => {
       showDeleteSecurityModal.value = false
       deletePurchase(purchaseToDelete.value)
       purchaseToDelete.value = null
     }
 
-    // Lógica real de eliminación
+    /**
+     * @function deletePurchase
+     * @description Lógica para eliminar una compra de la base de datos (actualmente es un placeholder).
+     * @param {number|string} purchaseId - ID de la compra a eliminar.
+     */
     const deletePurchase = (purchaseId) => {
       if (!verificarSuspension()) return
       alert(
@@ -518,8 +628,10 @@ export default {
       // else { fetchPurchaseHistory() }
     }
 
-    // --- INICIO: NUEVAS FUNCIONES PARA CIERRE DE CAJA ---
-
+    /**
+     * @function iniciarCierreCaja
+     * @description Inicia el proceso de cierre de caja, mostrando un modal de seguridad.
+     */
     const iniciarCierreCaja = () => {
       if (!verificarSuspension()) return
 
@@ -539,6 +651,10 @@ export default {
       showCierreCajaModal.value = true
     }
 
+    /**
+     * @function handleCierreCajaConfirm
+     * @description Confirma el cierre de caja y limpia el historial de la pantalla.
+     */
     const handleCierreCajaConfirm = () => {
       if (!verificarSuspension()) return
       showCierreCajaModal.value = false
@@ -546,17 +662,32 @@ export default {
       alert('Historial limpiado de la pantalla.')
     }
 
+    /**
+     * @function iniciarReporteDia
+     * @description Inicia la generación de un reporte de ventas del día, mostrando un modal de seguridad.
+     */
     const iniciarReporteDia = () => {
       if (!verificarSuspension()) return
       showReporteDiaModal.value = true
     }
 
+    /**
+     * @function handleReporteDiaConfirm
+     * @async
+     * @description Confirma y genera el reporte de ventas del día en formato PDF.
+     */
     const handleReporteDiaConfirm = async () => {
       if (!verificarSuspension()) return
       showReporteDiaModal.value = false
       await fetchAndGenerateReport(true) // Detallado
     }
 
+    /**
+     * @function fetchAndGenerateReport
+     * @async
+     * @description Obtiene los datos de las ventas del día para el cajero actual y genera el PDF del reporte.
+     * @param {boolean} isDetailed - Si el reporte debe ser detallado.
+     */
     const fetchAndGenerateReport = async (isDetailed) => {
       try {
         const today = new Date()
@@ -595,7 +726,13 @@ export default {
         alert('Error al generar el reporte: ' + err.message)
       }
     }
-
+    
+    /**
+     * @function generateCierreCajaPdf
+     * @async
+     * @description Genera un PDF multipágina para el reporte de cierre de caja.
+     * @param {Object} data - Los datos del reporte.
+     */
     const generateCierreCajaPdf = async (data) => {
       cierreCajaData.value = data
       await nextTick()
@@ -665,8 +802,6 @@ export default {
         purchaseHistory.value = []
       }
     }
-
-    // --- FIN: NUEVAS FUNCIONES PARA CIERRE DE CAJA ---
 
     return {
       products: computed(() => productStore.products),
