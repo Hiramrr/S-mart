@@ -1,4 +1,10 @@
 <script setup>
+/**
+ * @file AdminProductosView.vue
+ * @description Vista de administración de productos.
+ * Proporciona el layout para que los administradores gestionen el catálogo global.
+ * Incluye el encabezado y el componente de sección de administración de productos.
+ */
 import AdminProductSection from '@/components/PrincipalComponents/AdminProductSection.vue'
 import Header from '@/components/Landing/LandingHeader.vue'
 </script>
