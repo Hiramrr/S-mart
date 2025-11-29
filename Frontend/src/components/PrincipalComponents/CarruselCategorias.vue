@@ -1,8 +1,19 @@
 <script setup>
+/**
+ * @file CarruselCategorias.vue
+ * @description Componente de carrusel interactivo para navegar entre categorías de productos.
+ * Adapta el número de elementos visibles según el tamaño de la pantalla (responsive).
+ * Emite un evento cuando se selecciona una categoría.
+ */
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 
+/**
+ * @event category-selected
+ * @description Emitido al hacer clic en una tarjeta de categoría. Envía el nombre de la categoría.
+ */
 const emit = defineEmits(['category-selected'])
 
+/** @type {import('vue').Ref<Array<{nombre: string, descripcion: string, imagen: string}>>} Lista de categorías estáticas */
 const categorias = ref([
   {
     nombre: 'Electronica',
@@ -21,11 +32,20 @@ const categorias = ref([
   },
 ])
 
+/** @type {import('vue').Ref<number>} Índice actual del carrusel */
 const currentIndex = ref(0)
+/** @type {import('vue').Ref<number>} Número de items visibles simultáneamente */
 const itemsPerView = ref(3)
 
+/**
+ * Calcula el índice máximo permitido para la navegación.
+ * @type {import('vue').ComputedRef<number>}
+ */
 const maxIndex = computed(() => Math.max(0, categorias.value.length - itemsPerView.value))
 
+/**
+ * Ajusta el número de items visibles basado en el ancho de la ventana.
+ */
 const handleResize = () => {
   if (window.innerWidth < 640) {
     itemsPerView.value = 1
@@ -36,18 +56,24 @@ const handleResize = () => {
   }
 }
 
+/** Mueve el carrusel hacia atrás. */
 const handlePrev = () => {
   if (currentIndex.value > 0) {
     currentIndex.value--
   }
 }
 
+/** Mueve el carrusel hacia adelante. */
 const handleNext = () => {
   if (currentIndex.value < maxIndex.value) {
     currentIndex.value++
   }
 }
 
+/**
+ * Maneja el clic en una categoría y emite el evento de selección.
+ * @param {Object} categoria - Objeto de la categoría seleccionada.
+ */
 const handleCategoryClick = (categoria) => {
   emit('category-selected', categoria.nombre)
 }
