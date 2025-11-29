@@ -1,19 +1,35 @@
 <script setup>
+/**
+ * @file ResetPasswordView.vue
+ * @description Vista para restablecer la contraseña del usuario.
+ * Se accede a esta vista típicamente a través de un enlace enviado por correo electrónico.
+ * Permite al usuario ingresar y confirmar una nueva contraseña.
+ */
 import { ref, onMounted } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+/** @type {import('vue').Ref<string>} Nueva contraseña ingresada */
 const newPassword = ref('')
+/** @type {import('vue').Ref<string>} Confirmación de la nueva contraseña */
 const confirmPassword = ref('')
+/** @type {import('vue').Ref<boolean>} Estado de carga */
 const loading = ref(false)
+/** @type {import('vue').Ref<string>} Mensaje de error */
 const error = ref('')
+/** @type {import('vue').Ref<string>} Mensaje de éxito */
 const message = ref('')
 
 onMounted(() => {
   document.body.style.overflow = 'hidden'
 })
 
+/**
+ * Envía la solicitud de actualización de contraseña a Supabase.
+ * Valida que las contraseñas coincidan y cumplan con la longitud mínima.
+ * @async
+ */
 const handleResetPassword = async () => {
   if (newPassword.value !== confirmPassword.value) {
     error.value = 'Las contraseñas no coinciden'
