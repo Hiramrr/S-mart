@@ -1,44 +1,63 @@
 <script setup>
+/**
+ * @file ProductCard.vue
+ * @description Tarjeta individual de producto. Muestra imagen, nombre, precio, calificación y botones de acción.
+ * Soporta modos de visualización para cliente (compra) y vendedor (edición/gestión).
+ */
 import { useRouter } from 'vue-router'
+/**
+ * @emits delete-product - Emitido por el vendedor para eliminar el producto.
+ * @emits edit-product - Emitido por el vendedor para editar el producto.
+ * @emits create-coupon - Emitido por el vendedor para crear un cupón para el producto.
+ */
 const emit = defineEmits(['delete-product', 'edit-product', 'create-coupon'])
 defineProps({
+  /** ID del producto */
   productId: {
     type: [String, Number],
     default: true,
   },
+  /** Nombre del producto */
   productName: {
     type: String,
     default: 'Nombre del producto',
   },
+  /** Calificación del producto (0-5) */
   rating: {
     type: Number,
     default: 4.5,
   },
+  /** Precio actual a mostrar (formateado) */
   price: {
     type: String,
     default: 'PRECIO',
   },
+  /** Precio original para mostrar tachado (si hay descuento) */
   originalPrice: {
     type: String,
     default: null,
   },
+  /** Descripción corta del producto */
   description: {
     type: String,
     default: 'Descripción de forma de pago',
   },
+  /** URL de la imagen del producto */
   imageUrl: {
     type: String,
     default: null,
   },
+  /** Indica si la tarjeta se muestra en modo vendedor (con acciones de gestión) */
   isSeller: {
     type: Boolean,
     default: false,
   },
+  /** Oculta los botones de acción en modo vendedor si es true */
   hideActions: {
     type: Boolean,
     default: false,
   },
-  // --- ¡AÑADIDO! ---
+  /** Cantidad de stock disponible. Si <= 0 muestra overlay de Agotado */
   stock: {
     type: Number,
     default: 1, // Asumimos que hay stock si no se provee
