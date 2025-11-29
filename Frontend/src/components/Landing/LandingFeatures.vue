@@ -1,4 +1,10 @@
 <script setup>
+/**
+ * @file LandingFeatures.vue
+ * @description Sección de características principales para la página de inicio (Landing Page).
+ * Muestra una cuadrícula de tarjetas con iconos y descripciones de las funcionalidades clave del sistema.
+ * @author Equipo A
+ */
 console.log(
   ' +XX;;+$$$$$XX$$X&$+;;;;;;+::..::::; \
   $$+:...;$XXXXXXXXXxXXx;;;:.....:::: \
@@ -21,6 +27,18 @@ console.log(
          .........:;+++++++++++xx+xx+ \
 ',
 )
+
+/**
+ * @typedef {Object} Feature
+ * @property {string} icon - Emoji o icono representativo.
+ * @property {string} title - Título de la característica.
+ * @property {string} description - Descripción breve de la funcionalidad.
+ */
+
+/**
+ * Lista de características a mostrar en la landing page.
+ * @type {Feature[]}
+ */
 const features = [
   {
     icon: '🛒',
