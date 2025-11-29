@@ -1,20 +1,42 @@
 <script setup>
+/**
+ * @file AdminProductSection.vue
+ * @description Componente principal para la gestión de productos en el panel de administración.
+ * Permite listar, filtrar, buscar y gestionar productos (incluyendo la creación de cupones).
+ * Integra filtros laterales por categoría y precio.
+ */
 import { ref, computed, onMounted } from 'vue'
 import ProductCard from './ProductCard.vue'
 import CouponModal from './CouponModal.vue'
 import { supabase } from '@/lib/supabase.js'
+
+/** @type {import('vue').Ref<number>} Total de productos cargados */
 const totalProducts = ref(0)
+/** @type {import('vue').Ref<Array<Object>>} Lista cruda de productos */
 const products = ref([])
+/** @type {import('vue').Ref<Array<Object>>} Lista de categorías disponibles */
 const categorias = ref([])
+/** @type {import('vue').Ref<boolean>} Estado de carga */
 const loading = ref(true)
+/** @type {import('vue').Ref<string|null>} Mensaje de error */
 const error = ref(null)
+/** @type {import('vue').Ref<string>} Término de búsqueda */
 const search = ref('')
+/** @type {import('vue').Ref<string>} Filtro de categoría seleccionada */
 const selectedCategoria = ref('')
+/** @type {import('vue').Ref<number|null>} Filtro de precio mínimo */
 const precioMin = ref(null)
+/** @type {import('vue').Ref<number|null>} Filtro de precio máximo */
 const precioMax = ref(null)
+/** @type {import('vue').Ref<boolean>} Controla el modal de creación de cupones */
 const showCouponModal = ref(false)
+/** @type {import('vue').Ref<Object>} Producto seleccionado para operaciones (ej. cupón) */
 const selectedProduct = ref({ id: null, name: '' })
 
+/**
+ * Carga la lista de categorías desde la base de datos.
+ * @async
+ */
 async function cargarCategorias() {
   try {
     const { data, error: supabaseError } = await supabase
@@ -31,6 +53,11 @@ async function cargarCategorias() {
   }
 }
 
+/**
+ * Carga todos los productos desde la base de datos y formatea sus precios.
+ * Determina si hay descuentos activos para mostrar el precio correcto.
+ * @async
+ */
 async function cargarProductos() {
   try {
     loading.value = true
@@ -81,6 +108,11 @@ onMounted(async () => {
   await cargarProductos()
 })
 
+
+/**
+ * Filtra la lista de productos en base a la búsqueda, categoría y rango de precios.
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const filteredProducts = computed(() => {
   let filtered = [...products.value]
   // Filtro de búsqueda por nombre
@@ -117,11 +149,19 @@ const filteredProducts = computed(() => {
   return filtered
 })
 
+/**
+ * Resetea todos los filtros activos.
+ */
 const limpiarFiltros = () => {
   selectedCategoria.value = ''
   precioMin.value = null
   precioMax.value = null
 }
+
+/**
+ * Indica si existe algún filtro activo.
+ * @type {import('vue').ComputedRef<boolean>}
+ */
 
 const hayFiltrosActivos = computed(() => {
   return selectedCategoria.value || 
@@ -129,11 +169,21 @@ const hayFiltrosActivos = computed(() => {
          (precioMax.value !== null && precioMax.value !== '')
 })
 
+/**
+ * Abre el modal para crear un cupón para un producto específico.
+ * @param {string|number} productId - ID del producto.
+ * @param {string} productName - Nombre del producto.
+ */
 function handleCreateCoupon(productId, productName) {
   selectedProduct.value = { id: productId, name: productName }
   showCouponModal.value = true
 }
 
+
+/**
+ * Callback ejecutado cuando se crea un cupón exitosamente.
+ * @param {Object} coupon - Datos del cupón creado.
+ */
 function handleCouponCreated(coupon) {
   console.log('Cupón creado:', coupon)
 }
