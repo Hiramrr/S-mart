@@ -1,4 +1,13 @@
 <script setup>
+/**
+ * @file HomeView.vue
+ * @description Vista de la página de inicio (Landing Page).
+ * Compone la página utilizando los componentes:
+ * - LandingHeader: Barra de navegación.
+ * - LandingHero: Sección principal con llamada a la acción.
+ * - LandingFeatures: Sección de características.
+ * - LandingFooter: Pie de página.
+ */
 import LandingHeader from '@/components/Landing/LandingHeader.vue'
 import LandingHero from '@/components/Landing/LandingHero.vue'
 import LandingFeatures from '@/components/Landing/LandingFeatures.vue'
