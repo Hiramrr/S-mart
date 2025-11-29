@@ -1,4 +1,9 @@
-
+/**
+ * @file assets.css
+ * @description Hoja de estilos globales de la aplicación.
+ * Importa la tipografía 'Manrope', aplica un reset básico de CSS (box-sizing, margins)
+ * y define la fuente predeterminada para el body.
+ */
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&display=swap');
 
 * {
