@@ -1,9 +1,16 @@
 <script setup>
+/**
+ * @file ProductSection.vue
+ * @description Sección principal de la tienda (vista de cliente).
+ * Combina una barra lateral de filtros, un carrusel de categorías y la cuadrícula de productos.
+ * Utiliza el store de Pinia (`useProductStore`) para obtener los datos.
+ */
 import { computed, onMounted, ref, watch, onUnmounted } from 'vue'
 import { useProductStore } from '@/stores/products.js'
 import ProductCard from './ProductCard.vue'
 
 const props = defineProps({
+  /** Categoría preseleccionada al cargar el componente */
   initialCategory: {
     type: String,
     default: '',
@@ -16,6 +23,7 @@ const selectedCategoria = ref('')
 const precioMin = ref(null)
 const precioMax = ref(null)
 
+/** Categorías estáticas para el carrusel superior */
 const categorias = ref([
   {
     nombre: 'Electrónica',
@@ -39,6 +47,7 @@ const itemsPerView = ref(3)
 
 const maxIndex = computed(() => Math.max(0, categorias.value.length - itemsPerView.value))
 
+/** Ajusta el carrusel según el tamaño de pantalla */
 const handleCarouselResize = () => {
   if (window.innerWidth < 640) {
     itemsPerView.value = 1
@@ -87,6 +96,10 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleCarouselResize)
 })
 
+/**
+ * Filtra los productos del store basándose en búsqueda, categoría y rango de precios.
+ * @type {import('vue').ComputedRef<Array>}
+ */
 const filteredProducts = computed(() => {
   let filtered = [...productStore.products]
 
