@@ -1,3 +1,9 @@
+/**
+ * @file eslint.config.js
+ * @description Configuración de ESLint (Linter) para el proyecto.
+ * Establece las reglas de calidad de código, ignora carpetas de compilación (dist, coverage)
+ * y configura la integración con Prettier para el formateo automático.
+ */
 import { defineConfig, globalIgnores } from 'eslint/config'
 import globals from 'globals'
 import js from '@eslint/js'
