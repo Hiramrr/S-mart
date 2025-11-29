@@ -1,4 +1,10 @@
 <script setup>
+/**
+ * @file LoginView.vue
+ * @description Vista contenedora para la pantalla de inicio de sesión.
+ * Su función principal es renderizar el componente `LoginForm` y gestionar estilos globales
+ * específicos de esta vista (como bloquear el scroll del body) durante su ciclo de vida.
+ */
 import LoginForm from '@/components/LoginForm.vue'
 import { onMounted, onUnmounted } from 'vue'
 
