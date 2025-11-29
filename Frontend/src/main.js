@@ -1,3 +1,11 @@
+/**
+ * @file main.js
+ * @description Punto de entrada principal de la aplicación Vue.
+ * Se encarga de:
+ * 1. Crear la instancia de la aplicación.
+ * 2. Registrar plugins globales: Pinia (estado), Router (navegación) y Toast (notificaciones).
+ * 3. Inicializar la sesión de autenticación antes de montar la aplicación en el DOM.
+ */
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 
