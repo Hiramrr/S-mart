@@ -1,17 +1,25 @@
 <script setup>
+/**
+ * @file CouponModal.vue
+ * @description Modal para la creación de cupones de descuento asociados a un producto.
+ * Permite configurar código, tipo de descuento (fijo/porcentaje), valor, expiración y límite de usos.
+ */
 import { ref, computed, watch } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps({
+  /** Controla la visibilidad del modal */
   show: {
     type: Boolean,
     default: false
   },
+  /** ID del producto al que se aplica el cupón */
   productId: {
     type: String,
     required: true
   },
+  /** Nombre del producto para mostrar en el título */
   productName: {
     type: String,
     default: ''
@@ -22,6 +30,7 @@ const emit = defineEmits(['close', 'created'])
 
 const authStore = useAuthStore()
 
+/** Estado del formulario de creación */
 const form = ref({
   codigo: '',
   tipo_descuento: 'porcentaje',
@@ -33,12 +42,14 @@ const form = ref({
 const loading = ref(false)
 const error = ref(null)
 
+/** Fecha mínima para el selector de fecha (ahora mismo) */
 const today = computed(() => {
   const now = new Date()
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
   return now.toISOString().slice(0, 16)
 })
 
+/** Resetea el formulario a sus valores iniciales */
 const resetForm = () => {
   form.value = {
     codigo: '',
@@ -50,18 +61,25 @@ const resetForm = () => {
   error.value = null
 }
 
+// Resetea el formulario cada vez que se abre el modal
 watch(() => props.show, (newVal) => {
   if (newVal) {
     resetForm()
   }
 })
 
+/** Valida si el formulario está listo para envío */
 const isFormValid = computed(() => {
   return form.value.codigo.trim() &&
          form.value.valor &&
          parseFloat(form.value.valor) > 0
 })
 
+/**
+ * Envía los datos del cupón a Supabase.
+ * Calcula valores por defecto y maneja errores.
+ * @async
+ */
 const handleSubmit = async () => {
   if (!isFormValid.value) return
 
