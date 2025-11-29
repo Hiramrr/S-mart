@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: composables/Payment/usePaymentCheckout.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: composables/Payment/usePaymentCheckout.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { ref, computed } from 'vue'
+import { supabase } from '@/lib/supabase'
+import { useCreditCardFormatters } from '@/composables/Payment/useCreditCardFormatters.js'
+
+/**
+ * @module usePaymentCheckout
+ * @description Composable de Vue para gestionar todo el proceso de pago, desde la carga de datos hasta la finalización de la compra.
+ *
+ * @param {import('vue-router').RouteLocationNormalizedLoaded} route - El objeto de la ruta actual de Vue Router, usado para obtener parámetros de consulta.
+ * @param {object} authStore - La tienda Pinia de autenticación (useAuthStore) para acceder a la información del usuario.
+ * @param {object} cartStore - La tienda Pinia del carrito (useCartStore) para gestionar los artículos del carrito.
+ * @param {object} ventasStore - La tienda Pinia de ventas (useVentasStore) para registrar las transacciones.
+ *
+ * @returns {{
+ *   itemsParaComprar: import('vue').Ref&lt;Array&lt;object>>,
+ *   direccionSeleccionada: import('vue').Ref&lt;object|null>,
+ *   tarjetasGuardadas: import('vue').Ref&lt;Array&lt;object>>,
+ *   loading: import('vue').Ref&lt;boolean>,
+ *   error: import('vue').Ref&lt;string|null>,
+ *   checkoutTotal: import('vue').ComputedRef&lt;number>,
+ *   initializeCheckout: () => Promise&lt;void>,
+ *   guardarNuevaTarjeta: (nuevaTarjeta: {numero: string, vencimiento: string, cvv: string, titular: string}) => Promise&lt;object|null>,
+ *   eliminarTarjeta: (cardId: number|string) => Promise&lt;boolean>,
+ *   procesarPago: (tarjeta: object, cvv: string) => Promise&lt;{purchaseDataForTicket: object, detallesCompraParaExito: object}|null>
+ * }}
+ */
+export function usePaymentCheckout(route, authStore, cartStore, ventasStore) {
+  const { validateCardNumber, validateExpirationDate, getCardType } = useCreditCardFormatters()
+
+  // --- Estado ---
+  /** @type {import('vue').Ref&lt;Array&lt;object>>} Los artículos que se van a comprar. */
+  const itemsParaComprar = ref([])
+  /** @type {import('vue').Ref&lt;object|null>} La dirección de envío seleccionada por el usuario. */
+  const direccionSeleccionada = ref(null)
+  /** @type {import('vue').Ref&lt;Array&lt;object>>} La lista de tarjetas de crédito guardadas por el usuario. */
+  const tarjetasGuardadas = ref([])
+  /** @type {import('vue').Ref&lt;boolean>} Indica si hay una operación en curso. */
+  const loading = ref(true)
+  /** @type {import('vue').Ref&lt;string|null>} Almacena el mensaje de error si ocurre uno. */
+  const error = ref(null)
+
+  // --- Computadas ---
+  /** @type {import('vue').ComputedRef&lt;number>} El costo total de los artículos en el checkout. */
+  const checkoutTotal = computed(() => {
+    return itemsParaComprar.value.reduce((total, item) => {
+      const price = parseFloat(item.precio || item.precio_venta || 0)
+      const qty = parseInt(item.cantidad || 1, 10)
+      return total + price * qty
+    }, 0)
+  })
+
+  // --- Métodos Internos ---
+  /**
+   * Carga las tarjetas de crédito guardadas del usuario actual desde Supabase.
+   * @private
+   * @async
+   */
+  async function _cargarTarjetas() {
+    const idCliente = authStore.usuario?.id
+    if (!idCliente) return
+
+    try {
+      const { data, error: supabaseError } = await supabase
+        .from('tarjetas')
+        .select('id, titular, numero_tarjeta, fecha_vencimiento')
+        .eq('idcliente', idCliente)
+
+      if (supabaseError) throw supabaseError
+      tarjetasGuardadas.value = data || []
+    } catch (err) {
+      console.error('Error al cargar tarjetas:', err)
+      throw new Error('Error al cargar las tarjetas guardadas.')
+    }
+  }
+
+  /**
+   * Carga los artículos para el checkout. Puede ser desde "Comprar ahora" (query param) o desde el carrito.
+   * @private
+   * @async
+   * @throws {Error} Si el producto no se encuentra, no tiene vendedor, o el carrito está vacío.
+   */
+  async function _cargarItemsParaCheckout() {
+    try {
+      const { buyNowId, qty } = route.query
+      if (buyNowId) {
+        const { data, error: dbError } = await supabase
+          .from('productos')
+          .select('*')
+          .eq('id', buyNowId)
+          .single()
+        if (dbError) throw dbError
+        if (!data) throw new Error('Producto no encontrado')
+        if (!data.vendedor_id) {
+          throw new Error(`El producto "${data.nombre}" no tiene un vendedor asignado.`)
+        }
+        const precioFinal =
+          data.precio_descuento &amp;&amp; data.precio_descuento > 0
+            ? data.precio_descuento
+            : data.precio_venta
+        itemsParaComprar.value = [
+          { ...data, cantidad: parseInt(qty, 10) || 1, precio: precioFinal, name: data.nombre },
+        ]
+      } else {
+        if (!cartStore.items || cartStore.items.length === 0) {
+          throw new Error('Tu carrito está vacío')
+        }
+        for (const item of cartStore.items) {
+          if (!item.vendedor_id) {
+            throw new Error(`El producto "${item.name}" no tiene un vendedor asignado.`)
+          }
+        }
+        itemsParaComprar.value = [...cartStore.items]
+      }
+    } catch (err) {
+      console.error('Error al cargar items:', err)
+      itemsParaComprar.value = []
+      throw err
+    }
+  }
+
+  /**
+   * Carga la dirección de envío seleccionada desde Supabase usando el ID de la query.
+   * @private
+   * @async
+   * @throws {Error} Si no se proporciona un ID de dirección o no se encuentra.
+   */
+  async function _cargarDireccion() {
+    try {
+      const idDireccion = route.query.direccionId
+      if (!idDireccion) {
+        throw new Error('No se proporcionó una dirección. Por favor, vuelve a seleccionarla.')
+      }
+      const { data, error: dirError } = await supabase
+        .from('direcciones')
+        .select('*')
+        .eq('id', idDireccion)
+        .single()
+      if (dirError) throw new Error(`Error al cargar la dirección: ${dirError.message}`)
+      if (!data) throw new Error('No se pudo encontrar la dirección seleccionada.')
+      direccionSeleccionada.value = data
+    } catch (err) {
+      throw err
+    }
+  }
+
+  // --- Métodos Expuestos ---
+  /**
+   * Inicializa la página de pago, cargando en paralelo la dirección, tarjetas y artículos.
+   * @async
+   */
+  async function initializeCheckout() {
+    loading.value = true
+    error.value = null
+    try {
+      await _cargarDireccion()
+      await Promise.all([_cargarTarjetas(), _cargarItemsParaCheckout()])
+      if (itemsParaComprar.value.length === 0 &amp;&amp; !error.value) {
+        throw new Error('No hay productos para comprar.')
+      }
+    } catch (err) {
+      console.error('Error al inicializar la página de pago:', err)
+      error.value = err.message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Valida y guarda una nueva tarjeta de crédito para el usuario autenticado.
+   * @async
+   * @param {{numero: string, vencimiento: string, cvv: string, titular: string}} nuevaTarjeta - Datos de la nueva tarjeta.
+   * @returns {Promise&lt;object|null>} El objeto de la tarjeta guardada o null si hay un error.
+   */
+  async function guardarNuevaTarjeta(nuevaTarjeta) {
+    loading.value = true
+    error.value = null
+    const idCliente = authStore.usuario?.id
+    if (!idCliente) {
+      error.value = 'Usuario no autenticado.'
+      loading.value = false
+      return null
+    }
+
+    // Validaciones
+    const numero_tarjeta_limpio = validateCardNumber(nuevaTarjeta.numero)
+    if (!numero_tarjeta_limpio) {
+      error.value = 'El número de tarjeta debe ser de 16 dígitos.'
+      loading.value = false
+      return null
+    }
+    if (!validateExpirationDate(nuevaTarjeta.vencimiento)) {
+      error.value = 'La fecha de vencimiento no es válida (formato MM/YY).'
+      loading.value = false
+      return null
+    }
+    const cvv_limpio = nuevaTarjeta.cvv.replace(/\D/g, '')
+    if (cvv_limpio.length &lt; 3 || cvv_limpio.length > 4) {
+      error.value = 'El CVV debe ser de 3 o 4 dígitos.'
+      loading.value = false
+      return null
+    }
+
+    try {
+      const [month, year] = nuevaTarjeta.vencimiento.split('/')
+      const fullYear = year.length === 2 ? `20${year}` : year
+      const lastDayOfMonth = new Date(fullYear, month, 0).getDate()
+      const vencimientoISO = `${fullYear}-${month}-${lastDayOfMonth}T23:59:59Z`
+
+      const { data, error: supabaseError } = await supabase
+        .from('tarjetas')
+        .insert({
+          idcliente: idCliente,
+          numero_tarjeta: numero_tarjeta_limpio,
+          titular: nuevaTarjeta.titular.trim(),
+          fecha_vencimiento: vencimientoISO,
+        })
+        .select()
+        .single()
+
+      if (supabaseError) throw supabaseError
+
+      await _cargarTarjetas() // Recargar la lista
+      return data // Devuelve la tarjeta recién creada
+    } catch (err) {
+      console.error('Error al registrar tarjeta:', err)
+      error.value = err.message.includes('duplicate key')
+        ? 'Esta tarjeta ya se encuentra registrada.'
+        : 'Error al registrar la tarjeta.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Elimina una tarjeta de crédito guardada por su ID.
+   * @async
+   * @param {number|string} cardId - El ID de la tarjeta a eliminar.
+   * @returns {Promise&lt;boolean>} `true` si la eliminación fue exitosa, `false` en caso contrario.
+   */
+  async function eliminarTarjeta(cardId) {
+    loading.value = true
+    error.value = null
+    try {
+      const { error: deleteError } = await supabase.from('tarjetas').delete().eq('id', cardId)
+      if (deleteError) throw deleteError
+      tarjetasGuardadas.value = tarjetasGuardadas.value.filter((t) => t.id !== cardId)
+      return true
+    } catch (err) {
+      console.error('Error al eliminar tarjeta:', err)
+      error.value = 'Error al eliminar la tarjeta.'
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Procesa el pago final: simula el pago, actualiza el stock, registra la venta y limpia el carrito.
+   * @async
+   * @param {object} tarjeta - La tarjeta seleccionada para el pago.
+   * @param {string} cvv - El CVV de la tarjeta seleccionada.
+   * @returns {Promise&lt;{purchaseDataForTicket: object, detallesCompraParaExito: object}|null>} Objeto con datos para la página de éxito y el ticket, o null si falla.
+   */
+  async function procesarPago(tarjeta, cvv) {
+    if (!tarjeta) {
+      error.value = 'Tarjeta no seleccionada.'
+      return null
+    }
+    if (!cvv || cvv.length &lt; 3) {
+      error.value = 'CVV inválido.'
+      return null
+    }
+
+    loading.value = true
+    error.value = null
+
+    try {
+      // 1. Simulación de pago
+      console.log(`Pago simulado con tarjeta ${tarjeta.numero_tarjeta_display} y CVV ${cvv}.`)
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      // 2. Actualizar Stock
+      const itemsPayload = itemsParaComprar.value.map((item) => ({
+        p_id: item.id,
+        p_qty: item.cantidad,
+      }))
+      const { error: rpcError } = await supabase.rpc('actualizar_stock_multi', { items: itemsPayload })
+      if (rpcError) throw new Error(`Error al actualizar el stock: ${rpcError.message}`)
+
+      // 3. Registrar Venta
+      const metodoPago = `Tarjeta ${getCardType(tarjeta.numero_tarjeta)} (•••• ${tarjeta.numero_tarjeta_display})`
+      const direccionId = direccionSeleccionada.value.id
+      
+      const ventasData = await ventasStore.crearVentaEnLinea(
+        itemsParaComprar.value,
+        metodoPago,
+        direccionId
+      )
+      if (!ventasData) throw new Error("No se pudo registrar la venta.")
+      
+      // 4. Limpiar Carrito (si no es "Comprar Ahora")
+      if (!route.query.buyNowId) {
+        const purchasedIds = itemsParaComprar.value.map((item) => item.id)
+        cartStore.removeProductsByIds(purchasedIds)
+      }
+
+      // 5. Preparar datos para Ticket y Página de Éxito
+      const purchaseId = ventasData.map(v => v.id).join('-') // Combina IDs si hay múltiples ventas
+      
+      const purchaseDataForTicket = {
+        id: purchaseId,
+        fecha: new Date(), // El generador de PDF lo formateará
+        items: itemsParaComprar.value.map((item) => ({
+          ...item,
+          nombre: item.name || item.nombre,
+          precio: item.precio || item.precio_venta,
+        })),
+        subtotal: checkoutTotal.value,
+        discount: 0,
+        total: checkoutTotal.value,
+        paymentMethod: metodoPago,
+      }
+      
+      const detallesCompraParaExito = {
+        items: purchaseDataForTicket.items,
+        total: checkoutTotal.value,
+        direccion: direccionSeleccionada.value,
+        metodoPago: metodoPago,
+        ticketId: purchaseId
+      }
+
+      // Devolvemos los datos para que la vista los use
+      return {
+        purchaseDataForTicket,
+        detallesCompraParaExito
+      }
+
+    } catch (err) {
+      console.error('Error en el proceso de pago:', err)
+      error.value = err.message || 'Ocurrió un error inesperado.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return {
+    // Estado
+    itemsParaComprar,
+    direccionSeleccionada,
+    tarjetasGuardadas,
+    loading,
+    error,
+    // Computadas
+    checkoutTotal,
+    // Métodos
+    initializeCheckout,
+    guardarNuevaTarjeta,
+    eliminarTarjeta,
+    procesarPago,
+  }
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-useAuthStore.html">useAuthStore</a></li><li><a href="module-useCartStore.html">useCartStore</a></li><li><a href="module-useChat.html">useChat</a></li><li><a href="module-useCounterStore.html">useCounterStore</a></li><li><a href="module-useCreditCardFormatters.html">useCreditCardFormatters</a></li><li><a href="module-useNotificationStore.html">useNotificationStore</a></li><li><a href="module-usePaymentCheckout.html">usePaymentCheckout</a></li><li><a href="module-useProductStore.html">useProductStore</a></li><li><a href="module-useRole.html">useRole</a></li><li><a href="module-useTicketGenerator.html">useTicketGenerator</a></li><li><a href="module-useVentasStore.html">useVentasStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#LOW_STOCK_THRESHOLD">LOW_STOCK_THRESHOLD</a></li><li><a href="global.html#history">history</a></li><li><a href="global.html#redirectUrl">redirectUrl</a></li><li><a href="global.html#router">router</a></li><li><a href="global.html#routes">routes</a></li><li><a href="global.html#scrollBehavior">scrollBehavior</a></li><li><a href="global.html#subirImagenCloudinary">subirImagenCloudinary</a></li><li><a href="global.html#supabase">supabase</a></li><li><a href="global.html#supabaseAnonKey">supabaseAnonKey</a></li><li><a href="global.html#supabaseUrl">supabaseUrl</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Nov 29 2025 17:14:20 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

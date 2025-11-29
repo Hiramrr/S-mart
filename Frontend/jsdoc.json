@@ -1,18 +1,23 @@
 {
   "source": {
     "include": ["src"],
-    "includePattern": ".+\\.(js|vue)$",
-    "excludePattern": "(node_modules/|docs/)"
+    "includePattern": ".+\\.js(doc|x)?$|.+\\.vue$",
+    "excludePattern": "(node_modules|docs)"
   },
-  "plugins": ["plugins/markdown"],
   "opts": {
-    "encoding": "utf8",
     "destination": "./docs",
     "recurse": true,
-    "readme": "./README.md"
+    "verbose": true,
+    "encoding": "utf8"
   },
+  "plugins": [
+    "node_modules/better-docs"
+  ],
   "templates": {
-    "cleverLinks": false,
-    "monospaceLinks": false
+    "cleverLinks": true,
+    "monospaceLinks": true,
+    "better-docs": {
+      "name": "Documentación del Proyecto"
+    }
   }
 }

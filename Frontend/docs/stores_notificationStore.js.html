@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: stores/notificationStore.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: stores/notificationStore.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { ref, computed } from 'vue'
+import { defineStore } from 'pinia'
+import { supabase } from '@/lib/supabase'
+import { useAuthStore } from './auth' // Importamos authStore para saber el rol
+
+/**
+ * @typedef {object} StockAlertItem
+ * @property {number} id - El ID del producto.
+ * @property {string} nombre - El nombre del producto.
+ * @property {number} stock - La cantidad de stock restante.
+ * @property {string} vendedor_id - El ID del vendedor del producto.
+ */
+
+/**
+ * El umbral para considerar que un producto tiene bajo stock.
+ * @type {number}
+ */
+const LOW_STOCK_THRESHOLD = 5
+
+/**
+ * Store para gestionar las notificaciones de stock de productos.
+ * Permite a los administradores y vendedores ver qué productos están agotados o con bajo stock.
+ *
+ * @exports useNotificationStore
+ */
+export const useNotificationStore = defineStore('notifications', () => {
+  /**
+   * Lista de productos con bajo stock.
+   * @type {import('vue').Ref&lt;StockAlertItem[]>}
+   */
+  const lowStockItems = ref([])
+  /**
+   * Lista de productos agotados (stock 0).
+   * @type {import('vue').Ref&lt;StockAlertItem[]>}
+   */
+  const outOfStockItems = ref([])
+  /**
+   * Bandera que indica si se están cargando las alertas.
+   * @type {import('vue').Ref&lt;boolean>}
+   */
+  const loading = ref(false)
+  /**
+   * Almacena un mensaje de error si la carga de alertas falla.
+   * @type {import('vue').Ref&lt;string|null>}
+   */
+  const error = ref(null)
+
+  /**
+   * El número de productos con bajo stock.
+   * @type {import('vue').ComputedRef&lt;number>}
+   */
+  const lowStockCount = computed(() => lowStockItems.value.length)
+  /**
+   * El número de productos agotados.
+   * @type {import('vue').ComputedRef&lt;number>}
+   */
+  const outOfStockCount = computed(() => outOfStockItems.value.length)
+  /**
+   * El número total de alertas de stock (agotados + bajos).
+   * @type {import('vue').ComputedRef&lt;number>}
+   */
+  const totalAlertCount = computed(() => lowStockCount.value + outOfStockCount.value)
+
+  /**
+   * Obtiene las alertas de stock desde la base de datos.
+   * Si el usuario es un vendedor, solo trae las alertas de sus propios productos.
+   * Si es administrador, trae las de todos los productos.
+   * @returns {Promise&lt;void>}
+   * @async
+   */
+  async function fetchStockAlerts() {
+    const authStore = useAuthStore() // Obtenemos el auth store aquí
+    if (loading.value) return
+    if (!authStore.usuario) return // No hacer nada si no hay usuario
+
+    loading.value = true
+    error.value = null
+
+    try {
+      // 1. Preparar consultas base
+      let queryAgotados = supabase
+        .from('productos')
+        // --- CORRECCIÓN AQUÍ ---
+        // Pedimos el 'vendedor_id' para que el admin pueda iniciar el chat
+        .select('id, nombre, stock, vendedor_id')
+        .eq('stock', 0)
+
+      let queryBajos = supabase
+        .from('productos')
+        // --- CORRECCIÓN AQUÍ ---
+        // Pedimos el 'vendedor_id' para que el admin pueda iniciar el chat
+        .select('id, nombre, stock, vendedor_id')
+        .gt('stock', 0)
+        .lte('stock', LOW_STOCK_THRESHOLD)
+
+      // 2. AÑADIR FILTRO SI ES VENDEDOR
+      if (authStore.rolUsuario === 'vendedor') {
+        queryAgotados = queryAgotados.eq('vendedor_id', authStore.usuario.id)
+        queryBajos = queryBajos.eq('vendedor_id', authStore.usuario.id)
+      }
+      // Si es admin, no se añade filtro y trae todo
+
+      // 3. Ejecutar consultas
+      const { data: agotados, error: errAgotados } = await queryAgotados.order('nombre', { ascending: true })
+      if (errAgotados) throw errAgotados
+      
+      // los items 'agotados' ahora tendrán 'vendedor_id'
+      outOfStockItems.value = agotados || []
+
+      const { data: bajos, error: errBajos } = await queryBajos.order('stock', { ascending: true })
+      if (errBajos) throw errBajos
+
+      // los items 'bajos' ahora tendrán 'vendedor_id'
+      lowStockItems.value = bajos || []
+
+    } catch (err) {
+      console.error('Error al cargar alertas de stock:', err)
+      error.value = 'No se pudieron cargar las alertas de stock.'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Limpia todas las alertas de stock y resetea el estado del store.
+   */
+  function clearAlerts() {
+    lowStockItems.value = []
+    outOfStockItems.value = []
+    error.value = null
+    loading.value = false
+  }
+
+  return {
+    lowStockItems,
+    outOfStockItems,
+    loading,
+    error,
+    lowStockCount,
+    outOfStockCount,
+    totalAlertCount,
+    fetchStockAlerts,
+    clearAlerts,
+  }
+})</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-useAuthStore.html">useAuthStore</a></li><li><a href="module-useCartStore.html">useCartStore</a></li><li><a href="module-useChat.html">useChat</a></li><li><a href="module-useCounterStore.html">useCounterStore</a></li><li><a href="module-useCreditCardFormatters.html">useCreditCardFormatters</a></li><li><a href="module-useNotificationStore.html">useNotificationStore</a></li><li><a href="module-usePaymentCheckout.html">usePaymentCheckout</a></li><li><a href="module-useProductStore.html">useProductStore</a></li><li><a href="module-useRole.html">useRole</a></li><li><a href="module-useTicketGenerator.html">useTicketGenerator</a></li><li><a href="module-useVentasStore.html">useVentasStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#LOW_STOCK_THRESHOLD">LOW_STOCK_THRESHOLD</a></li><li><a href="global.html#history">history</a></li><li><a href="global.html#redirectUrl">redirectUrl</a></li><li><a href="global.html#router">router</a></li><li><a href="global.html#routes">routes</a></li><li><a href="global.html#scrollBehavior">scrollBehavior</a></li><li><a href="global.html#subirImagenCloudinary">subirImagenCloudinary</a></li><li><a href="global.html#supabase">supabase</a></li><li><a href="global.html#supabaseAnonKey">supabaseAnonKey</a></li><li><a href="global.html#supabaseUrl">supabaseUrl</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Nov 29 2025 17:14:20 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
