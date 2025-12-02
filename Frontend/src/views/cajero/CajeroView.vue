@@ -348,7 +348,7 @@ export default {
       const existingItem = cartItems.value.find((item) => item.id === product.id)
       const cartQuantity = existingItem ? existingItem.cantidad : 0
 
-      if (product.stock <= cartQuantity) {
+      if (product.stock <= 0) {
         alert('No hay más stock disponible para este producto.')
         return
       }
