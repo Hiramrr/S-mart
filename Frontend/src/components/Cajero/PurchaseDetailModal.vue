@@ -25,7 +25,7 @@
 
           <div class="items-list">
               <h3 class="items-title">Productos</h3>
-              <ul>
+              <ul class="product-list-scroll">
                   <li v-for="(item, index) in purchase.items" :key="index">
                       {{ item.name }} x{{ item.cantidad }} - ${{ (item.precio * item.cantidad).toLocaleString() }}
                   </li>
@@ -52,7 +52,7 @@
         title="Eliminar Venta"
         description="Ingresa el código de 4 dígitos para confirmar la eliminación."
         :code-length="4"
-        security-code="5555"
+        :security-code="authStore.perfil?.cierre_code || 'INVALID'"
         @cancel="showSecurityModal = false"
         @confirm="handleSecurityConfirm"
     />
@@ -281,6 +281,12 @@ export default {
     font-weight: 600;
     margin-bottom: 0.5rem;
     text-align: center;
+}
+
+.product-list-scroll {
+    max-height: 150px;
+    overflow-y: auto;
+    padding-right: 0.5rem; /* Para que el scroll no se pegue al texto */
 }
 
 .items-list ul {

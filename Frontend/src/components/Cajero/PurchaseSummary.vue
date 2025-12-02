@@ -51,7 +51,7 @@
       title="Cancelar Compra"
       description="Ingresa el código de 4 dígitos para confirmar la cancelación."
       :code-length="4"
-      security-code="5555"
+      :security-code="authStore.perfil?.cierre_code || 'INVALID'"
       @cancel="showSecurityModal = false"
       @confirm="handleSecurityConfirm"
     />
@@ -63,6 +63,7 @@ import { ref } from 'vue'
 import PaymentMethodModal from './PaymentMethodModal.vue'
 import SecurityCodeModal from './SecurityCodeModal.vue'
 import CouponInput from './CouponInput.vue'
+import { useAuthStore } from '@/stores/auth';
 
 /**
  * @file PurchaseSummary.vue - Componente que muestra el resumen de una compra y gestiona las acciones de pago.
@@ -140,6 +141,8 @@ export default {
      */
     const showSecurityModal = ref(false)
 
+    const authStore = useAuthStore();
+
     /**
      * @function handlePaymentContinue
      * @description Actualiza el método de pago y cierra el modal de selección.
@@ -155,6 +158,10 @@ export default {
      * @description Muestra el modal de código de seguridad para iniciar la cancelación de la compra.
      */
     const handleCancelPurchase = () => {
+      if (!authStore.perfil?.cierre_code) {
+        alert('No tienes un código de seguridad asignado. Contacta a un administrador.');
+        return;
+      }
       showSecurityModal.value = true
     }
 
@@ -174,6 +181,7 @@ export default {
       handlePaymentContinue,
       handleCancelPurchase,
       handleSecurityConfirm,
+      authStore,
     }
   },
 }
