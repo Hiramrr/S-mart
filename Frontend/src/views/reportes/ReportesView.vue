@@ -102,10 +102,11 @@ async function cargarReporte() {
     // 2. El procesamiento de datos sigue igual
     const dataProcesada = data.map(venta => ({
       ...venta,
-      total_items: venta.productos_vendidos.reduce((acc, prod) => acc + (prod.cantidad || 1), 0),
+      // Actualizar reduce para soportar 'cantidad' o 'quantity'
+      total_items: venta.productos_vendidos.reduce((acc, prod) => acc + (prod.cantidad || prod.quantity || 1), 0),
       fecha_formateada: formatDate(venta.fecha_venta),
       total_formateado: formatCurrency(venta.total_venta)
-    })).sort((a, b) => new Date(b.fecha_venta) - new Date(a.fecha_venta)) 
+    })).sort((a, b) => new Date(b.fecha_venta) - new Date(a.fecha_venta))
 
     ventas.value = dataProcesada
 
@@ -201,11 +202,17 @@ onMounted(() => {
                 <div class="product-breakdown">
                   <h4>Detalle de la Venta:</h4>
                   <ul class="product-list">
-                    <li v-for="prod in venta.productos_vendidos" :key="prod.producto_id">
-                      <span class="qty">{{ prod.cantidad }}x</span>
-                      <span class="name">{{ prod.nombre }}</span>
-                      <span class="price">{{ formatCurrency(prod.precio_unitario) }} c/u</span>
-                    </li>
+                  <li v-for="prod in venta.productos_vendidos" :key="prod.producto_id || prod.product_id">
+                    <span class="qty">{{ prod.cantidad || prod.quantity }}x</span>
+                    
+                    <span class="name">
+                      {{ prod.nombre || prod.name || 'Producto sin nombre' }}
+                    </span>
+
+                    <span class="price">
+                      {{ formatCurrency(prod.precio_unitario || prod.price) }} c/u
+                    </span>
+                  </li>
                   </ul>
                 </div>
               </td>

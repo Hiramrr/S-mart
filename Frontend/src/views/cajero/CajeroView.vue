@@ -510,11 +510,13 @@ export default {
       }
 
       const productsToSave = cartItems.value.map((item) => ({
-        product_id: item.id,
-        name: item.nombre,
-        quantity: item.cantidad,
-        price: item.precio,
-      }))
+          // 1. Usamos claves en español para que coincidan con ReportesView
+          producto_id: item.id,           
+          nombre: item.name, 
+          cantidad: item.cantidad,
+          precio_unitario: item.precio,
+          imagen_url: item.imagen_url || item.imageUrl || null 
+        }))
 
       const { data: purchaseData, error: purchaseError } = await supabase
         .from('purchase_history')

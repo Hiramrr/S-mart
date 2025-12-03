@@ -32,23 +32,16 @@ import { ref } from 'vue'
 
 /**
  * Store para la gestión de ventas, tanto en punto de venta (POS) como en línea.
- *
- * @exports useVentasStore
  */
 export const useVentasStore = defineStore('ventas', () => {
   /**
    * Almacena los detalles de la última venta realizada para poder mostrarlos en una vista de confirmación.
-   * @type {import('vue').Ref<any|null>}
    */
   const ultimaVentaDetalles = ref(null)
 
   /**
    * Registra una nueva venta en el sistema de Punto de Venta (POS).
-   * @param {object[]} productos - Los productos vendidos.
-   * @param {number} total - El monto total de la venta.
-   * @param {string} metodoPago - El método de pago (e.g., 'efectivo', 'tarjeta').
-   * @returns {Promise<any>} Los datos de la venta registrada.
-   * @async
+   * ESTA FUNCIÓN SE MANTIENE INTACTA.
    */
   async function crearVentaPOS(productos, total, metodoPago) {
     const authStore = useAuthStore()
@@ -75,117 +68,83 @@ export const useVentasStore = defineStore('ventas', () => {
   }
 
   /**
-   * Registra una o más ventas en línea a partir de los items de un carrito.
-   * Agrupa los productos por vendedor y crea una venta separada para cada uno.
-   * @param {import('./cartStore').CartItem[]} itemsDelCarrito - Los items que se van a comprar.
-   * @param {string} metodoPago - El método de pago utilizado.
-   * @param {number} direccionId - El ID de la dirección de envío del cliente.
-   * @returns {Promise<VentaEnLinea[]>} Un array con los datos de las ventas registradas.
-   * @async
+   * Registra una venta en línea UNIFICADA a partir de los items de un carrito.
+   * Crea un solo registro de venta con todos los productos, independientemente del vendedor.
    */
   async function crearVentaEnLinea(itemsDelCarrito, metodoPago, direccionId) {
     const authStore = useAuthStore()
     if (!authStore.usuario) throw new Error('Cliente no autenticado')
 
-    // 1. Calcular fecha de entrega
+    // 1. Calcular fecha de entrega (Ej: 7 días)
     const hoy = new Date()
     const fechaEntrega = new Date(hoy)
     fechaEntrega.setDate(hoy.getDate() + 7)
     const fechaEstimadaISO = fechaEntrega.toISOString().split('T')[0]
 
-    // 2. Agrupar productos por vendedor_id
-    const ventasPorVendedor = new Map()
+    // 2. Preparar los datos de la venta UNIFICADA
+    
+    // Tomamos el vendedor del primer producto como referencia para el registro,
+    // o null si no se requiere una asignación estricta en este modo unificado.
+    const vendedorIdReferencia = itemsDelCarrito[0]?.vendedor_id || null
 
-    for (const item of itemsDelCarrito) {
-      const vendedorId = item.vendedor_id
-
-      if (!vendedorId) {
-        console.warn('Producto sin vendedor_id en el carrito:', item)
-        continue
-      }
-
-      // Debug: Verificar datos del item
-      console.log('📦 Procesando item del carrito:', {
-        id: item.id,
-        name: item.name,
-        precio: item.precio,
-        price: item.price,
-        imageUrl: item.imageUrl,
-        imagen_url: item.imagen_url,
-        vendedor_id: item.vendedor_id,
-      })
-
-      if (!ventasPorVendedor.has(vendedorId)) {
-        ventasPorVendedor.set(vendedorId, {
-          productos: [],
-          monto_total: 0,
-        })
-      }
-
-      const venta = ventasPorVendedor.get(vendedorId)
-
-      // Obtener el precio correcto del item del carrito
-      const precioNumerico = parseFloat(item.precio || item.price || 0)
-
-      venta.productos.push({
+    // Mapear todos los productos para el JSONB
+    // Aseguramos usar las claves 'nombre' y 'precio_unitario' para compatibilidad con reportes
+    const productosParaGuardar = itemsDelCarrito.map(item => {
+      const precioNumerico = parseFloat(item.precio || item.price || item.precio_venta || 0)
+      
+      return {
         producto_id: item.id,
-        nombre: item.name,
+        nombre: item.name, // Usamos 'name' que viene del carrito
         cantidad: item.cantidad,
-        precio: precioNumerico,
-        imagen_url: item.imageUrl || item.imagen_url || null,
-      })
-
-      // Validar que el precio sea válido
-      if (isNaN(precioNumerico) || precioNumerico <= 0) {
-        console.warn(`Producto ${item.name} tiene precio inválido o 0:`, item)
+        precio_unitario: precioNumerico, // Usamos 'precio_unitario' para el reporte
+        imagen_url: item.imageUrl || item.imagen_url || null
       }
+    })
 
-      venta.monto_total += precioNumerico * item.cantidad
+    // Calcular el total absoluto de todo el carrito
+    const montoTotal = productosParaGuardar.reduce((total, prod) => {
+      return total + (prod.precio_unitario * prod.cantidad)
+    }, 0)
+
+    // 3. Crear el objeto de venta única
+    const ventaUnica = {
+      cliente_id: authStore.usuario.id,
+      vendedor_id: vendedorIdReferencia, // Se asigna a un vendedor referencia
+      productos: productosParaGuardar,
+      monto_total: montoTotal,
+      metodo_pago: metodoPago,
+      direccion_id: direccionId,
+      fecha_estimada_entrega: fechaEstimadaISO,
+      seguimiento: [{ estado: 'Pendiente', fecha: new Date().toISOString() }]
     }
 
-    // 3. Crear un array de registros para insertar
-    const registrosDeVenta = []
-    const clienteId = authStore.usuario.id
-
-    for (const [vendedorId, venta] of ventasPorVendedor.entries()) {
-      registrosDeVenta.push({
-        cliente_id: clienteId,
-        vendedor_id: vendedorId,
-        productos: venta.productos,
-        monto_total: venta.monto_total, // <-- Esto ahora será un NÚMERO
-        metodo_pago: metodoPago,
-        direccion_id: direccionId,
-        fecha_estimada_entrega: fechaEstimadaISO,
-        seguimiento: [{ estado: 'Pendiente', fecha: new Date().toISOString() }],
-      })
-    }
-
-    // 4. Insertar todos los registros en la BD
-    console.log('Registrando ventas en línea:', registrosDeVenta)
-    const { data, error } = await supabase.from('venta_en_linea').insert(registrosDeVenta).select()
+    // 4. Insertar UN SOLO registro en la base de datos
+    console.log('Registrando venta única:', ventaUnica)
+    const { data, error } = await supabase
+      .from('venta_en_linea')
+      .insert(ventaUnica)
+      .select()
 
     if (error) {
       console.error('Error al registrar venta en línea:', error)
       throw error
     }
 
-    console.log('Ventas en línea registradas:', data)
+    console.log('Venta en línea registrada:', data)
     return data
   }
 
   /**
    * Establece los detalles de la última venta para que puedan ser accedidos por otros componentes.
-   * @param {any} detalles - Los detalles de la venta a almacenar.
    */
   function setUltimaVenta(detalles) {
     ultimaVentaDetalles.value = detalles
   }
 
   return {
-
     crearVentaPOS,
     crearVentaEnLinea,
-    ultimaVentaDetalles, // <-- Exponer el estado
+    ultimaVentaDetalles,
     setUltimaVenta,
   }
 })
