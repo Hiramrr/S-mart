@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: stores/products.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: stores/products.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { defineStore } from 'pinia';
+import { ref } from 'vue';
+import { supabase } from '@/lib/supabase';
+
+/**
+ * @typedef {object} Categoria
+ * @property {string} nombre - El nombre de la categoría.
+ * @property {string} descripcion - La descripción de la categoría.
+ */
+
+/**
+ * @typedef {object} Product
+ * @property {number} id - El ID del producto.
+ * @property {string} name - El nombre del producto.
+ * @property {string} price - El precio final formateado como string (e.g., "$12.99").
+ * @property {string|null} originalPrice - El precio original formateado como string (si hay descuento).
+ * @property {string} description - La descripción del producto.
+ * @property {string} imageUrl - La URL de la imagen del producto.
+ * @property {number} precio - El precio final numérico.
+ * @property {number} precioOriginal - El precio de venta original numérico.
+ * @property {number} stock - La cantidad de stock disponible.
+ * @property {string} vendedor_id - El ID del vendedor del producto.
+ * @property {string} categoria - La categoría del producto.
+ */
+
+/**
+ * Store para la gestión de productos y categorías.
+ * Maneja la carga de datos desde Supabase y las operaciones de stock.
+ *
+ * @exports useProductStore
+ */
+export const useProductStore = defineStore('products', () => {
+  /**
+   * La lista de productos cargados.
+   * @type {import('vue').Ref&lt;Product[]>}
+   */
+  const products = ref([]);
+  /**
+   * La lista de categorías de productos.
+   * @type {import('vue').Ref&lt;Categoria[]>}
+   */
+  const categorias = ref([]);
+  /**
+   * Bandera que indica si se están cargando los productos.
+   * @type {import('vue').Ref&lt;boolean>}
+   */
+  const loading = ref(true);
+  /**
+   * Almacena un mensaje de error si la carga falla.
+   * @type {import('vue').Ref&lt;string|null>}
+   */
+  const error = ref(null);
+
+  /**
+   * Carga la lista de categorías desde la base de datos.
+   * @returns {Promise&lt;void>}
+   * @async
+   */
+  async function fetchCategorias() {
+    try {
+      const { data, error: supabaseError } = await supabase
+        .from('categoria')
+        .select('nombre, descripcion')
+        .order('nombre', { ascending: true });
+
+      if (supabaseError) {
+        console.error('Error al cargar categorías:', supabaseError);
+        return;
+      }
+
+      categorias.value = data || [];
+    } catch (err) {
+      console.error('Error al cargar categorías:', err);
+    }
+  }
+
+  /**
+   * Carga la lista de productos desde la base de datos y los formatea para la vista.
+   * @returns {Promise&lt;void>}
+   * @async
+   */
+  async function fetchProducts() {
+    try {
+      loading.value = true;
+      error.value = null;
+
+      if (!supabase) {
+        throw new Error('Supabase no está configurado correctamente');
+      }
+
+      const { data, error: supabaseError } = await supabase
+        .from('productos')
+        .select(
+          'id, nombre, precio_venta, precio_descuento, descripcion, imagen_url, stock, vendedor_id, categoria'
+        )
+        .order('id', { ascending: false });
+
+      if (supabaseError) {
+        throw supabaseError;
+      }
+
+      if (!data) {
+        products.value = [];
+        return;
+      }
+
+      products.value = data.map((p) => {
+        // Comprobar si hay un descuento válido
+        const tieneDescuento =
+          p.precio_descuento &amp;&amp;
+          p.precio_descuento > 0 &amp;&amp;
+          p.precio_descuento &lt; p.precio_venta;
+
+        return {
+          id: p.id,
+          name: p.nombre,
+          // 'price' es el precio final que se muestra
+          price: tieneDescuento
+            ? `$${p.precio_descuento.toFixed(2)}`
+            : `$${p.precio_venta.toFixed(2)}`,
+          // 'originalPrice' es el precio tachado (si existe)
+          originalPrice: tieneDescuento
+            ? `$${p.precio_venta.toFixed(2)}`
+            : null,
+          description: p.descripcion,
+          imageUrl: p.imagen_url,
+          precio: tieneDescuento ? p.precio_descuento : p.precio_venta,
+          precioOriginal: p.precio_venta,
+          stock: p.stock,          
+          vendedor_id: p.vendedor_id,
+          categoria: p.categoria,
+        };
+      });
+    } catch (err) {
+      console.error('Error al cargar productos:', err);
+      error.value = err.message || 'Error al cargar productos';
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  /**
+   * Disminuye el stock de un producto en el estado local.
+   * @param {number} productId - El ID del producto.
+   * @param {number} quantity - La cantidad a disminuir.
+   */
+  function decreaseStock(productId, quantity) {
+    const product = products.value.find((p) => p.id === productId);
+    if (product) {
+      product.stock -= quantity;
+    }
+  }
+
+  /**
+   * Aumenta el stock de un producto en el estado local.
+   * @param {number} productId - El ID del producto.
+   * @param {number} quantity - La cantidad a aumentar.
+   */
+  function increaseStock(productId, quantity) {
+    const product = products.value.find((p) => p.id === productId);
+    if (product) {
+      product.stock += quantity;
+    }
+  }
+
+  /**
+   * Actualiza el stock de los productos en la base de datos a partir de los items del carrito.
+   * @param {import('./cartStore').CartItem[]} cartItems - Los items del carrito cuya compra se ha completado.
+   * @returns {Promise&lt;void>}
+   * @async
+   */
+  async function updateStockInDB(cartItems) {
+    console.log('Iniciando actualización de stock en la base de datos...');
+    console.log('Artículos del carrito:', cartItems);
+
+    try {
+      const updates = cartItems.map((item) => {
+        const product = products.value.find((p) => p.id === item.id);
+        if (product) {
+          console.log(
+            `Preparando actualización para producto ID ${item.id}. Nuevo stock: ${product.stock}`
+          );
+          return supabase
+            .from('productos')
+            .update({ stock: product.stock })
+            .eq('id', item.id)
+            .select();
+        }
+        console.log(`Producto ID ${item.id} no encontrado en el store local.`);
+        return Promise.resolve();
+      });
+
+      if (updates.length === 0) {
+        console.log('No hay actualizaciones de stock para realizar.');
+        return;
+      }
+
+      console.log('Enviando actualizaciones a Supabase...');
+      const results = await Promise.all(updates);
+      console.log('Resultados de Supabase:', results);
+
+      results.forEach((res, index) => {
+        if (res.error) {
+          console.error(
+            `Error al actualizar el producto ID ${cartItems[index].id}:`,
+            res.error
+          );
+          throw res.error;
+        }
+        console.log(
+          `Stock para el producto ID ${cartItems[index].id} actualizado correctamente.`
+        );
+      });
+
+      console.log(
+        'La actualización del stock en la base de datos ha finalizado.'
+      );
+    } catch (err) {
+      console.error(
+        'Error general al actualizar el stock en la base de datos:',
+        err
+      );
+      alert(
+        'Hubo un error al actualizar el stock en la base de datos. Por favor, revisa la consola para más detalles.'
+      );
+    }
+  }
+
+  return {
+    products,
+    categorias,
+    loading,
+    error,
+    fetchProducts,
+    fetchCategorias,
+    decreaseStock,
+    increaseStock,
+    updateStockInDB,
+  };
+});</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-useAuthStore.html">useAuthStore</a></li><li><a href="module-useCartStore.html">useCartStore</a></li><li><a href="module-useChat.html">useChat</a></li><li><a href="module-useCounterStore.html">useCounterStore</a></li><li><a href="module-useCreditCardFormatters.html">useCreditCardFormatters</a></li><li><a href="module-useNotificationStore.html">useNotificationStore</a></li><li><a href="module-usePaymentCheckout.html">usePaymentCheckout</a></li><li><a href="module-useProductStore.html">useProductStore</a></li><li><a href="module-useRole.html">useRole</a></li><li><a href="module-useTicketGenerator.html">useTicketGenerator</a></li></ul><h3>Global</h3><ul><li><a href="global.html#LOW_STOCK_THRESHOLD">LOW_STOCK_THRESHOLD</a></li><li><a href="global.html#history">history</a></li><li><a href="global.html#redirectUrl">redirectUrl</a></li><li><a href="global.html#router">router</a></li><li><a href="global.html#routes">routes</a></li><li><a href="global.html#scrollBehavior">scrollBehavior</a></li><li><a href="global.html#subirImagenCloudinary">subirImagenCloudinary</a></li><li><a href="global.html#supabase">supabase</a></li><li><a href="global.html#supabaseAnonKey">supabaseAnonKey</a></li><li><a href="global.html#supabaseUrl">supabaseUrl</a></li><li><a href="global.html#useVentasStore">useVentasStore</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 02 2025 21:31:12 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

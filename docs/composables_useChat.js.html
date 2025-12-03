@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: composables/useChat.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: composables/useChat.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// Frontend/src/composables/useChat.js
+import { ref, computed } from 'vue'
+import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/stores/auth'
+
+/**
+ * @module useChat
+ * @description Composable para gestionar la funcionalidad de chat en tiempo real.
+ * Proporciona funciones para crear, cargar y gestionar conversaciones y mensajes,
+ * así como para suscribirse a actualizaciones en tiempo real a través de Supabase.
+ */
+export function useChat() {
+  const authStore = useAuthStore()
+
+  /**
+   * @type {import('vue').Ref&lt;Array&lt;Object>>}
+   * @description Almacena la lista de conversaciones del usuario actual.
+   */
+  const conversaciones = ref([])
+
+  /**
+   * @type {import('vue').Ref&lt;Array&lt;Object>>}
+   * @description Almacena la lista de mensajes de la conversación activa.
+   */
+  const mensajes = ref([])
+
+  /**
+   * @type {import('vue').Ref&lt;boolean>}
+   * @description Indica si hay una operación de chat en curso.
+   */
+  const loading = ref(false)
+
+  /**
+   * @type {import('vue').Ref&lt;Error|null>}
+   * @description Almacena el último error ocurrido en una operación de chat.
+   */
+  const error = ref(null)
+
+  /**
+   * @type {import('vue').ComputedRef&lt;number>}
+   * @description Calcula el número total de conversaciones con mensajes no leídos para el usuario actual.
+   */
+  const mensajesNoLeidos = computed(() => {
+    if (!authStore.usuario) return 0
+
+    return conversaciones.value.filter((conv) => {
+      const esCliente = conv.cliente_id === authStore.usuario.id
+      const esVendedor = conv.vendedor_id === authStore.usuario.id
+
+      if (esCliente) return !conv.cliente_leido
+      if (esVendedor) return !conv.vendedor_leido
+      return false
+    }).length
+  })
+
+  /**
+   * Busca una conversación existente entre el cliente y el vendedor para un producto específico.
+   * Si no existe, crea una nueva.
+   * @param {string} productoId - El ID del producto.
+   * @param {string} vendedorId - El ID del vendedor.
+   * @returns {Promise&lt;Object>} La conversación existente o la nueva recién creada.
+   * @throws {Error} Si el usuario no está autenticado o si ocurre un error en la base de datos.
+   */
+  async function obtenerOCrearConversacion(productoId, vendedorId) {
+    try {
+      loading.value = true
+      error.value = null
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) {
+        throw new Error('Debes iniciar sesión para chatear')
+      }
+
+      const { data: existente, error: errorBuscar } = await supabase
+        .from('conversaciones')
+        .select('*')
+        .eq('producto_id', productoId)
+        .eq('cliente_id', user.id)
+        .eq('vendedor_id', vendedorId)
+        .single()
+
+      if (errorBuscar &amp;&amp; errorBuscar.code !== 'PGRST116') {
+        throw errorBuscar
+      }
+
+      if (existente) {
+        return existente
+      }
+
+      const { data: nueva, error: errorCrear } = await supabase
+        .from('conversaciones')
+        .insert({
+          producto_id: productoId,
+          cliente_id: user.id,
+          vendedor_id: vendedorId,
+        })
+        .select()
+        .single()
+
+      if (errorCrear) throw errorCrear
+
+      return nueva
+    } catch (err) {
+      console.error('Error al obtener/crear conversación:', err)
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Carga todas las conversaciones en las que el usuario actual es cliente o vendedor.
+   * @returns {Promise&lt;void>}
+   */
+  async function cargarConversaciones() {
+    try {
+      loading.value = true
+      error.value = null
+
+      if (!authStore.usuario) return
+
+      const { data, error: errorCargar } = await supabase
+        .from('conversaciones')
+        .select(
+          `
+          *,
+          producto:productos(id, nombre, imagen_url),
+          cliente:usuarios!conversaciones_cliente_id_fkey(id, nombre, foto_url),
+          vendedor:usuarios!conversaciones_vendedor_id_fkey(id, nombre, foto_url)
+        `,
+        )
+        .or(`cliente_id.eq.${authStore.usuario.id},vendedor_id.eq.${authStore.usuario.id}`)
+        .order('actualizado', { ascending: false })
+
+      if (errorCargar) throw errorCargar
+
+      conversaciones.value = data || []
+    } catch (err) {
+      console.error('Error al cargar conversaciones:', err)
+      error.value = err.message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Carga todos los mensajes de una conversación específica y los marca como leídos.
+   * @param {string} conversacionId - El ID de la conversación.
+   * @returns {Promise&lt;void>}
+   */
+  async function cargarMensajes(conversacionId) {
+    try {
+      loading.value = true
+      error.value = null
+
+      const { data, error: errorCargar } = await supabase
+        .from('mensajes')
+        .select(
+          `
+          *,
+          remitente:usuarios(id, nombre, foto_url)
+        `,
+        )
+        .eq('conversacion_id', conversacionId)
+        .order('creado', { ascending: true })
+
+      if (errorCargar) throw errorCargar
+
+      mensajes.value = data || []
+
+      await marcarComoLeido(conversacionId)
+    } catch (err) {
+      console.error('Error al cargar mensajes:', err)
+      error.value = err.message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Envía un nuevo mensaje a una conversación.
+   * @param {string} conversacionId - El ID de la conversación.
+   * @param {string} contenido - El texto del mensaje.
+   * @returns {Promise&lt;Object>} El mensaje recién enviado.
+   * @throws {Error} Si el usuario no está autenticado o el mensaje está vacío.
+   */
+  async function enviarMensaje(conversacionId, contenido) {
+    try {
+      if (!authStore.usuario) {
+        throw new Error('Debes iniciar sesión')
+      }
+
+      if (!contenido.trim()) {
+        throw new Error('El mensaje no puede estar vacío')
+      }
+
+      const { data, error: errorEnviar } = await supabase
+        .from('mensajes')
+        .insert({
+          conversacion_id: conversacionId,
+          remitente_id: authStore.usuario.id,
+          contenido: contenido.trim(),
+        })
+        .select(
+          `
+          *,
+          remitente:usuarios(id, nombre, foto_url)
+        `,
+        )
+        .single()
+
+      if (errorEnviar) throw errorEnviar
+
+      mensajes.value.push(data)
+
+      return data
+    } catch (err) {
+      console.error('Error al enviar mensaje:', err)
+      error.value = err.message
+      throw err
+    }
+  }
+
+  /**
+   * Marca una conversación como leída para el usuario actual.
+   * Actualiza el estado de la conversación y los mensajes correspondientes.
+   * @param {string} conversacionId - El ID de la conversación a marcar como leída.
+   * @returns {Promise&lt;void>}
+   */
+  async function marcarComoLeido(conversacionId) {
+    try {
+      if (!authStore.usuario) return
+
+      const conversacion = conversaciones.value.find((c) => c.id === conversacionId)
+      if (!conversacion) return
+
+      const esCliente = conversacion.cliente_id === authStore.usuario.id
+      const campo = esCliente ? 'cliente_leido' : 'vendedor_leido'
+
+      await supabase
+        .from('conversaciones')
+        .update({ [campo]: true })
+        .eq('id', conversacionId)
+
+      const index = conversaciones.value.findIndex((c) => c.id === conversacionId)
+      if (index !== -1) {
+        conversaciones.value[index][campo] = true
+      }
+
+      await supabase
+        .from('mensajes')
+        .update({ leido: true })
+        .eq('conversacion_id', conversacionId)
+        .neq('remitente_id', authStore.usuario.id)
+    } catch (err) {
+      console.error('Error al marcar como leído:', err)
+    }
+  }
+
+  /**
+   * Se suscribe a nuevos mensajes en tiempo real para una conversación específica.
+   * @param {string} conversacionId - El ID de la conversación.
+   * @param {function(Object):void} callback - Función que se ejecuta al recibir un nuevo mensaje.
+   * @returns {function():void} Una función para cancelar la suscripción.
+   */
+  function suscribirseAMensajes(conversacionId, callback) {
+    const channel = supabase
+      .channel(`mensajes:${conversacionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'mensajes',
+          filter: `conversacion_id=eq.${conversacionId}`,
+        },
+        async (payload) => {
+          const { data } = await supabase
+            .from('mensajes')
+            .select(
+              `
+              *,
+              remitente:usuarios(id, nombre, foto_url)
+            `,
+            )
+            .eq('id', payload.new.id)
+            .single()
+
+          if (data &amp;&amp; callback) {
+            callback(data)
+          }
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }
+
+  /**
+   * Se suscribe a actualizaciones en las conversaciones del usuario en tiempo real.
+   * @param {function(Object):void} callback - Función que se ejecuta al recibir una actualización.
+   * @returns {function():void} Una función para cancelar la suscripción.
+   */
+  function suscribirseAConversaciones(callback) {
+    if (!authStore.usuario) return () => {}
+
+    const channel = supabase
+      .channel('conversaciones-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'conversaciones',
+        },
+        (payload) => {
+          if (callback) {
+            callback(payload)
+          }
+          cargarConversaciones()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }
+
+  return {
+    /**
+     * @type {import('vue').Ref&lt;Array&lt;Object>>}
+     * @description Lista de conversaciones del usuario.
+     */
+    conversaciones,
+    /**
+     * @type {import('vue').Ref&lt;Array&lt;Object>>}
+     * @description Lista de mensajes de la conversación activa.
+     */
+    mensajes,
+    /**
+     * @type {import('vue').Ref&lt;boolean>}
+     * @description Estado de carga de las operaciones.
+     */
+    loading,
+    /**
+     * @type {import('vue').Ref&lt;Error|null>}
+     * @description Objeto de error si alguna operación falla.
+     */
+    error,
+    /**
+     * @type {import('vue').ComputedRef&lt;number>}
+     * @description Número de conversaciones con mensajes no leídos.
+     */
+    mensajesNoLeidos,
+    obtenerOCrearConversacion,
+    cargarConversaciones,
+    cargarMensajes,
+    enviarMensaje,
+    marcarComoLeido,
+    suscribirseAMensajes,
+    suscribirseAConversaciones,
+  }
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-useAuthStore.html">useAuthStore</a></li><li><a href="module-useCartStore.html">useCartStore</a></li><li><a href="module-useChat.html">useChat</a></li><li><a href="module-useCounterStore.html">useCounterStore</a></li><li><a href="module-useCreditCardFormatters.html">useCreditCardFormatters</a></li><li><a href="module-useNotificationStore.html">useNotificationStore</a></li><li><a href="module-usePaymentCheckout.html">usePaymentCheckout</a></li><li><a href="module-useProductStore.html">useProductStore</a></li><li><a href="module-useRole.html">useRole</a></li><li><a href="module-useTicketGenerator.html">useTicketGenerator</a></li></ul><h3>Global</h3><ul><li><a href="global.html#LOW_STOCK_THRESHOLD">LOW_STOCK_THRESHOLD</a></li><li><a href="global.html#history">history</a></li><li><a href="global.html#redirectUrl">redirectUrl</a></li><li><a href="global.html#router">router</a></li><li><a href="global.html#routes">routes</a></li><li><a href="global.html#scrollBehavior">scrollBehavior</a></li><li><a href="global.html#subirImagenCloudinary">subirImagenCloudinary</a></li><li><a href="global.html#supabase">supabase</a></li><li><a href="global.html#supabaseAnonKey">supabaseAnonKey</a></li><li><a href="global.html#supabaseUrl">supabaseUrl</a></li><li><a href="global.html#useVentasStore">useVentasStore</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 02 2025 21:46:59 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

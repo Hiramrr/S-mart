@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Module: useChat</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Module: useChat</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        
+            
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description">Composable para gestionar la funcionalidad de chat en tiempo real.
+Proporciona funciones para crear, cargar y gestionar conversaciones y mensajes,
+así como para suscribirse a actualizaciones en tiempo real a través de Supabase.</div>
+        
+
+        
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="composables_useChat.js.html">composables/useChat.js</a>, <a href="composables_useChat.js.html#line6">line 6</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id="~conversaciones"><span class="type-signature">(inner) </span>conversaciones<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Lista de conversaciones del usuario.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="composables_useChat.js.html">composables/useChat.js</a>, <a href="composables_useChat.js.html#line341">line 341</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="~error"><span class="type-signature">(inner) </span>error<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Objeto de error si alguna operación falla.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="composables_useChat.js.html">composables/useChat.js</a>, <a href="composables_useChat.js.html#line356">line 356</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="~loading"><span class="type-signature">(inner) </span>loading<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Estado de carga de las operaciones.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="composables_useChat.js.html">composables/useChat.js</a>, <a href="composables_useChat.js.html#line351">line 351</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="~mensajes"><span class="type-signature">(inner) </span>mensajes<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Lista de mensajes de la conversación activa.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="composables_useChat.js.html">composables/useChat.js</a>, <a href="composables_useChat.js.html#line346">line 346</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="~mensajesNoLeidos"><span class="type-signature">(inner) </span>mensajesNoLeidos<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Número de conversaciones con mensajes no leídos.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="composables_useChat.js.html">composables/useChat.js</a>, <a href="composables_useChat.js.html#line361">line 361</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-useAuthStore.html">useAuthStore</a></li><li><a href="module-useCartStore.html">useCartStore</a></li><li><a href="module-useChat.html">useChat</a></li><li><a href="module-useCounterStore.html">useCounterStore</a></li><li><a href="module-useCreditCardFormatters.html">useCreditCardFormatters</a></li><li><a href="module-useNotificationStore.html">useNotificationStore</a></li><li><a href="module-usePaymentCheckout.html">usePaymentCheckout</a></li><li><a href="module-useProductStore.html">useProductStore</a></li><li><a href="module-useRole.html">useRole</a></li><li><a href="module-useTicketGenerator.html">useTicketGenerator</a></li></ul><h3>Global</h3><ul><li><a href="global.html#LOW_STOCK_THRESHOLD">LOW_STOCK_THRESHOLD</a></li><li><a href="global.html#history">history</a></li><li><a href="global.html#redirectUrl">redirectUrl</a></li><li><a href="global.html#router">router</a></li><li><a href="global.html#routes">routes</a></li><li><a href="global.html#scrollBehavior">scrollBehavior</a></li><li><a href="global.html#subirImagenCloudinary">subirImagenCloudinary</a></li><li><a href="global.html#supabase">supabase</a></li><li><a href="global.html#supabaseAnonKey">supabaseAnonKey</a></li><li><a href="global.html#supabaseUrl">supabaseUrl</a></li><li><a href="global.html#useVentasStore">useVentasStore</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 02 2025 21:31:12 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
